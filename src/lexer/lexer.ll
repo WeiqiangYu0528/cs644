@@ -4,10 +4,10 @@
 
 %{
     #include "lexer.h"
-    #include "parser.tab.hpp"
+    #include "parser.h"
     #undef  YY_DECL 
-    #define YY_DECL int MyLexer::yylex(std::string *const yylval)
-    #define TOKEN(tok) yy::parser::token::tok
+    #define YY_DECL int yy::MyLexer::yylex(std::string *const yylval, location *const yylloc)
+    using Token = yy::parser::token;  
 %}
 
 DIGIT   [0-9]
@@ -18,12 +18,12 @@ WHITESPACE [ \t\n\r]+
 
 %%
 
-"int"                   { return TOKEN(INT); }
-"short"                 { return TOKEN(SHORT); }
-"="                     { return TOKEN(ASSIGN); }
-";"                     { return TOKEN(SEMICOLON); }
-{ID}                    { *yylval = std::string(yytext); return TOKEN(IDENTIFIER); }
-{INTEGER}               { *yylval = std::string(yytext); return TOKEN(INTEGER); }
+"int"                   { return Token::INT; }
+"short"                 { return Token::SHORT; }
+"="                     { return Token::ASSIGN; }
+";"                     { return Token::SEMICOLON; }
+{ID}                    { *yylval = std::string(yytext); return Token::IDENTIFIER; }
+{INTEGER}               { *yylval = std::string(yytext); return Token::INTEGER; }
 {WHITESPACE}              ;
 .                       { }
 

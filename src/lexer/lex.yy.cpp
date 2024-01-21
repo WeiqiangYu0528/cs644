@@ -417,10 +417,10 @@ static const flex_int16_t yy_chk[51] =
 #line 1 "src/lexer/lexer.ll"
 #line 6 "src/lexer/lexer.ll"
     #include "lexer.h"
-    #include "parser.tab.hpp"
+    #include "parser.h"
     #undef  YY_DECL 
-    #define YY_DECL int MyLexer::yylex(std::string *const yylval)
-    #define TOKEN(tok) yy::parser::token::tok
+    #define YY_DECL int yy::MyLexer::yylex(std::string *const yylval, location *const yylloc)
+    using Token = yy::parser::token;  
 #line 425 "src/lexer/lex.yy.cpp"
 #line 426 "src/lexer/lex.yy.cpp"
 
@@ -617,32 +617,32 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 21 "src/lexer/lexer.ll"
-{ return TOKEN(INT); }
+{ return Token::INT; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 22 "src/lexer/lexer.ll"
-{ return TOKEN(SHORT); }
+{ return Token::SHORT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 23 "src/lexer/lexer.ll"
-{ return TOKEN(ASSIGN); }
+{ return Token::ASSIGN; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 24 "src/lexer/lexer.ll"
-{ return TOKEN(SEMICOLON); }
+{ return Token::SEMICOLON; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 25 "src/lexer/lexer.ll"
-{ *yylval = std::string(yytext); return TOKEN(IDENTIFIER); }
+{ *yylval = std::string(yytext); return Token::IDENTIFIER; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 26 "src/lexer/lexer.ll"
-{ *yylval = std::string(yytext); return TOKEN(INTEGER); }
+{ *yylval = std::string(yytext); return Token::INTEGER; }
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */

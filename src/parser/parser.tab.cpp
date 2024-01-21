@@ -38,11 +38,11 @@
 
 
 
-#include "parser.tab.hpp"
+#include "parser.h"
 
 
 // Unqualified %code blocks.
-#line 14 "src/parser/parser.yy"
+#line 20 "src/parser/parser.yy"
 
     #define yylex lexer.yylex
 
@@ -71,6 +71,25 @@
 # endif
 #endif
 
+#define YYRHSLOC(Rhs, K) ((Rhs)[K].location)
+/* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
+   If N is 0, then set CURRENT to the empty location which ends
+   the previous symbol: RHS[0] (always defined).  */
+
+# ifndef YYLLOC_DEFAULT
+#  define YYLLOC_DEFAULT(Current, Rhs, N)                               \
+    do                                                                  \
+      if (N)                                                            \
+        {                                                               \
+          (Current).begin  = YYRHSLOC (Rhs, 1).begin;                   \
+          (Current).end    = YYRHSLOC (Rhs, N).end;                     \
+        }                                                               \
+      else                                                              \
+        {                                                               \
+          (Current).begin = (Current).end = YYRHSLOC (Rhs, 0).end;      \
+        }                                                               \
+    while (false)
+# endif
 
 
 // Enable debugging if requested.
@@ -119,7 +138,7 @@
 #define YYRECOVERING()  (!!yyerrstatus_)
 
 namespace yy {
-#line 123 "src/parser/parser.tab.cpp"
+#line 142 "src/parser/parser.tab.cpp"
 
   /// Build a parser object.
   parser::parser (MyLexer &lexer_yyarg)
@@ -147,20 +166,23 @@ namespace yy {
   parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
     , value (that.value)
+    , location (that.location)
   {}
 
 
   /// Constructor for valueless symbols.
   template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t)
+  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t, YY_MOVE_REF (location_type) l)
     : Base (t)
     , value ()
+    , location (l)
   {}
 
   template <typename Base>
-  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t, YY_RVREF (value_type) v)
+  parser::basic_symbol<Base>::basic_symbol (typename Base::kind_type t, YY_RVREF (value_type) v, YY_RVREF (location_type) l)
     : Base (t)
     , value (YY_MOVE (v))
+    , location (YY_MOVE (l))
   {}
 
 
@@ -185,6 +207,7 @@ namespace yy {
   {
     super_type::move (s);
     value = YY_MOVE (s.value);
+    location = YY_MOVE (s.location);
   }
 
   // by_kind.
@@ -277,7 +300,7 @@ namespace yy {
   {}
 
   parser::stack_symbol_type::stack_symbol_type (YY_RVREF (stack_symbol_type) that)
-    : super_type (YY_MOVE (that.state), YY_MOVE (that.value))
+    : super_type (YY_MOVE (that.state), YY_MOVE (that.value), YY_MOVE (that.location))
   {
 #if 201103L <= YY_CPLUSPLUS
     // that is emptied.
@@ -286,7 +309,7 @@ namespace yy {
   }
 
   parser::stack_symbol_type::stack_symbol_type (state_type s, YY_MOVE_REF (symbol_type) that)
-    : super_type (s, YY_MOVE (that.value))
+    : super_type (s, YY_MOVE (that.value), YY_MOVE (that.location))
   {
     // that is emptied.
     that.kind_ = symbol_kind::S_YYEMPTY;
@@ -298,6 +321,7 @@ namespace yy {
   {
     state = that.state;
     value = that.value;
+    location = that.location;
     return *this;
   }
 
@@ -306,6 +330,7 @@ namespace yy {
   {
     state = that.state;
     value = that.value;
+    location = that.location;
     // that is emptied.
     that.state = empty_state;
     return *this;
@@ -336,7 +361,8 @@ namespace yy {
       {
         symbol_kind_type yykind = yysym.kind ();
         yyo << (yykind < YYNTOKENS ? "token" : "nterm")
-            << ' ' << yysym.name () << " (";
+            << ' ' << yysym.name () << " ("
+            << yysym.location << ": ";
         YY_USE (yykind);
         yyo << ')';
       }
@@ -437,6 +463,9 @@ namespace yy {
     /// The lookahead symbol.
     symbol_type yyla;
 
+    /// The locations where the error started and ended.
+    stack_symbol_type yyerror_range[3];
+
     /// The return value of parse ().
     int yyresult;
 
@@ -485,7 +514,7 @@ namespace yy {
         try
 #endif // YY_EXCEPTIONS
           {
-            yyla.kind_ = yytranslate_ (yylex (&yyla.value));
+            yyla.kind_ = yytranslate_ (yylex (&yyla.value, &yyla.location));
           }
 #if YY_EXCEPTIONS
         catch (const syntax_error& yyexc)
@@ -564,6 +593,12 @@ namespace yy {
       else
         yylhs.value = yystack_[0].value;
 
+      // Default location.
+      {
+        stack_type::slice range (yystack_, yylen);
+        YYLLOC_DEFAULT (yylhs.location, range, yylen);
+        yyerror_range[1].location = yylhs.location;
+      }
 
       // Perform the reduction.
       YY_REDUCE_PRINT (yyn);
@@ -574,27 +609,27 @@ namespace yy {
           switch (yyn)
             {
   case 4: // statement: integer_type_declaration IDENTIFIER ASSIGN INTEGER SEMICOLON
-#line 28 "src/parser/parser.yy"
+#line 34 "src/parser/parser.yy"
     {       
          std::cout << "Declared " << yystack_[4].value << " " << yystack_[3].value << ", set to " << yystack_[1].value << std::endl;
     }
-#line 582 "src/parser/parser.tab.cpp"
+#line 617 "src/parser/parser.tab.cpp"
     break;
 
   case 5: // integer_type_declaration: SHORT
-#line 33 "src/parser/parser.yy"
+#line 39 "src/parser/parser.yy"
           { yylhs.value = std::string("short variable"); }
-#line 588 "src/parser/parser.tab.cpp"
+#line 623 "src/parser/parser.tab.cpp"
     break;
 
   case 6: // integer_type_declaration: INT
-#line 34 "src/parser/parser.yy"
+#line 40 "src/parser/parser.yy"
           {yylhs.value = std::string("int variable");}
-#line 594 "src/parser/parser.tab.cpp"
+#line 629 "src/parser/parser.tab.cpp"
     break;
 
 
-#line 598 "src/parser/parser.tab.cpp"
+#line 633 "src/parser/parser.tab.cpp"
 
             default:
               break;
@@ -627,10 +662,11 @@ namespace yy {
       {
         ++yynerrs_;
         std::string msg = YY_("syntax error");
-        error (YY_MOVE (msg));
+        error (yyla.location, YY_MOVE (msg));
       }
 
 
+    yyerror_range[1].location = yyla.location;
     if (yyerrstatus_ == 3)
       {
         /* If just tried and failed to reuse lookahead token after an
@@ -692,6 +728,7 @@ namespace yy {
         if (yystack_.size () == 1)
           YYABORT;
 
+        yyerror_range[1].location = yystack_[0].location;
         yy_destroy_ ("Error: popping", yystack_[0]);
         yypop_ ();
         YY_STACK_PRINT ();
@@ -699,6 +736,8 @@ namespace yy {
     {
       stack_symbol_type error_token;
 
+      yyerror_range[2].location = yyla.location;
+      YYLLOC_DEFAULT (error_token.location, yyerror_range, 2);
 
       // Shift the error token.
       error_token.state = state_type (yyn);
@@ -764,7 +803,7 @@ namespace yy {
   void
   parser::error (const syntax_error& yyexc)
   {
-    error (yyexc.what ());
+    error (yyexc.location, yyexc.what ());
   }
 
 #if YYDEBUG || 0
@@ -862,7 +901,7 @@ namespace yy {
   const signed char
   parser::yyrline_[] =
   {
-       0,    22,    22,    23,    27,    33,    34
+       0,    28,    28,    29,    33,    39,    40
   };
 
   void
@@ -941,13 +980,13 @@ namespace yy {
   }
 
 } // yy
-#line 945 "src/parser/parser.tab.cpp"
+#line 984 "src/parser/parser.tab.cpp"
 
-#line 37 "src/parser/parser.yy"
+#line 43 "src/parser/parser.yy"
 
 
 
-void yy::parser::error(const std::string &message)
+void yy::parser::error(const location &location, const std::string &message)
 {
-    std::cerr << "Error: " << message << std::endl;
+    std::cerr << "Error at lines " << location << ": " << message << std::endl;
 }

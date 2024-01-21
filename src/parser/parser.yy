@@ -1,5 +1,6 @@
 %require "3.2"
 %language "c++"
+%define lr.type lalr
 
 %code requires {
     #include <string>
@@ -7,6 +8,11 @@
 }
 
 %define api.value.type {std::string}
+
+%locations
+%define api.location.file "../../include/location.h"
+%define api.location.include {"location.h"}
+%header "include/parser.h"
 
 %parse-param {MyLexer &lexer}
 
@@ -37,7 +43,7 @@ integer_type_declaration:
 %%
 
 
-void yy::parser::error(const std::string &message)
+void yy::parser::error(const location &location, const std::string &message)
 {
-    std::cerr << "Error: " << message << std::endl;
+    std::cerr << "Error at lines " << location << ": " << message << std::endl;
 }

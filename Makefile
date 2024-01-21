@@ -1,11 +1,12 @@
 CXX=g++
-CXXFLAGS=-Iinclude -Isrc/parser -Isrc/lexer -Wall -std=c++11
+CXXFLAGS=-Iinclude -Wall -std=c++11
 LIBS=
 
 BISON=bison
 BISON_SRC=src/parser/parser.yy
 BISON_OUT=src/parser/parser.tab.cpp
-BISON_HEADER=src/parser/parser.tab.hpp
+BISON_HEADER=include/parser.h
+BISON_LOCATION_HEADER=include/location.h
 BISON_OPTS=-d 
 
 FLEX=flex
@@ -33,7 +34,7 @@ $(FLEX_OUT): $(FLEX_SRC) $(BISON_HEADER)
 	$(FLEX) $(FLEX_OPTS) -o $@ $<
 
 clean:
-	rm -rf $(BUILD_DIR) $(BISON_OUT) $(BISON_HEADER) $(FLEX_OUT)
+	rm -rf $(BUILD_DIR) $(BISON_OUT) $(BISON_HEADER) $(BISON_LOCATION_HEADER) $(FLEX_OUT)
 
 parser: $(BISON_OUT)
 
