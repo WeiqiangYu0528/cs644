@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 
     inputFile.open(argv[1]);
     if (!inputFile.is_open()) {
-        std::cerr << "Error: Unable to open file " << argv[2] << std::endl;
+        std::cerr << "Error: Unable to open file " << argv[1] << std::endl;
         return 1;
     }
  
