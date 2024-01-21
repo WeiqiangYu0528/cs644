@@ -42,7 +42,7 @@
 
 
 // Unqualified %code blocks.
-#line 20 "src/parser/parser.yy"
+#line 21 "src/parser/parser.yy"
 
     #define yylex lexer.yylex
 
@@ -608,28 +608,8 @@ namespace yy {
         {
           switch (yyn)
             {
-  case 4: // statement: integer_type_declaration IDENTIFIER ASSIGN INTEGER SEMICOLON
-#line 34 "src/parser/parser.yy"
-    {       
-         std::cout << "Declared " << yystack_[4].value << " " << yystack_[3].value << ", set to " << yystack_[1].value << std::endl;
-    }
-#line 617 "src/parser/parser.tab.cpp"
-    break;
 
-  case 5: // integer_type_declaration: SHORT
-#line 39 "src/parser/parser.yy"
-          { yylhs.value = std::string("short variable"); }
-#line 623 "src/parser/parser.tab.cpp"
-    break;
-
-  case 6: // integer_type_declaration: INT
-#line 40 "src/parser/parser.yy"
-          {yylhs.value = std::string("int variable");}
-#line 629 "src/parser/parser.tab.cpp"
-    break;
-
-
-#line 633 "src/parser/parser.tab.cpp"
+#line 613 "src/parser/parser.tab.cpp"
 
             default:
               break;
@@ -661,7 +641,8 @@ namespace yy {
     if (!yyerrstatus_)
       {
         ++yynerrs_;
-        std::string msg = YY_("syntax error");
+        context yyctx (*this, yyla);
+        std::string msg = yysyntax_error_ (yyctx);
         error (yyla.location, YY_MOVE (msg));
       }
 
@@ -806,102 +787,274 @@ namespace yy {
     error (yyexc.location, yyexc.what ());
   }
 
-#if YYDEBUG || 0
   const char *
   parser::symbol_name (symbol_kind_type yysymbol)
   {
-    return yytname_[yysymbol];
+    static const char *const yy_sname[] =
+    {
+    "end of file", "error", "invalid token", "IDENTIFIER", "DOT", "ASSIGN",
+  "INTEGER", "OR_OR", "AND_AND", "OR", "XOR", "AND", "EQUAL", "NOT_EQUAL",
+  "LESS", "GREATER", "LESS_EQUAL", "GREATER_EQUAL", "LEFT_SHIFT",
+  "RIGHT_SHIFT", "UNSIGNED_RIGHT_SHIFT", "PLUS", "MINUS", "MULTIPLY",
+  "DIVIDE", "MODULO", "LEFT_PAREN", "RIGHT_PAREN", "COLON",
+  "QUESTION_MARK", "THIS", "CLASS", "IMPLEMENTS", "INCREMENT", "DECREMENT",
+  "NOT", "BITWISE_NOT", "BYTE", "SHORT", "CHAR", "INT", "LONG", "FLOAT",
+  "DOUBLE", "BOOLEAN", "LEFT_BRACKET", "RIGHT_BRACKET", "COMMA", "AT",
+  "LEFT_BRACE", "RIGHT_BRACE", "EXTENDS", "SUPER", "PUBLIC", "PROTECTED",
+  "PRIVATE", "STATIC", "ABSTRACT", "FINAL", "NATIVE", "SYNCHRONIZED",
+  "TRANSIENT", "VOLATILE", "STRICTFP", "$accept", "Program",
+  "NormalClassDeclaration", "NormalClassDeclarationOpt1",
+  "NormalClassDeclarationOpt2", "NormalClassDeclarationOpt3", "Type",
+  "BracketsOpt", "BasicType", "ReferenceType", "ReferenceTypeOpt1",
+  "ReferenceTypeOpt2", "TypeArguments", "TypeArgumentsOpt1",
+  "TypeArgument", "TypeArgumentOpt1", "TypeList", "TypeParameters",
+  "TypeParametersOpt1", "TypeParameter", "TypeParameterOpt1", "Bound",
+  "ClassBody", "ClassBodyOpt1", "ClassBodyDeclaration", YY_NULLPTR
+    };
+    return yy_sname[yysymbol];
   }
-#endif // #if YYDEBUG || 0
+
+
+
+  // parser::context.
+  parser::context::context (const parser& yyparser, const symbol_type& yyla)
+    : yyparser_ (yyparser)
+    , yyla_ (yyla)
+  {}
+
+  int
+  parser::context::expected_tokens (symbol_kind_type yyarg[], int yyargn) const
+  {
+    // Actual number of expected tokens
+    int yycount = 0;
+
+    const int yyn = yypact_[+yyparser_.yystack_[0].state];
+    if (!yy_pact_value_is_default_ (yyn))
+      {
+        /* Start YYX at -YYN if negative to avoid negative indexes in
+           YYCHECK.  In other words, skip the first -YYN actions for
+           this state because they are default actions.  */
+        const int yyxbegin = yyn < 0 ? -yyn : 0;
+        // Stay within bounds of both yycheck and yytname.
+        const int yychecklim = yylast_ - yyn + 1;
+        const int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+        for (int yyx = yyxbegin; yyx < yyxend; ++yyx)
+          if (yycheck_[yyx + yyn] == yyx && yyx != symbol_kind::S_YYerror
+              && !yy_table_value_is_error_ (yytable_[yyx + yyn]))
+            {
+              if (!yyarg)
+                ++yycount;
+              else if (yycount == yyargn)
+                return 0;
+              else
+                yyarg[yycount++] = YY_CAST (symbol_kind_type, yyx);
+            }
+      }
+
+    if (yyarg && yycount == 0 && 0 < yyargn)
+      yyarg[0] = symbol_kind::S_YYEMPTY;
+    return yycount;
+  }
 
 
 
 
 
 
+  int
+  parser::yy_syntax_error_arguments_ (const context& yyctx,
+                                                 symbol_kind_type yyarg[], int yyargn) const
+  {
+    /* There are many possibilities here to consider:
+       - If this state is a consistent state with a default action, then
+         the only way this function was invoked is if the default action
+         is an error action.  In that case, don't check for expected
+         tokens because there are none.
+       - The only way there can be no lookahead present (in yyla) is
+         if this state is a consistent state with a default action.
+         Thus, detecting the absence of a lookahead is sufficient to
+         determine that there is no unexpected or expected token to
+         report.  In that case, just report a simple "syntax error".
+       - Don't assume there isn't a lookahead just because this state is
+         a consistent state with a default action.  There might have
+         been a previous inconsistent state, consistent state with a
+         non-default action, or user semantic action that manipulated
+         yyla.  (However, yyla is currently not documented for users.)
+       - Of course, the expected token list depends on states to have
+         correct lookahead information, and it depends on the parser not
+         to perform extra reductions after fetching a lookahead from the
+         scanner and before detecting a syntax error.  Thus, state merging
+         (from LALR or IELR) and default reductions corrupt the expected
+         token list.  However, the list is correct for canonical LR with
+         one exception: it will still contain any token that will not be
+         accepted due to an error action in a later state.
+    */
+
+    if (!yyctx.lookahead ().empty ())
+      {
+        if (yyarg)
+          yyarg[0] = yyctx.token ();
+        int yyn = yyctx.expected_tokens (yyarg ? yyarg + 1 : yyarg, yyargn - 1);
+        return yyn + 1;
+      }
+    return 0;
+  }
+
+  // Generate an error message.
+  std::string
+  parser::yysyntax_error_ (const context& yyctx) const
+  {
+    // Its maximum.
+    enum { YYARGS_MAX = 5 };
+    // Arguments of yyformat.
+    symbol_kind_type yyarg[YYARGS_MAX];
+    int yycount = yy_syntax_error_arguments_ (yyctx, yyarg, YYARGS_MAX);
+
+    char const* yyformat = YY_NULLPTR;
+    switch (yycount)
+      {
+#define YYCASE_(N, S)                         \
+        case N:                               \
+          yyformat = S;                       \
+        break
+      default: // Avoid compiler warnings.
+        YYCASE_ (0, YY_("syntax error"));
+        YYCASE_ (1, YY_("syntax error, unexpected %s"));
+        YYCASE_ (2, YY_("syntax error, unexpected %s, expecting %s"));
+        YYCASE_ (3, YY_("syntax error, unexpected %s, expecting %s or %s"));
+        YYCASE_ (4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
+        YYCASE_ (5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
+#undef YYCASE_
+      }
+
+    std::string yyres;
+    // Argument number.
+    std::ptrdiff_t yyi = 0;
+    for (char const* yyp = yyformat; *yyp; ++yyp)
+      if (yyp[0] == '%' && yyp[1] == 's' && yyi < yycount)
+        {
+          yyres += symbol_name (yyarg[yyi++]);
+          ++yyp;
+        }
+      else
+        yyres += *yyp;
+    return yyres;
+  }
 
 
-
-  const signed char parser::yypact_ninf_ = -7;
+  const signed char parser::yypact_ninf_ = -47;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const signed char
   parser::yypact_[] =
   {
-      -7,     0,    -7,    -7,    -7,    -7,    -4,    -1,    -6,     1,
-      -7
+     -47,     1,   -47,     5,   -47,    -4,     8,   -39,   -47,   -38,
+     -33,     6,   -17,    13,   -47,     8,     2,     7,   -47,   -47,
+     -47,   -47,   -47,   -47,   -47,   -47,   -47,   -26,   -26,    13,
+     -29,   -47,    11,   -33,   -47,     0,    19,   -47,   -22,   -47,
+     -47,   -47,   -21,   -47,   -47,    13,   -47,   -20,   -47,   -19,
+      24,   -47,   -47,    13,   -43,   -47,   -46,     0,    15,     7,
+     -47,   -47,   -47,   -47,   -47,   -47,    13,   -19,   -47,    19,
+     -15,   -47,   -47,   -47
   };
 
   const signed char
   parser::yydefact_[] =
   {
-       2,     0,     1,     6,     5,     3,     0,     0,     0,     0,
-       4
+       2,     0,     1,     0,     3,     5,     0,     7,     6,    41,
+      38,     0,     9,     0,    40,     0,     0,    24,    15,    16,
+      17,    18,    19,    20,    21,    22,     8,    13,    13,     0,
+       0,    43,    42,    38,    37,     0,    26,    25,     0,    11,
+      12,    35,    10,    46,     4,     0,    39,     0,    31,    29,
+       0,    23,    14,     0,     0,    44,     0,     0,     0,    24,
+      36,    48,    45,    47,    33,    34,     0,    29,    28,    26,
+       0,    30,    27,    32
   };
 
   const signed char
   parser::yypgoto_[] =
   {
-      -7,    -7,    -7,    -7
+     -47,   -47,   -47,   -47,   -47,   -47,   -47,     9,   -47,   -11,
+     -24,   -36,   -47,   -31,   -18,   -47,   -47,   -47,    18,    23,
+     -47,   -47,   -47,   -47,   -47
   };
 
   const signed char
   parser::yydefgoto_[] =
   {
-       0,     1,     5,     6
+       0,     1,     4,     7,    12,    30,    26,    39,    27,    48,
+      36,    51,    37,    58,    49,    66,    42,     8,    16,    10,
+      14,    32,    44,    54,    63
   };
 
   const signed char
   parser::yytable_[] =
   {
-       2,     7,     9,     3,     4,     8,     0,     0,    10
+      28,     2,    31,    17,    61,    64,    65,    62,     5,    17,
+       6,     9,    11,    13,    15,    29,    17,    34,    41,    38,
+      43,    35,    45,    50,    52,    56,    53,    59,    57,    47,
+      68,    73,     3,    72,    55,    69,    71,    40,    33,    67,
+       0,     0,    60,    18,    19,    20,    21,    22,    23,    24,
+      25,    46,     0,     0,     0,    70
   };
 
   const signed char
   parser::yycheck_[] =
   {
-       0,     5,     8,     3,     4,     6,    -1,    -1,     7
+      11,     0,    13,     3,    47,    51,    52,    50,     3,     3,
+      14,     3,    51,    51,    47,    32,     3,    15,    29,    45,
+      49,    14,    11,     4,    46,    45,    47,     3,    47,    29,
+      15,    46,    31,    69,    45,    59,    67,    28,    15,    57,
+      -1,    -1,    53,    37,    38,    39,    40,    41,    42,    43,
+      44,    33,    -1,    -1,    -1,    66
   };
 
   const signed char
   parser::yystos_[] =
   {
-       0,    10,     0,     3,     4,    11,    12,     5,     6,     8,
-       7
+       0,    65,     0,    31,    66,     3,    14,    67,    81,     3,
+      83,    51,    68,    51,    84,    47,    82,     3,    37,    38,
+      39,    40,    41,    42,    43,    44,    70,    72,    73,    32,
+      69,    73,    85,    83,    15,    14,    74,    76,    45,    71,
+      71,    73,    80,    49,    86,    11,    82,    29,    73,    78,
+       4,    75,    46,    47,    87,    73,    45,    47,    77,     3,
+      73,    47,    50,    88,    51,    52,    79,    78,    15,    74,
+      73,    77,    75,    46
   };
 
   const signed char
   parser::yyr1_[] =
   {
-       0,     9,    10,    10,    11,    12,    12
+       0,    64,    65,    65,    66,    67,    67,    68,    68,    69,
+      69,    70,    70,    71,    71,    72,    72,    72,    72,    72,
+      72,    72,    72,    73,    74,    74,    75,    75,    76,    77,
+      77,    78,    78,    79,    79,    80,    80,    81,    82,    82,
+      83,    84,    84,    85,    85,    86,    87,    87,    88
   };
 
   const signed char
   parser::yyr2_[] =
   {
-       0,     2,     0,     2,     5,     1,     1
+       0,     2,     0,     2,     6,     0,     1,     0,     2,     0,
+       2,     2,     2,     0,     2,     1,     1,     1,     1,     1,
+       1,     1,     1,     3,     0,     1,     0,     4,     4,     0,
+       3,     1,     5,     1,     1,     1,     3,     4,     0,     3,
+       2,     0,     2,     1,     3,     3,     0,     2,     1
   };
 
 
-#if YYDEBUG
-  // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
-  // First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
-  const char*
-  const parser::yytname_[] =
-  {
-  "\"end of file\"", "error", "\"invalid token\"", "INT", "SHORT",
-  "IDENTIFIER", "ASSIGN", "SEMICOLON", "INTEGER", "$accept", "program",
-  "statement", "integer_type_declaration", YY_NULLPTR
-  };
-#endif
 
 
 #if YYDEBUG
-  const signed char
+  const unsigned char
   parser::yyrline_[] =
   {
-       0,    28,    28,    29,    33,    39,    40
+       0,    44,    44,    45,    59,    62,    63,    66,    67,    70,
+      71,    76,    77,    80,    81,    85,    86,    87,    88,    89,
+      90,    91,    92,    96,    99,   100,   103,   104,   108,   111,
+     112,   116,   117,   120,   121,   125,   126,   130,   133,   134,
+     138,   141,   142,   146,   147,   176,   179,   180,   184
   };
 
   void
@@ -966,10 +1119,15 @@ namespace yy {
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
+      55,    56,    57,    58,    59,    60,    61,    62,    63
     };
     // Last valid token kind.
-    const int code_max = 263;
+    const int code_max = 318;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -980,13 +1138,13 @@ namespace yy {
   }
 
 } // yy
-#line 984 "src/parser/parser.tab.cpp"
+#line 1142 "src/parser/parser.tab.cpp"
 
-#line 43 "src/parser/parser.yy"
+#line 209 "src/parser/parser.yy"
 
 
 
 void yy::parser::error(const location &location, const std::string &message)
 {
-    std::cerr << "Error at lines " << location << ": " << message << std::endl;
+    std::cerr << "Error at line " << location.end.line << " col " << location.end.column << ": " << message << std::endl;
 }

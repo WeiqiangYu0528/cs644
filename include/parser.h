@@ -236,12 +236,67 @@ namespace yy {
     YYEOF = 0,                     // "end of file"
     YYerror = 256,                 // error
     YYUNDEF = 257,                 // "invalid token"
-    INT = 258,                     // INT
-    SHORT = 259,                   // SHORT
-    IDENTIFIER = 260,              // IDENTIFIER
-    ASSIGN = 261,                  // ASSIGN
-    SEMICOLON = 262,               // SEMICOLON
-    INTEGER = 263                  // INTEGER
+    IDENTIFIER = 258,              // IDENTIFIER
+    DOT = 259,                     // DOT
+    ASSIGN = 260,                  // ASSIGN
+    INTEGER = 261,                 // INTEGER
+    OR_OR = 262,                   // OR_OR
+    AND_AND = 263,                 // AND_AND
+    OR = 264,                      // OR
+    XOR = 265,                     // XOR
+    AND = 266,                     // AND
+    EQUAL = 267,                   // EQUAL
+    NOT_EQUAL = 268,               // NOT_EQUAL
+    LESS = 269,                    // LESS
+    GREATER = 270,                 // GREATER
+    LESS_EQUAL = 271,              // LESS_EQUAL
+    GREATER_EQUAL = 272,           // GREATER_EQUAL
+    LEFT_SHIFT = 273,              // LEFT_SHIFT
+    RIGHT_SHIFT = 274,             // RIGHT_SHIFT
+    UNSIGNED_RIGHT_SHIFT = 275,    // UNSIGNED_RIGHT_SHIFT
+    PLUS = 276,                    // PLUS
+    MINUS = 277,                   // MINUS
+    MULTIPLY = 278,                // MULTIPLY
+    DIVIDE = 279,                  // DIVIDE
+    MODULO = 280,                  // MODULO
+    LEFT_PAREN = 281,              // LEFT_PAREN
+    RIGHT_PAREN = 282,             // RIGHT_PAREN
+    COLON = 283,                   // COLON
+    QUESTION_MARK = 284,           // QUESTION_MARK
+    THIS = 285,                    // THIS
+    CLASS = 286,                   // CLASS
+    IMPLEMENTS = 287,              // IMPLEMENTS
+    INCREMENT = 288,               // INCREMENT
+    DECREMENT = 289,               // DECREMENT
+    NOT = 290,                     // NOT
+    BITWISE_NOT = 291,             // BITWISE_NOT
+    BYTE = 292,                    // BYTE
+    SHORT = 293,                   // SHORT
+    CHAR = 294,                    // CHAR
+    INT = 295,                     // INT
+    LONG = 296,                    // LONG
+    FLOAT = 297,                   // FLOAT
+    DOUBLE = 298,                  // DOUBLE
+    BOOLEAN = 299,                 // BOOLEAN
+    LEFT_BRACKET = 300,            // LEFT_BRACKET
+    RIGHT_BRACKET = 301,           // RIGHT_BRACKET
+    COMMA = 302,                   // COMMA
+    AT = 303,                      // AT
+    LEFT_BRACE = 304,              // LEFT_BRACE
+    RIGHT_BRACE = 305,             // RIGHT_BRACE
+    EXTENDS = 306,                 // EXTENDS
+    SUPER = 307,                   // SUPER
+    PUBLIC = 308,                  // PUBLIC
+    PROTECTED = 309,               // PROTECTED
+    PRIVATE = 310,                 // PRIVATE
+    STATIC = 311,                  // STATIC
+    ABSTRACT = 312,                // ABSTRACT
+    FINAL = 313,                   // FINAL
+    NATIVE = 314,                  // NATIVE
+    SYNCHRONIZED = 315,            // SYNCHRONIZED
+    TRANSIENT = 316,               // TRANSIENT
+    VOLATILE = 317,                // VOLATILE
+    STRICTFP = 318                 // STRICTFP
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -258,21 +313,97 @@ namespace yy {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 9, ///< Number of tokens.
+        YYNTOKENS = 64, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
-        S_INT = 3,                               // INT
-        S_SHORT = 4,                             // SHORT
-        S_IDENTIFIER = 5,                        // IDENTIFIER
-        S_ASSIGN = 6,                            // ASSIGN
-        S_SEMICOLON = 7,                         // SEMICOLON
-        S_INTEGER = 8,                           // INTEGER
-        S_YYACCEPT = 9,                          // $accept
-        S_program = 10,                          // program
-        S_statement = 11,                        // statement
-        S_integer_type_declaration = 12          // integer_type_declaration
+        S_IDENTIFIER = 3,                        // IDENTIFIER
+        S_DOT = 4,                               // DOT
+        S_ASSIGN = 5,                            // ASSIGN
+        S_INTEGER = 6,                           // INTEGER
+        S_OR_OR = 7,                             // OR_OR
+        S_AND_AND = 8,                           // AND_AND
+        S_OR = 9,                                // OR
+        S_XOR = 10,                              // XOR
+        S_AND = 11,                              // AND
+        S_EQUAL = 12,                            // EQUAL
+        S_NOT_EQUAL = 13,                        // NOT_EQUAL
+        S_LESS = 14,                             // LESS
+        S_GREATER = 15,                          // GREATER
+        S_LESS_EQUAL = 16,                       // LESS_EQUAL
+        S_GREATER_EQUAL = 17,                    // GREATER_EQUAL
+        S_LEFT_SHIFT = 18,                       // LEFT_SHIFT
+        S_RIGHT_SHIFT = 19,                      // RIGHT_SHIFT
+        S_UNSIGNED_RIGHT_SHIFT = 20,             // UNSIGNED_RIGHT_SHIFT
+        S_PLUS = 21,                             // PLUS
+        S_MINUS = 22,                            // MINUS
+        S_MULTIPLY = 23,                         // MULTIPLY
+        S_DIVIDE = 24,                           // DIVIDE
+        S_MODULO = 25,                           // MODULO
+        S_LEFT_PAREN = 26,                       // LEFT_PAREN
+        S_RIGHT_PAREN = 27,                      // RIGHT_PAREN
+        S_COLON = 28,                            // COLON
+        S_QUESTION_MARK = 29,                    // QUESTION_MARK
+        S_THIS = 30,                             // THIS
+        S_CLASS = 31,                            // CLASS
+        S_IMPLEMENTS = 32,                       // IMPLEMENTS
+        S_INCREMENT = 33,                        // INCREMENT
+        S_DECREMENT = 34,                        // DECREMENT
+        S_NOT = 35,                              // NOT
+        S_BITWISE_NOT = 36,                      // BITWISE_NOT
+        S_BYTE = 37,                             // BYTE
+        S_SHORT = 38,                            // SHORT
+        S_CHAR = 39,                             // CHAR
+        S_INT = 40,                              // INT
+        S_LONG = 41,                             // LONG
+        S_FLOAT = 42,                            // FLOAT
+        S_DOUBLE = 43,                           // DOUBLE
+        S_BOOLEAN = 44,                          // BOOLEAN
+        S_LEFT_BRACKET = 45,                     // LEFT_BRACKET
+        S_RIGHT_BRACKET = 46,                    // RIGHT_BRACKET
+        S_COMMA = 47,                            // COMMA
+        S_AT = 48,                               // AT
+        S_LEFT_BRACE = 49,                       // LEFT_BRACE
+        S_RIGHT_BRACE = 50,                      // RIGHT_BRACE
+        S_EXTENDS = 51,                          // EXTENDS
+        S_SUPER = 52,                            // SUPER
+        S_PUBLIC = 53,                           // PUBLIC
+        S_PROTECTED = 54,                        // PROTECTED
+        S_PRIVATE = 55,                          // PRIVATE
+        S_STATIC = 56,                           // STATIC
+        S_ABSTRACT = 57,                         // ABSTRACT
+        S_FINAL = 58,                            // FINAL
+        S_NATIVE = 59,                           // NATIVE
+        S_SYNCHRONIZED = 60,                     // SYNCHRONIZED
+        S_TRANSIENT = 61,                        // TRANSIENT
+        S_VOLATILE = 62,                         // VOLATILE
+        S_STRICTFP = 63,                         // STRICTFP
+        S_YYACCEPT = 64,                         // $accept
+        S_Program = 65,                          // Program
+        S_NormalClassDeclaration = 66,           // NormalClassDeclaration
+        S_NormalClassDeclarationOpt1 = 67,       // NormalClassDeclarationOpt1
+        S_NormalClassDeclarationOpt2 = 68,       // NormalClassDeclarationOpt2
+        S_NormalClassDeclarationOpt3 = 69,       // NormalClassDeclarationOpt3
+        S_Type = 70,                             // Type
+        S_BracketsOpt = 71,                      // BracketsOpt
+        S_BasicType = 72,                        // BasicType
+        S_ReferenceType = 73,                    // ReferenceType
+        S_ReferenceTypeOpt1 = 74,                // ReferenceTypeOpt1
+        S_ReferenceTypeOpt2 = 75,                // ReferenceTypeOpt2
+        S_TypeArguments = 76,                    // TypeArguments
+        S_TypeArgumentsOpt1 = 77,                // TypeArgumentsOpt1
+        S_TypeArgument = 78,                     // TypeArgument
+        S_TypeArgumentOpt1 = 79,                 // TypeArgumentOpt1
+        S_TypeList = 80,                         // TypeList
+        S_TypeParameters = 81,                   // TypeParameters
+        S_TypeParametersOpt1 = 82,               // TypeParametersOpt1
+        S_TypeParameter = 83,                    // TypeParameter
+        S_TypeParameterOpt1 = 84,                // TypeParameterOpt1
+        S_Bound = 85,                            // Bound
+        S_ClassBody = 86,                        // ClassBody
+        S_ClassBodyOpt1 = 87,                    // ClassBodyOpt1
+        S_ClassBodyDeclaration = 88              // ClassBodyDeclaration
       };
     };
 
@@ -334,14 +465,11 @@ namespace yy {
         Base::clear ();
       }
 
-#if YYDEBUG || 0
       /// The user-facing name of this symbol.
       const char *name () const YY_NOEXCEPT
       {
         return parser::symbol_name (this->kind ());
       }
-#endif // #if YYDEBUG || 0
-
 
       /// Backward compatibility (Bison 3.6).
       symbol_kind_type type_get () const YY_NOEXCEPT;
@@ -453,14 +581,29 @@ namespace yy {
     /// Report a syntax error.
     void error (const syntax_error& err);
 
-#if YYDEBUG || 0
     /// The user-facing name of the symbol whose (internal) number is
     /// YYSYMBOL.  No bounds checking.
     static const char *symbol_name (symbol_kind_type yysymbol);
-#endif // #if YYDEBUG || 0
 
 
 
+    class context
+    {
+    public:
+      context (const parser& yyparser, const symbol_type& yyla);
+      const symbol_type& lookahead () const YY_NOEXCEPT { return yyla_; }
+      symbol_kind_type token () const YY_NOEXCEPT { return yyla_.kind (); }
+      const location_type& location () const YY_NOEXCEPT { return yyla_.location; }
+
+      /// Put in YYARG at most YYARGN of the expected tokens, and return the
+      /// number of tokens stored in YYARG.  If YYARG is null, return the
+      /// number of expected tokens (guaranteed to be less than YYNTOKENS).
+      int expected_tokens (symbol_kind_type yyarg[], int yyargn) const;
+
+    private:
+      const parser& yyparser_;
+      const symbol_type& yyla_;
+    };
 
   private:
 #if YY_CPLUSPLUS < 201103L
@@ -474,6 +617,13 @@ namespace yy {
     /// Stored state numbers (used for stacks).
     typedef signed char state_type;
 
+    /// The arguments of the error message.
+    int yy_syntax_error_arguments_ (const context& yyctx,
+                                    symbol_kind_type yyarg[], int yyargn) const;
+
+    /// Generate an error message.
+    /// \param yyctx     the context in which the error occurred.
+    virtual std::string yysyntax_error_ (const context& yyctx) const;
     /// Compute post-reduction state.
     /// \param yystate   the current state
     /// \param yysym     the nonterminal to push on the stack
@@ -495,10 +645,6 @@ namespace yy {
     /// are valid, yet not members of the token_kind_type enum.
     static symbol_kind_type yytranslate_ (int t) YY_NOEXCEPT;
 
-#if YYDEBUG || 0
-    /// For a symbol, its name in clear.
-    static const char* const yytname_[];
-#endif // #if YYDEBUG || 0
 
 
     // Tables.
@@ -537,7 +683,7 @@ namespace yy {
 
 #if YYDEBUG
     // YYRLINE[YYN] -- Source line where rule number YYN was defined.
-    static const signed char yyrline_[];
+    static const unsigned char yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
     virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
@@ -764,8 +910,8 @@ namespace yy {
     /// Constants.
     enum
     {
-      yylast_ = 8,     ///< Last index in yytable_.
-      yynnts_ = 4,  ///< Number of nonterminal symbols.
+      yylast_ = 55,     ///< Last index in yytable_.
+      yynnts_ = 25,  ///< Number of nonterminal symbols.
       yyfinal_ = 2 ///< Termination state number.
     };
 
@@ -777,7 +923,7 @@ namespace yy {
 
 
 } // yy
-#line 781 "include/parser.h"
+#line 927 "include/parser.h"
 
 
 
