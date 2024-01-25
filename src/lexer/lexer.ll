@@ -36,12 +36,22 @@ WHITESPACE [ \t\r]+
 "]"                     { update_yylloc; return Token::RIGHT_BRACKET; }
 "abstract"              { update_yylloc; return Token::ABSTRACT; }
 "int"                   { update_yylloc; return Token::INT; }
+"boolean"               { update_yylloc; return Token::BOOLEAN; }
 "native"                { update_yylloc; return Token::NATIVE; }
 "class"                 { update_yylloc; return Token::CLASS; }
+"interface"             { update_yylloc; return Token::INTERFACE; }
 "public"                { update_yylloc; return Token::PUBLIC; }
 "protected"             { update_yylloc; return Token::PROTECTED; }
 "static"                { update_yylloc; return Token::STATIC; }
 "final"                 { update_yylloc; return Token::FINAL; }
+"extends"               { update_yylloc; return Token::EXTENDS; }
+"implements"            { update_yylloc; return Token::IMPLEMENTS; }
+"import"                { update_yylloc; return Token::IMPORT; }
+"package"               { update_yylloc; return Token::PACKAGE; }
+"return"                { update_yylloc; return Token::RETURN; }
+"void"                  { update_yylloc; return Token::VOID; }
+"new"                   { update_yylloc; return Token::NEW; }
+"this"                  { update_yylloc; return Token::THIS; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
 {IDENTIFIER}            { update_yylloc; *yylval = std::string(yytext); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }
