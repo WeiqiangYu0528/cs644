@@ -1,3 +1,7 @@
 .vscode/
 build/
-./joosc
+joosc
+src/lexer/lex.yy.cpp
+src/parser/parser.tab.cpp
+include/location.h
+include/parser.h
