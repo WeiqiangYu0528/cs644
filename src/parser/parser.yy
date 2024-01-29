@@ -39,6 +39,7 @@
 %token EXTENDS SUPER
 %token PUBLIC PROTECTED PRIVATE STATIC ABSTRACT FINAL NATIVE SYNCHRONIZED TRANSIENT VOLATILE STRICTFP
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
+%token IF ELSE WHILE FOR
 %%
 
 Program
@@ -57,7 +58,7 @@ QualifiedIdentifierList
     ;
 
 ClassDeclaration
-    : ModifierOptions NormalClassDeclaration
+    : ClassModifiers NormalClassDeclaration
     ;
 
 NormalClassDeclaration
@@ -80,6 +81,7 @@ Type
     : BasicType BracketsOpt
     | ReferenceType BracketsOpt
     ;
+
 BracketsOpt
     :
     | LEFT_BRACKET RIGHT_BRACKET
@@ -99,10 +101,12 @@ BasicType
 ReferenceType
     : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
     ;
+
 ReferenceTypeOpt1
     :
     | TypeArguments
     ;
+
 ReferenceTypeOpt2
     :
     | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
@@ -151,25 +155,54 @@ Bound
     | Bound AND ReferenceType
     ;
 
+Statement:
+    Block
+    | SEMICOLON
+    | IF ParExpression Statement ElseStatement
+    | WHILE ParExpression Statement
+    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
+    ;
+
+ElseStatement:
+    | ELSE Statement
+    ;
+
+ForControl:
+    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
+    ;
+
+ForInit: 
+    ;
+
+ForExpression:
+    | Expression
+    ;
+
+ForUpdate:
+    ;
+
+Expression:
+    ;
+
+ParExpression:
+    LEFT_PAREN Expression RIGHT_PAREN
+    ;
 
 /* Modifier
     : Annotation */
-Modifier:
-    PUBLIC
-    | PROTECTED
-    | PRIVATE
-    | STATIC
-    | ABSTRACT
-    | FINAL
-    | NATIVE
-    | SYNCHRONIZED
-    | TRANSIENT
-    | VOLATILE
-    | STRICTFP
+
+ClassModifiers:
+    ClassAccessModifiers ClassNonAccessModifiers
     ;
 
-ModifierOptions:
-    | ModifierOptions Modifier
+ClassAccessModifiers:
+    | PUBLIC
+    ;
+
+ClassNonAccessModifiers:
+    | FINAL
+    | ABSTRACT
+    ;
 
 /* Annotations
     : Annotation
@@ -183,6 +216,7 @@ Annotation
 ClassBody
     : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE 
     ;
+
 ClassBodyOpt1
     :
     | ClassBodyOpt1 ClassBodyDeclaration
@@ -190,42 +224,76 @@ ClassBodyOpt1
 
 ClassBodyDeclaration
     : SEMICOLON
-    | ClassBodyDeclarationOpt1 MemberDecl
-    | ClassBodyDeclarationOpt2 Block
-    ;
-ClassBodyDeclarationOpt1
-    : 
-    | ClassBodyDeclarationOpt1 Modifier
-    ;
-ClassBodyDeclarationOpt2
-    : 
-    | STATIC
+    | EmptyMethodDeclaration
+    | MethodDeclaration
+    | FieldDeclaration
     ;
 
-MemberDecl:
-    MethodOrFieldDecl
-    | IDENTIFIER ConstructorDeclaratorRest
+EmptyMethodDeclaration
+    :
+    ClassBodyDeclarationOpt1 ClassBodyDeclarationOpt2 EmptyMethodDecl
+    ;
+
+MethodDeclaration:
+    ClassBodyDeclarationOpt1 MethodDecl
+    | ClassBodyDeclarationOpt1 ClassBodyDeclarationOpt3 MethodDecl
+    | ClassBodyDeclarationOpt1 ClassBodyDeclarationOpt4 MethodDecl
+    ;
+
+FieldDeclaration:
+    ClassBodyDeclarationOpt1 FieldDecl
+    | ClassBodyDeclarationOpt1 ClassBodyDeclarationOpt3 FieldDecl
+    ;
+
+ClassBodyDeclarationOpt1
+    : 
+    PUBLIC
+    | PROTECTED
+    ;
+
+ClassBodyDeclarationOpt2
+    : ABSTRACT
+    | STATIC NATIVE
+    ;
+
+ClassBodyDeclarationOpt3
+    : 
+    STATIC
+    ;
+
+ClassBodyDeclarationOpt4
+    : 
+    FINAL
     ;
 
 MethodOrFieldDecl:
-    Type IDENTIFIER MethodOrFieldRest
+    Type IDENTIFIER 
     ;
 
-MethodOrFieldRest:  
-    FieldDeclaratorsRest SEMICOLON
-    | MethodDeclaratorRest
+EmptyMethodDecl
+    : MethodOrFieldDecl FormalParameters SEMICOLON
+    ;
+ 
+MethodDecl:
+    MethodOrFieldDecl MethodDeclaratorRest
+    | IDENTIFIER ConstructorDeclaratorRest
+    ;
+
+FieldDecl:
+    MethodOrFieldDecl FieldDeclaratorsRest SEMICOLON
     ;
 
 MethodDeclaratorRest:
-    FormalParameters Block;
-    | FormalParameters SEMICOLON
-    
+    FormalParameters Block
+    ;
+
 FieldDeclaratorsRest:
     VariableDeclaratorRest
     ;
 
 VariableDeclaratorRest:
     | EQUAL VariableInitializer
+    ;
 
 VariableInitializer:
     ;
@@ -239,20 +307,18 @@ FormalParameters:
     ;
 
 FormalParameterDecls:
-    | VariableModifier Type FormalParameterDeclsRest
-    ;
-
-VariableModifier:
-    | FINAL
+    | Type FormalParameterDeclsRest
     ;
 
 FormalParameterDeclsRest: 
     VariableDeclaratorId
     | VariableDeclaratorId COMMA FormalParameterDecls
+    ;
 
 VariableDeclaratorId:
     IDENTIFIER 
     | IDENTIFIER MultiDimensionArray
+    ;
 
 MultiDimensionArray:
     LEFT_BRACKET RIGHT_BRACKET
@@ -264,6 +330,11 @@ Block:
     ;
 
 BlockStatements:
+    | BlockStatement
+    ;
+
+BlockStatement:
+    Statement
     ;
 
 Literal

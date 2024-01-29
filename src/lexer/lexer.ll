@@ -52,6 +52,10 @@ WHITESPACE [ \t\r]+
 "void"                  { update_yylloc; return Token::VOID; }
 "new"                   { update_yylloc; return Token::NEW; }
 "this"                  { update_yylloc; return Token::THIS; }
+"if"                    { update_yylloc; return Token::IF; }
+"else"                  { update_yylloc; return Token::ELSE; }
+"while"                 { update_yylloc; return Token::WHILE; }
+"for"                   { update_yylloc; return Token::FOR; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
 {IDENTIFIER}            { update_yylloc; *yylval = std::string(yytext); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }
