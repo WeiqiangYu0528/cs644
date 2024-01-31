@@ -170,10 +170,12 @@ BasicType
 ReferenceType
     : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
     ;
+
 ReferenceTypeOpt1
     :
     | TypeArguments
     ;
+
 ReferenceTypeOpt2
     :
     | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
@@ -182,6 +184,7 @@ ReferenceTypeOpt2
 TypeArguments
     : LESS TypeArgument TypeArgumentsOpt1 GREATER
     ;
+
 TypeArgumentsOpt1
     : 
     | COMMA TypeArgument TypeArgumentsOpt1
@@ -191,6 +194,7 @@ TypeArgument
     : ReferenceType
     | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
     ;
+
 TypeArgumentOpt1
     : EXTENDS
     | SUPER
@@ -204,6 +208,7 @@ TypeList
 TypeParameters
     : LESS TypeParameter TypeParametersOpt1 GREATER
     ;
+
 TypeParametersOpt1
     : 
     | COMMA TypeParameter TypeParametersOpt1
@@ -212,6 +217,7 @@ TypeParametersOpt1
 TypeParameter
     : IDENTIFIER TypeParameterOpt1
     ;
+
 TypeParameterOpt1
     : 
     | EXTENDS Bound
@@ -222,11 +228,10 @@ Bound
     | Bound AND ReferenceType
     ;
 
-
 /* Modifier
     : Annotation */
-Modifier: 
-    PUBLIC {$$ = Modifiers::PUBLIC;}
+Modifier
+    : PUBLIC {$$ = Modifiers::PUBLIC;}
     | PROTECTED {$$ = Modifiers::PROTECTED;}
     | STATIC {$$ = Modifiers::STATIC;}
     | ABSTRACT  {$$ = Modifiers::ABSTRACT;}
@@ -302,44 +307,48 @@ ClassBodyDeclarationOpt2
     | STATIC
     ;
 
-MemberDecl:
-    MethodOrFieldDecl {$$ = $1;}
+MemberDecl
+    : MethodOrFieldDecl {$$ = $1;}
     | IDENTIFIER ConstructorDeclaratorRest {$$ = MemberType::CONSTRUCTOR;}
     ;
 
-MethodOrFieldDecl:
-    Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
+MethodOrFieldDecl
+    : Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
     ;
 
-MethodOrFieldRest:  
-    FieldDeclaratorsRest SEMICOLON {$$ = MemberType::FIELD;}
+MethodOrFieldRest
+    : FieldDeclaratorsRest SEMICOLON {$$ = MemberType::FIELD;}
     | MethodDeclaratorRest
     ;
 
-MethodDeclaratorRest:
-    FormalParameters Block {$$ = MemberType::METHODWITHBODY;}
+MethodDeclaratorRest
+    : FormalParameters Block {$$ = MemberType::METHODWITHBODY;}
     | FormalParameters SEMICOLON  {$$ = MemberType::METHODWITHOUTBODY;}
     ;
 
-FieldDeclaratorsRest:
-    VariableDeclaratorRest
+FieldDeclaratorsRest
+    : VariableDeclaratorRest
     ;
 
-VariableDeclaratorRest:
+VariableDeclaratorRest
+    :
     | EQUAL VariableInitializer
-
-VariableInitializer:
     ;
 
-ConstructorDeclaratorRest:
-    FormalParameters Block
+VariableInitializer
+    :
     ;
 
-FormalParameters: 
-    LEFT_PAREN FormalParameterDecls RIGHT_PAREN
+ConstructorDeclaratorRest
+    : FormalParameters Block
     ;
 
-FormalParameterDecls:
+FormalParameters
+    : LEFT_PAREN FormalParameterDecls RIGHT_PAREN
+    ;
+
+FormalParameterDecls
+    :
     | VariableModifier Type FormalParameterDeclsRest
     ;
 
@@ -348,18 +357,17 @@ VariableModifier:
     ;
 
 FormalParameterDeclsRest
-    : 
-    VariableDeclaratorId
+    : VariableDeclaratorId
     | VariableDeclaratorId COMMA FormalParameterDecls
+    ;
 
 VariableDeclaratorId
-    :
-    IDENTIFIER 
+    : IDENTIFIER 
     | IDENTIFIER MultiDimensionArray
+    ;
 
 MultiDimensionArray
-    :
-    LEFT_BRACKET RIGHT_BRACKET
+    : LEFT_BRACKET RIGHT_BRACKET
     | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
     ;
 
@@ -373,13 +381,14 @@ BlockStatements
     ;
 
 ReturnStatements
-    :  Literal
+    : Literal
     | QualifiedIdentifier
     ;
 
 Literal
     : IntegerLiteral
     ;
+
 IntegerLiteral
     : INTEGER
     ;
