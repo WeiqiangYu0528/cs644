@@ -369,6 +369,12 @@ Block
 
 BlockStatements
     :
+    | RETURN ReturnStatements SEMICOLON
+    ;
+
+ReturnStatements
+    :  Literal
+    | QualifiedIdentifier
     ;
 
 Literal
