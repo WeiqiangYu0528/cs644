@@ -52,8 +52,7 @@
 %%
 
 Program
-    : 
-    | PackageDeclaration  ImportStatements ClassOrInterfaceDeclaration 
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration 
     ;
 
 ClassOrInterfaceDeclaration
@@ -73,8 +72,7 @@ ImportStatements
     ;
 
 ImportStatement
-    :
-    | IMPORT QualifiedIdentifier SEMICOLON
+    : IMPORT QualifiedIdentifier SEMICOLON
     | IMPORT PackageImportIdentifier SEMICOLON
     ;
 
@@ -93,14 +91,12 @@ QualifiedIdentifierList
     ;
 
 InterfaceDeclaration 
-    : 
-    | ModifierOptions INTERFACE IDENTIFIER InterfaceBody
+    : ModifierOptions INTERFACE IDENTIFIER InterfaceBody
     | ModifierOptions INTERFACE IDENTIFIER EXTENDS IDENTIFIER InterfaceBody
     ;
 
 InterfaceBody
-    : LEFT_BRACE RIGHT_BRACE
-    | LEFT_BRACE MethodDeclarations RIGHT_BRACE
+    : LEFT_BRACE MethodDeclarations RIGHT_BRACE
     ;
 
 MethodDeclarations 
@@ -109,8 +105,7 @@ MethodDeclarations
     ;
 
 MethodDeclaration
-    :
-    | Modifier IDENTIFIER LEFT_PAREN FormalParameters RIGHT_PAREN LEFT_BRACE MethodBody RIGHT_BRACE
+    : Modifier IDENTIFIER LEFT_PAREN FormalParameters RIGHT_PAREN LEFT_BRACE MethodBody RIGHT_BRACE
     ;    
 
 // uncomplete and put it as placeholder 
