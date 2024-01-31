@@ -31,6 +31,7 @@ WHITESPACE [ \t\r]+
 <java_comment>"*/"         {BEGIN(INITIAL); }
 
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
+","                     { update_yylloc; return Token::COMMA; }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
 "."                     { update_yylloc; return Token::DOT; }
 
@@ -40,6 +41,7 @@ WHITESPACE [ \t\r]+
 ")"                     { update_yylloc; return Token::RIGHT_PAREN; }
 "["                     { update_yylloc; return Token::LEFT_BRACKET; }
 "]"                     { update_yylloc; return Token::RIGHT_BRACKET; }
+"="                     { update_yylloc; return Token::EQUAL; }
 "abstract"              { update_yylloc; return Token::ABSTRACT; }
 "int"                   { update_yylloc; return Token::INT; }
 "boolean"               { update_yylloc; return Token::BOOLEAN; }
@@ -62,6 +64,8 @@ WHITESPACE [ \t\r]+
 "else"                  { update_yylloc; return Token::ELSE; }
 "while"                 { update_yylloc; return Token::WHILE; }
 "for"                   { update_yylloc; return Token::FOR; }
+"true"                  { update_yylloc; return Token::TRUE; }
+"false"                 { update_yylloc; return Token::FALSE; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
 {IDENTIFIER}            { update_yylloc; yylval = new std::string(yytext); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }
