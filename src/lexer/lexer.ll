@@ -15,6 +15,13 @@
         yylloc->columns(prev_token_length); \
         prev_token_length = strlen(yytext); \
     } while(0)
+    #define update_linenumber do { \
+        for(int i = 0; i < yyleng; ++i) { \
+            if(yytext[i] == '\n') { \
+                yylloc->lines(1); \
+            } \
+        } \
+    } while(0)
 %}
 
 DIGIT   [0-9]
@@ -26,9 +33,9 @@ WHITESPACE [ \t\r]+
 %%
 [/][/].* { }
 "/*"   { BEGIN(java_comment); }
-<java_comment>[^*]*        { }
-<java_comment>"*"+[^*/]*   { }
-<java_comment>"*/"         {BEGIN(INITIAL); }
+<java_comment>[^*]*        { update_linenumber; }
+<java_comment>"*"+[^*/]*   { update_linenumber; }
+<java_comment>"*/"         { BEGIN(INITIAL); }
 
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
