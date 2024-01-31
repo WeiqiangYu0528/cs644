@@ -81,7 +81,7 @@ ASCII_CHAR [\x00-\x7F]
 "new"                   { update_yylloc; return Token::NEW; }
 "this"                  { update_yylloc; return Token::THIS; }
 "null"                  { update_yylloc; return Token::NULL; }
-[1-9]{DIGIT}*           { update_yylloc; return Token::INTEGER; }
+(0|[1-9]{DIGIT}*)       { update_yylloc; return Token::INTEGER; }
 \\([btnfr]|([0-3]?[0-7])?[0-7]) { update_yylloc; return Token::ESCAPE; }
 ASCII_CHAR              { update_yylloc; return Token::ASCII; }
 {IDENTIFIER}            { update_yylloc; *yylval = std::string(yytext); return Token::IDENTIFIER; }
