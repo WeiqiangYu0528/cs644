@@ -1,25 +1,60 @@
-public final class hello {
-    protected int x;
-    public A() { x = 123; }
-    protected A() {}
-    public B(int x) {}
-    public int m();
-    public int m1(int c) {}
-    public int y;
-    protected int m() {}
-}
-
-public abstract class A {
+public class A {
   public A() {}
-  public abstract int m();
-}
+  public int m(int x) {
+    for(int a = true; true; a = false){}
+    for (i = foo(); true; a = false) {}
+    if (true)
+	for (;; bar()){ ; }
+	else ;
+    if (true)
+	    for (foo();;) 
+		if (false) 
+		   ;
+		else 
+		    ;
+	else
+	    ;
+    if (true)
+	    for (;;new String()) 
+		if (false) 
+		    ;
+	else // must bind to closest if 
+	   ;
 
-public final class A {
-    public A() {}
-    public final int m() {
-    }
+    for (int a = true;;) 
+    if (false)
+    if (true) 
+        ;
+    else // must bind to closest if 
+        ;
+    for (;;)
+    for (;;)
+        ;
+  }
 }
 
 public class A {
-    public static native int m(int i);
+  public A() {}
+  public int m(int x) {
+    while (false) {}
+  }
+}
+
+public class A {
+    {
+        while(true) {
+            {
+                    
+            }
+        }
+        while (false) {
+	    ;
+	    }
+        while (true) {
+	    if (false) { 
+	    }
+        while (true) {
+	    }
+	}
+    }
 }

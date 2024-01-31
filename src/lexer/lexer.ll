@@ -15,6 +15,13 @@
         yylloc->columns(prev_token_length); \
         prev_token_length = strlen(yytext); \
     } while(0)
+    #define update_linenumber do { \
+        for(int i = 0; i < yyleng; ++i) { \
+            if(yytext[i] == '\n') { \
+                yylloc->lines(1); \
+            } \
+        } \
+    } while(0)
 %}
 
 DIGIT   [0-9]
@@ -26,11 +33,12 @@ WHITESPACE [ \t\r]+
 %%
 [/][/].* { }
 "/*"   { BEGIN(java_comment); }
-<java_comment>[^*]*        { }
-<java_comment>"*"+[^*/]*   { }
-<java_comment>"*/"         {BEGIN(INITIAL); }
+<java_comment>[^*]*        { update_linenumber; }
+<java_comment>"*"+[^*/]*   { update_linenumber; }
+<java_comment>"*/"         { BEGIN(INITIAL); }
 
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
+","                     { update_yylloc; return Token::COMMA; }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
 "."                     { update_yylloc; return Token::DOT; }
 "="                     { update_yylloc; return Token::ASSIGN; }
@@ -40,6 +48,7 @@ WHITESPACE [ \t\r]+
 ")"                     { update_yylloc; return Token::RIGHT_PAREN; }
 "["                     { update_yylloc; return Token::LEFT_BRACKET; }
 "]"                     { update_yylloc; return Token::RIGHT_BRACKET; }
+"="                     { update_yylloc; return Token::EQUAL; }
 "abstract"              { update_yylloc; return Token::ABSTRACT; }
 "int"                   { update_yylloc; return Token::INT; }
 "boolean"               { update_yylloc; return Token::BOOLEAN; }
@@ -62,6 +71,8 @@ WHITESPACE [ \t\r]+
 "else"                  { update_yylloc; return Token::ELSE; }
 "while"                 { update_yylloc; return Token::WHILE; }
 "for"                   { update_yylloc; return Token::FOR; }
+"true"                  { update_yylloc; return Token::TRUE; }
+"false"                 { update_yylloc; return Token::FALSE; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
 {IDENTIFIER}            { update_yylloc; yylval = new std::string(yytext); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }

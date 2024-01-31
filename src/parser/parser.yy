@@ -44,6 +44,11 @@
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
 %token IF ELSE WHILE FOR
 %token SWITCH CASE TRY CATCH FINALLY DEFAULT DO BREAK CONTINUE THROW
+%token TRUE FALSE
+
+%nonassoc THEN
+%nonassoc ELSE
+
 %type <Modifiers> Modifier
 %type <std::vector<int>> ModifierOptions ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
@@ -165,6 +170,75 @@ Bound
     | Bound AND ReferenceType
     ;
 
+Statement:
+    Block
+    | SEMICOLON
+    | IF ParExpression Statement %prec THEN
+    | IF ParExpression Statement ELSE Statement
+
+    | WHILE ParExpression Statement
+    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
+    ;
+
+ForControl:
+    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
+    ;
+
+ForExpression:
+    | Expression
+    ;
+
+ForUpdate:
+    | StatementExpression
+    ;
+
+ForInit: 
+    | StatementExpression
+    | LocalVariableDeclaration
+    ;
+
+LocalVariableDeclaration :
+    Type VariableDeclarator
+    ;
+
+VariableDeclarator :
+    IDENTIFIER EQUAL VariableInitializer
+    ;
+
+VariableInitializer:
+    Expression
+    ;
+
+Assignment:
+    IDENTIFIER EQUAL Expression
+    ;
+
+Expression:
+    TRUE
+    | FALSE
+    | MethodInvocation 
+    ;
+
+ParExpression:
+    LEFT_PAREN Expression RIGHT_PAREN
+    ;
+
+StatementExpression:
+    Assignment
+    | MethodInvocation 
+    | ClassInstanceCreationExpression
+    ;
+
+MethodInvocation:
+    IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    ;
+
+ClassInstanceCreationExpression:
+    NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    ;
+
+ArgumentList: 
+    ;
 
 /* Modifier
     : Annotation */
@@ -283,11 +357,7 @@ FormalParameters:
     ;
 
 FormalParameterDecls:
-    | VariableModifier Type FormalParameterDeclsRest
-    ;
-
-VariableModifier:
-    | FINAL
+    | Type FormalParameterDeclsRest
     ;
 
 FormalParameterDeclsRest: 
