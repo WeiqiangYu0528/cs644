@@ -29,6 +29,7 @@ WHITESPACE [ \t\r]+
 "/*"   { BEGIN(java_comment); }
 <java_comment>[^*]*        { }
 <java_comment>"*"+[^*/]*   { }
+<java_comment>"*/"         {BEGIN(INITIAL); }
 
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
