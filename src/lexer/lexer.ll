@@ -6,16 +6,15 @@
 %{
     #include "lexer.h"
     #include "parser.h"
+    #include <variant>
     #undef  YY_DECL 
-    #define YY_DECL int yy::MyLexer::yylex(std::string *const yylval, location *const yylloc)
+    #define YY_DECL int yy::MyLexer::yylex(void * yylval, location *const yylloc)
     using Token = yy::parser::token;  
     int prev_token_length = 0;
     #define update_yylloc do { \
         yylloc->columns(prev_token_length); \
         prev_token_length = strlen(yytext); \
     } while(0)
-
-
 %}
 
 DIGIT   [0-9]
@@ -59,8 +58,12 @@ WHITESPACE [ \t\r]+
 "void"                  { update_yylloc; return Token::VOID; }
 "new"                   { update_yylloc; return Token::NEW; }
 "this"                  { update_yylloc; return Token::THIS; }
+"if"                    { update_yylloc; return Token::IF; }
+"else"                  { update_yylloc; return Token::ELSE; }
+"while"                 { update_yylloc; return Token::WHILE; }
+"for"                   { update_yylloc; return Token::FOR; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
-{IDENTIFIER}            { update_yylloc; *yylval = std::string(yytext); return Token::IDENTIFIER; }
+{IDENTIFIER}            { update_yylloc; yylval = new std::string(yytext); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }
 .                       { update_yylloc; }
 %%

@@ -4,10 +4,13 @@
 
 %code requires {
     #include <string>
+    #include <vector>
+    #include <variant>
     #include "lexer.h"
+    #include "weeder.hpp"
 }
 
-%define api.value.type {std::string}
+%define api.value.type variant
 
 %locations
 %define api.location.file "../../include/location.h"
@@ -39,6 +42,12 @@
 %token EXTENDS SUPER
 %token PUBLIC PROTECTED PRIVATE STATIC ABSTRACT FINAL NATIVE SYNCHRONIZED TRANSIENT VOLATILE STRICTFP
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
+%token IF ELSE WHILE FOR
+
+%type <Modifiers> Modifier
+%type <std::vector<int>> ModifierOptions ClassBodyDeclarationOpt1
+%type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
+
 %%
 
 Program
@@ -57,7 +66,12 @@ QualifiedIdentifierList
     ;
 
 ClassDeclaration
-    : ModifierOptions NormalClassDeclaration
+    : ModifierOptions NormalClassDeclaration {
+        for (int val: $1) {
+            if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
+        }
+        if ($1[1] > 0 && $1[2] > 0) throw syntax_error(@1, std::string("A class cannot be both abstract and final.")); 
+    }
     ;
 
 NormalClassDeclaration
@@ -154,22 +168,27 @@ Bound
 
 /* Modifier
     : Annotation */
-Modifier:
-    PUBLIC
-    | PROTECTED
-    | PRIVATE
-    | STATIC
-    | ABSTRACT
-    | FINAL
-    | NATIVE
-    | SYNCHRONIZED
-    | TRANSIENT
-    | VOLATILE
-    | STRICTFP
+Modifier: 
+    PUBLIC {$$ = Modifiers::PUBLIC;}
+    | PROTECTED {$$ = Modifiers::PROTECTED;}
+    | STATIC {$$ = Modifiers::STATIC;}
+    | ABSTRACT  {$$ = Modifiers::ABSTRACT;}
+    | FINAL {$$ = Modifiers::FINAL;}
+    | NATIVE {$$ = Modifiers::NATIVE;}
     ;
 
-ModifierOptions:
-    | ModifierOptions Modifier
+ModifierOptions
+    : {$$ = std::vector<int>(3, 0);}
+    | Modifier ModifierOptions {
+        $$ = $2;
+        switch ($1) {
+            case Modifiers::PUBLIC: {$$[0]++; break;};
+            case Modifiers::FINAL: {$$[1]++; break;}
+            case Modifiers::ABSTRACT: {$$[2]++; break;}
+            default: throw syntax_error(@1, std::string("Invalid modifier for class declaration"));
+        }
+    }
+    ;
 
 /* Annotations
     : Annotation
@@ -183,6 +202,7 @@ Annotation
 ClassBody
     : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE 
     ;
+
 ClassBodyOpt1
     :
     | ClassBodyOpt1 ClassBodyDeclaration
@@ -190,36 +210,60 @@ ClassBodyOpt1
 
 ClassBodyDeclaration
     : SEMICOLON
-    | ClassBodyDeclarationOpt1 MemberDecl
+    | ClassBodyDeclarationOpt1 MemberDecl {
+        for (int val: $1) {
+            if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
+        }
+        if ($1[0] > 0 && $1[1] > 0) throw syntax_error(@1, std::string("Multiple access modifiers are not allowed")); 
+        if ($1[2] > 0 && ($1[3] > 0 || $1[4] > 0)) throw syntax_error(@1, std::string("An abstract method cannot be static or final.")); 
+        if ($1[4] > 0 && $1[3] > 0) throw syntax_error(@1, std::string("A static method cannot be final.")); 
+        if ($1[5] > 0 && $1[4] == 0) throw syntax_error(@1, std::string("A native method must be static."));
+        if ($2 == MemberType::FIELD && ($1[2] + $1[3] + $1[5] > 0)) throw syntax_error(@1, std::string("No field can be final, abstract or native."));
+        if ( ($2 == MemberType::METHODWITHBODY && ($1[2] > 0 || $1[5] > 0)) || 
+             ($2 == MemberType::METHODWITHOUTBODY && ($1[2] == 0 && $1[5] == 0)) )
+        throw syntax_error(@1, std::string("A method has a body if and only if it is neither abstract nor native"));
+        if ($2 == MemberType::CONSTRUCTOR && ($1[2] + $1[3] + $1[4] + $1[5] > 0))
+        throw syntax_error(@1, std::string("A constructor cannot be final, abstract, static or native"));
+    }
     | ClassBodyDeclarationOpt2 Block
     ;
+
 ClassBodyDeclarationOpt1
     : 
-    | ClassBodyDeclarationOpt1 Modifier
+    Modifier {
+        $$ = std::vector<int>(6, 0);
+        if (!validateModifier($$, $1)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
+    }
+    | Modifier ClassBodyDeclarationOpt1 {
+        $$ = $2;
+        if (!validateModifier($$, $1)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
+    }
     ;
+
 ClassBodyDeclarationOpt2
     : 
     | STATIC
     ;
 
 MemberDecl:
-    MethodOrFieldDecl
-    | IDENTIFIER ConstructorDeclaratorRest
+    MethodOrFieldDecl {$$ = $1;}
+    | IDENTIFIER ConstructorDeclaratorRest {$$ = MemberType::CONSTRUCTOR;}
     ;
 
 MethodOrFieldDecl:
-    Type IDENTIFIER MethodOrFieldRest
+    Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
     ;
 
 MethodOrFieldRest:  
-    FieldDeclaratorsRest SEMICOLON
+    FieldDeclaratorsRest SEMICOLON {$$ = MemberType::FIELD;}
     | MethodDeclaratorRest
     ;
 
 MethodDeclaratorRest:
-    FormalParameters Block;
-    | FormalParameters SEMICOLON
-    
+    FormalParameters Block {$$ = MemberType::METHODWITHBODY;}
+    | FormalParameters SEMICOLON  {$$ = MemberType::METHODWITHOUTBODY;}
+    ;
+
 FieldDeclaratorsRest:
     VariableDeclaratorRest
     ;

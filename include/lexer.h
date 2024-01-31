@@ -12,6 +12,6 @@ namespace yy
     public:
         MyLexer() { }
         MyLexer(std::istream &in) : yyFlexLexer(&in) { }
-        int yylex(std::string *const yylval, location *const yylloc);
+        int yylex(void * yylval, location *const yylloc);
     };
 }
