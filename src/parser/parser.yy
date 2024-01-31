@@ -180,11 +180,7 @@ Statement:
     ;
 
 ForControl:
-    ForVarControl
-    | ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
-    ;
-
-ForVarControl:
+    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
     ;
 
 ForExpression:
