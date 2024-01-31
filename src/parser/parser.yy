@@ -43,7 +43,7 @@
 %token PUBLIC PROTECTED PRIVATE STATIC ABSTRACT FINAL NATIVE SYNCHRONIZED TRANSIENT VOLATILE STRICTFP
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
 %token IF ELSE WHILE FOR
-
+%token SWITCH CASE TRY CATCH FINALLY DEFAULT DO BREAK CONTINUE THROW
 %type <Modifiers> Modifier
 %type <std::vector<int>> ModifierOptions ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
@@ -303,11 +303,241 @@ MultiDimensionArray:
     | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
     ;
 
-Block:
-    LEFT_BRACE BlockStatements RIGHT_BRACE
+Block: 
+    LEFT_BRACE BlockStatementsOpt RIGHT_BRACE
     ;
 
-BlockStatements:
+BlockStatementsOpt: 
+    | BlockStatements
+    ;
+
+BlockStatements: 
+    BlockStatement
+    | BlockStatements BlockStatement
+    ;
+
+BlockStatement: 
+    LocalVariableDeclarationStatement
+    | Statement
+    ;
+
+LocalVariableDeclarationStatement: 
+    LocalVariableDeclaration SEMICOLON
+    ;
+
+LocalVariableDeclaration: 
+    Type VariableDeclarators
+    ;
+
+Statement: 
+    StatementWithoutTrailingSubstatement
+    | LabeledStatement
+    | IfThenStatement
+    | IfThenElseStatement
+    | WhileStatement
+    | ForStatement
+    ;
+
+StatementNoShortIf: 
+    StatementWithoutTrailingSubstatement
+    | LabeledStatementNoShortIf
+    | IfThenElseStatementNoShortIf
+    | WhileStatementNoShortIf
+    | ForStatementNoShortIf
+    ;
+
+StatementWithoutTrailingSubstatement: 
+    Block
+    | EmptyStatement
+    | ExpressionStatement
+    | SwitchStatement
+    | DoStatement
+    | BreakStatement
+    | ContinueStatement
+    | ReturnStatement
+    | SynchronizedStatement
+    | ThrowsStatement
+    | TryStatement
+    ;
+
+EmptyStatement: 
+    SEMICOLON
+    ;
+
+LabeledStatement: 
+    IDENTIFIER COLON Statement
+    ;
+
+LabeledStatementNoShortIf: 
+    IDENTIFIER COLON StatementNoShortIf
+    ;
+
+ExpressionStatement: 
+    StatementExpression SEMICOLON
+    ;
+
+StatementExpression: 
+    Assignment
+    /* | PreincrementExpression
+    | PostincrementExpression
+    | PredecrementExpression
+    | PostdecrementExpression
+    | MethodInvocation
+    | ClassInstanceCreationExpression */
+    ;
+
+IfThenStatement: 
+    IF LEFT_PAREN Expression RIGHT_PAREN Statement
+    ;
+
+IfThenElseStatement: 
+    IF LEFT_PAREN Expression RIGHT_PAREN StatementNoShortIf ELSE Statement
+    ;
+
+IfThenElseStatementNoShortIf: 
+    IF LEFT_PAREN Expression RIGHT_PAREN StatementNoShortIf ELSE StatementNoShortIf
+    ;
+
+SwitchStatement: 
+    SWITCH LEFT_PAREN Expression RIGHT_PAREN SwitchBlock
+    ;
+
+SwitchBlock: 
+    LEFT_BRACE SwitchBlockStatementGroupsOpt SwitchLabelsOpt RIGHT_BRACE
+    ;
+
+SwitchBlockStatementGroupsOpt:
+    | SwitchBlockStatementGroups
+    ;
+
+SwitchLabelsOpt:
+    | SwitchLabels
+    ;
+
+
+SwitchBlockStatementGroups: 
+    SwitchBlockStatementGroup
+    | SwitchBlockStatementGroups SwitchBlockStatementGroup
+    ;
+
+SwitchBlockStatementGroup: 
+    SwitchLabels BlockStatements
+    ;
+
+SwitchLabels: 
+    SwitchLabel
+    | SwitchLabels SwitchLabel
+    ;
+
+SwitchLabel: 
+    CASE ConstantExpression COLON
+    | DEFAULT COLON
+    ;
+
+WhileStatement: 
+    WHILE LEFT_PAREN Expression RIGHT_PAREN Statement
+    ;
+
+WhileStatementNoShortIf: 
+    WHILE LEFT_PAREN Expression RIGHT_PAREN StatementNoShortIf
+    ;
+
+DoStatement: 
+    DO Statement WHILE LEFT_PAREN Expression RIGHT_PAREN SEMICOLON
+    ;
+
+ForStatement: 
+    FOR LEFT_PAREN ForInitOpt SEMICOLON ExpressionOpt SEMICOLON ForUpdateOpt RIGHT_PAREN Statement;
+
+ForInitOpt:
+    | ForInit
+    ;
+
+ExpressionOpt:
+    | Expression
+    ;
+
+ForUpdateOpt:
+    | ForUpdateOpt
+    ;
+
+ForInit: 
+    StatementExpressionList
+    | LocalVariableDeclaration
+    ;
+
+ForUpdate: 
+    StatementExpressionList
+    ;
+
+
+ForStatementNoShortIf: 
+    FOR LEFT_PAREN ForInitOpt SEMICOLON ExpressionOpt SEMICOLON ForUpdateOpt RIGHT_PAREN StatementNoShortIf
+    ;
+
+StatementExpressionList: 
+    StatementExpression
+    | StatementExpressionList COMMA StatementExpression
+    ;
+
+IdentifierOpt:
+    | IDENTIFIER
+    ;
+
+BreakStatement: 
+    BREAK IdentifierOpt SEMICOLON
+    ;
+
+ContinueStatement: 
+    CONTINUE IdentifierOpt SEMICOLON
+    ;
+
+ReturnStatement: 
+    RETURN ExpressionOpt SEMICOLON
+    ;
+
+ThrowsStatement: 
+    THROW Expression SEMICOLON
+    ;
+
+SynchronizedStatement: 
+    SYNCHRONIZED LEFT_PAREN Expression RIGHT_PAREN Block
+    ;
+
+TryStatement: 
+    TRY Block Catches
+    | TRY Block CatchesOpt Finally
+    ;
+
+CatchesOpt:
+    | Catches
+    ;
+
+Catches: 
+    CatchClause
+    | Catches CatchClause
+    ;
+
+CatchClause: 
+    CATCH LEFT_PAREN FormalParameter RIGHT_PAREN Block
+    ;
+
+Finally: 
+    FINALLY Block
+    ;
+
+
+Expression:  // Dummy Expression!
+    IDENTIFIER SEMICOLON    
+    ;               
+
+Assignment: // Dummy Assignment!
+    IDENTIFIER ASSIGN IDENTIFIER
+    | IDENTIFIER ASSIGN IntegerLiteral
+    ;
+
+ConstantExpression:
+    Expression
     ;
 
 Literal
@@ -316,6 +546,15 @@ Literal
 IntegerLiteral
     : INTEGER
     ;
+
+FormalParameter:
+    ;
+
+VariableDeclarators:        
+    ;
+
+
+
 
 %%
 

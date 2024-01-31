@@ -1,6 +1,6 @@
 public final class hello {
     protected int x;
-    public A() {}
+    public A() { x = 123; }
     protected A() {}
     public B(int x) {}
     public int m();
