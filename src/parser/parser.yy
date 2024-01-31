@@ -29,6 +29,7 @@
 
 %token IDENTIFIER 
 %token DOT
+%token STAR
 %token ASSIGN
 %token INTEGER 	
 %token OR_OR AND_AND OR XOR AND EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL 
@@ -51,8 +52,34 @@
 %%
 
 Program
+    : 
+    | PackageDeclaration  ImportStatements ClassOrInterfaceDeclaration 
+    ;
+
+ClassOrInterfaceDeclaration
     :
-    | Program ClassDeclaration
+    | ClassDeclaration
+    | InterfaceDeclaration
+    ;  
+
+PackageDeclaration
+    :
+    | PACKAGE QualifiedIdentifier SEMICOLON
+    ;
+
+ImportStatements
+    :
+    | ImportStatement ImportStatements
+    ;
+
+ImportStatement
+    :
+    | IMPORT QualifiedIdentifier SEMICOLON
+    | IMPORT PackageImportIdentifier SEMICOLON
+    ;
+
+PackageImportIdentifier    
+    : QualifiedIdentifier DOT STAR
     ;
 
 QualifiedIdentifier 
@@ -63,6 +90,32 @@ QualifiedIdentifier
 QualifiedIdentifierList
     : QualifiedIdentifier
     | QualifiedIdentifierList COMMA QualifiedIdentifier 
+    ;
+
+InterfaceDeclaration 
+    : 
+    | ModifierOptions INTERFACE IDENTIFIER InterfaceBody
+    | ModifierOptions INTERFACE IDENTIFIER EXTENDS IDENTIFIER InterfaceBody
+    ;
+
+InterfaceBody
+    : LEFT_BRACE RIGHT_BRACE
+    | LEFT_BRACE MethodDeclarations RIGHT_BRACE
+    ;
+
+MethodDeclarations 
+    : 
+    | MethodDeclaration MethodDeclarations
+    ;
+
+MethodDeclaration
+    :
+    | Modifier IDENTIFIER LEFT_PAREN FormalParameters RIGHT_PAREN LEFT_BRACE MethodBody RIGHT_BRACE
+    ;    
+
+// uncomplete and put it as placeholder 
+MethodBody 
+    : 
     ;
 
 ClassDeclaration
@@ -77,14 +130,17 @@ ClassDeclaration
 NormalClassDeclaration
     : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody
     ;
+
 NormalClassDeclarationOpt1
     :
     | TypeParameters
-    ;    
+    ;
+
 NormalClassDeclarationOpt2
     :
     | EXTENDS Type
     ;
+
 NormalClassDeclarationOpt3
     :
     | IMPLEMENTS TypeList
@@ -94,6 +150,7 @@ Type
     : BasicType BracketsOpt
     | ReferenceType BracketsOpt
     ;
+
 BracketsOpt
     :
     | LEFT_BRACKET RIGHT_BRACKET
@@ -290,24 +347,28 @@ VariableModifier:
     | FINAL
     ;
 
-FormalParameterDeclsRest: 
+FormalParameterDeclsRest
+    : 
     VariableDeclaratorId
     | VariableDeclaratorId COMMA FormalParameterDecls
 
-VariableDeclaratorId:
+VariableDeclaratorId
+    :
     IDENTIFIER 
     | IDENTIFIER MultiDimensionArray
 
-MultiDimensionArray:
+MultiDimensionArray
+    :
     LEFT_BRACKET RIGHT_BRACKET
     | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
     ;
 
-Block:
-    LEFT_BRACE BlockStatements RIGHT_BRACE
+Block
+    : LEFT_BRACE BlockStatements RIGHT_BRACE
     ;
 
-BlockStatements:
+BlockStatements
+    :
     ;
 
 Literal

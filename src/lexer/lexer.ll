@@ -33,7 +33,7 @@ WHITESPACE [ \t\r]+
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
 "."                     { update_yylloc; return Token::DOT; }
-
+"*"                     { update_yylloc; return Token::STAR; }
 "{"                     { update_yylloc; return Token::LEFT_BRACE; }
 "}"                     { update_yylloc; return Token::RIGHT_BRACE; }
 "("                     { update_yylloc; return Token::LEFT_PAREN; }
