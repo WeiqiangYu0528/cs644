@@ -4,6 +4,15 @@
 #include <iostream>
 
 
+std::string extractFilename(const std::string& filePath) {
+    size_t start = filePath.rfind('/') + 1; // Find the last '/' character
+    size_t end = filePath.rfind('.');       // Find the last '.' character
+    if (start == std::string::npos || end == std::string::npos || end <= start) {
+        return ""; // Return an empty string if the format is not as expected
+    }
+    return filePath.substr(start, end - start); // Extract the substring representing the filename
+}
+
 int main(int argc, char* argv[])
 {
     std::ifstream inputFile;
@@ -13,8 +22,9 @@ int main(int argc, char* argv[])
         std::cerr << "Error: Unable to open file " << argv[1] << std::endl;
         return 1;
     }
- 
-    yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile));
+
+    std::string filename = {extractFilename(argv[1])};
+    yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile), filename);
     yy::parser parser(lexer);
     int ret = parser.parse();
     if (ret == 0)

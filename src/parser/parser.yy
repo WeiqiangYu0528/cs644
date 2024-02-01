@@ -27,7 +27,7 @@
 
 %start Program
 
-%token IDENTIFIER 
+%token <std::string> IDENTIFIER
 %token DOT
 %token STAR
 %token ASSIGN
@@ -91,8 +91,17 @@ QualifiedIdentifierList
     ;
 
 InterfaceDeclaration 
-    : ModifierOptions INTERFACE IDENTIFIER InterfaceBody
-    | ModifierOptions INTERFACE IDENTIFIER EXTENDS IDENTIFIER InterfaceBody
+    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody
+    ;
+
+InterfaceOpt1
+    :
+    | ABSTRACT
+    ;
+
+InterfaceOpt2
+    :
+    | EXTENDS IDENTIFIER
     ;
 
 InterfaceBody
@@ -105,12 +114,11 @@ MethodDeclarations
     ;
 
 MethodDeclaration
-    : Modifier IDENTIFIER LEFT_PAREN FormalParameters RIGHT_PAREN LEFT_BRACE MethodBody RIGHT_BRACE
+    : PUBLIC MethodDeclarationOpt Type IDENTIFIER FormalParameters SEMICOLON
     ;    
 
-// uncomplete and put it as placeholder 
-MethodBody 
-    : 
+MethodDeclarationOpt
+    : ABSTRACT
     ;
 
 ClassDeclaration
@@ -372,7 +380,6 @@ Block
 
 BlockStatements
     :
-    | RETURN ReturnStatements SEMICOLON
     ;
 
 ReturnStatements

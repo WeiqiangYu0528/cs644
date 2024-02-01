@@ -9,9 +9,12 @@ namespace yy
 {
     class MyLexer : public yyFlexLexer
     {
+    private:
+        std::string filename;
     public:
         MyLexer() { }
-        MyLexer(std::istream &in) : yyFlexLexer(&in) { }
+        MyLexer(std::istream &in, std::string& fn) : yyFlexLexer(&in), filename(fn) { }
         int yylex(void * yylval, location *const yylloc);
+        std::string getFilename() { return filename; }
     };
 }
