@@ -98,6 +98,7 @@ WHITESPACE [ \t\r]+
 "while"                 { update_yylloc; return Token::WHILE; }
 "for"                   { update_yylloc; return Token::FOR; }
 "instanceof"            { update_yylloc; return Token::INSTANCEOF; }
+"null"                  { update_yylloc; return Token::NUL; }
 "true"                  { update_yylloc; return Token::TRUE; }
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
