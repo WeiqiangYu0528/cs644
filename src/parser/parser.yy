@@ -116,11 +116,6 @@ QualifiedIdentifier
     | QualifiedIdentifier DOT IDENTIFIER
     ;
 
-QualifiedIdentifierList
-    : QualifiedIdentifier
-    | QualifiedIdentifierList COMMA QualifiedIdentifier 
-    ;
-
 InterfaceDeclaration 
     : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
         if ($4 != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
@@ -274,6 +269,7 @@ Statement:
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
     | ReturnStatements
+    | StatementExpression
     ;
 
 ForControl:
@@ -332,10 +328,14 @@ ReturnStatements
 ReturnStatement
     : Literal
     | QualifiedIdentifier
+    | Expression
     ;
 
 MethodInvocation:
     IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    | THIS LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("this call not allowed")); }
+    | SUPER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super call not allowed")); }
+    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
@@ -397,7 +397,8 @@ ClassBodyDeclaration
         throw syntax_error(@1, std::string("A constructor cannot be final, abstract, static or native"));
         if ($1[0] == 0 && $1[1] == 0) throw syntax_error(@1, std::string("Every method/constructor/field is required to have an access modifier.")); 
     }
-    | ClassBodyDeclarationOpt2 Block {$$ = false;}
+    | STATIC Block { throw syntax_error(@1, std::string("static initializers not allowed.")); }    
+    | Block { throw syntax_error(@1, std::string("instance initializers not allowed.")); }
     ;
 
 ClassBodyDeclarationOpt1
@@ -410,11 +411,6 @@ ClassBodyDeclarationOpt1
         $$ = $2;
         if (!validateModifier($$, $1)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
     }
-    ;
-
-ClassBodyDeclarationOpt2
-    : 
-    | STATIC
     ;
 
 MemberDecl
@@ -449,10 +445,6 @@ FieldDeclaratorsRest
 VariableDeclaratorRest
     :
     | EQUAL VariableInitializer
-    ;
-
-VariableInitializer
-    :
     ;
 
 ConstructorDeclaratorRest
