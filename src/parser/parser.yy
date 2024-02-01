@@ -328,7 +328,8 @@ ReturnStatements
 ReturnStatement
     : Literal
     | QualifiedIdentifier
-    | Expression
+    | MethodInvocation
+    | ClassInstanceCreationExpression
     ;
 
 MethodInvocation:
@@ -489,12 +490,49 @@ BlockStatement:
 
 Literal
     : IntegerLiteral
+    | BooleanLiteral
+    | StringLiteral
+    | CharLiteral
+    | NullLiteral
     ;
 
 IntegerLiteral
     : INTEGER
     ;
 
+BooleanLiteral
+    : TRUE
+    | FALSE
+    ;
+
+StringLiteral
+    : QUOTE StringCharacters QUOTE
+    ;
+
+StringCharacters
+    : StringCharacter
+    | StringCharacter StringCharacters
+    ;
+
+StringCharacter
+    : IDENTIFIER
+    | ESCAPE
+    ;
+
+CharLiteral
+    : CHARACTER
+    | EscapeSequence
+    ;     
+
+EscapeSequence
+    : ESCAPE EscapeSequence
+    ;
+    
+NullLiteral
+    : NUL
+    ;
+
+    
 %%
 
 
