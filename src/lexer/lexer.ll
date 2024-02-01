@@ -61,9 +61,6 @@ WHITESPACE [ \t\r]+
 "%"                     { update_yylloc; return Token::MODULO; }
 "!"                     { update_yylloc; return Token::NOT; }
 "="                     { update_yylloc; return Token::ASSIGN; }
-
-
-
 "{"                     { update_yylloc; return Token::LEFT_BRACE; }
 "}"                     { update_yylloc; return Token::RIGHT_BRACE; }
 "("                     { update_yylloc; return Token::LEFT_PAREN; }
@@ -77,7 +74,6 @@ WHITESPACE [ \t\r]+
 "short"                 { update_yylloc; return Token::SHORT; }
 "char"                  { update_yylloc; return Token::CHAR; }
 "byte"                  { update_yylloc; return Token::BYTE; }
-
 "native"                { update_yylloc; return Token::NATIVE; }
 "class"                 { update_yylloc; return Token::CLASS; }
 "interface"             { update_yylloc; return Token::INTERFACE; }
