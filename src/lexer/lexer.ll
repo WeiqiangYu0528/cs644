@@ -101,7 +101,6 @@ WHITESPACE [ \t\r]+
 "null"                  { update_yylloc; return Token::NUL; }
 "true"                  { update_yylloc; return Token::TRUE; }
 "false"                 { update_yylloc; return Token::FALSE; }
-"null"                  { update_yylloc; return Token::NUL; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 (0|[1-9]{DIGIT}*)       { update_yylloc; return Token::INTEGER; }
 [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7]) { update_yylloc; return Token::ESCAPE; }
