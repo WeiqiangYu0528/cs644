@@ -95,7 +95,9 @@ QualifiedIdentifierList
     ;
 
 InterfaceDeclaration 
-    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody
+    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
+        if ($4 != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
+     }
     ;
 
 InterfaceOpt1
@@ -122,20 +124,24 @@ MethodDeclaration
     ;    
 
 MethodDeclarationOpt
-    : ABSTRACT
+    : 
+    | ABSTRACT
     ;
 
 ClassDeclaration
-    : ModifierOptions NormalClassDeclaration {
-        for (int val: $1) {
-            if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
-        }
-        if ($1[1] > 0 && $1[2] > 0) throw syntax_error(@1, std::string("A class cannot be both abstract and final.")); 
-    }
+    : PUBLIC ClassDeclarationOpt NormalClassDeclaration
+    ;
+
+ClassDeclarationOpt
+    : 
+    | ABSTRACT
+    | FINAL
     ;
 
 NormalClassDeclaration
-    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody
+    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
+        if ($2 != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
+    }
     ;
 
 NormalClassDeclarationOpt1
@@ -240,9 +246,9 @@ Statement:
     | SEMICOLON
     | IF ParExpression Statement %prec THEN
     | IF ParExpression Statement ELSE Statement
-
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
+    | ReturnStatements
     ;
 
 ForControl:
@@ -292,7 +298,6 @@ StatementExpression:
     Assignment
     | MethodInvocation 
     | ClassInstanceCreationExpression
-    | ReturnStatements
     ;
 
 ReturnStatements
@@ -324,19 +329,6 @@ Modifier
     | ABSTRACT  {$$ = Modifiers::ABSTRACT;}
     | FINAL {$$ = Modifiers::FINAL;}
     | NATIVE {$$ = Modifiers::NATIVE;}
-    ;
-
-ModifierOptions
-    : {$$ = std::vector<int>(3, 0);}
-    | Modifier ModifierOptions {
-        $$ = $2;
-        switch ($1) {
-            case Modifiers::PUBLIC: {$$[0]++; break;};
-            case Modifiers::FINAL: {$$[1]++; break;}
-            case Modifiers::ABSTRACT: {$$[2]++; break;}
-            default: throw syntax_error(@1, std::string("Invalid modifier for class declaration"));
-        }
-    }
     ;
 
 /* Annotations
