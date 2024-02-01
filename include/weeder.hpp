@@ -16,6 +16,20 @@ enum class MemberType {
     CONSTRUCTOR
 };
 
+enum class DataType {
+    VOID = 0,
+    INT,
+    BOOLEAN,
+    CHAR,
+    BYTE,
+    SHORT,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    ARRAY,
+    OBJECT
+};
+
 inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
     switch (token) {
         case Modifiers::PUBLIC: {vec[0]++; break;};

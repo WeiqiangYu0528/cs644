@@ -73,6 +73,8 @@
 %nonassoc THEN
 %nonassoc ELSE
 
+%type <bool> ClassBodyDeclaration ClassBodyOpt1
+%type <DataType> Type BasicType ReferenceType
 %type <Modifiers> Modifier
 %type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
@@ -184,8 +186,8 @@ NormalClassDeclarationOpt3
     ;
 
 Type
-    : BasicType BracketsOpt
-    | ReferenceType BracketsOpt
+    : BasicType BracketsOpt {$$ = $1;}
+    | ReferenceType BracketsOpt {$$ = $1;}
     ;
 
 BracketsOpt
@@ -194,18 +196,19 @@ BracketsOpt
     ;    
 
 BasicType
-    : BYTE 
-    | SHORT 
-    | CHAR
-    | INT
-    | LONG 
-    | FLOAT 
-    | DOUBLE 
-    | BOOLEAN
+    : VOID {$$ = DataType::VOID;}
+    | BYTE {$$ = DataType::BYTE;}
+    | SHORT {$$ = DataType::SHORT;}
+    | CHAR {$$ = DataType::CHAR;}
+    | INT {$$ = DataType::INT;}
+    | LONG {$$ = DataType::LONG;}
+    | FLOAT {$$ = DataType::FLOAT;}
+    | DOUBLE {$$ = DataType::DOUBLE;}
+    | BOOLEAN {$$ = DataType::BOOLEAN;}
     ;
 
 ReferenceType
-    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
+    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
     ;
 
 ReferenceTypeOpt1
@@ -365,17 +368,22 @@ Annotation
     ; */
 
 ClassBody
-    : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE 
+    : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE {
+        if (!$2) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
+    }
     ;
 
 ClassBodyOpt1
-    :
-    | ClassBodyOpt1 ClassBodyDeclaration
+    : {$$ = false;}
+    | ClassBodyDeclaration ClassBodyOpt1 {
+        $$ = $1 | $2;
+    }
     ;
 
 ClassBodyDeclaration
-    : SEMICOLON
+    : SEMICOLON {$$ = false;}
     | ClassBodyDeclarationOpt1 MemberDecl {
+        $$ = $2 == MemberType::CONSTRUCTOR;
         for (int val: $1) {
             if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
         }
@@ -389,8 +397,9 @@ ClassBodyDeclaration
         throw syntax_error(@1, std::string("A method has a body if and only if it is neither abstract nor native"));
         if ($2 == MemberType::CONSTRUCTOR && ($1[2] + $1[3] + $1[4] + $1[5] > 0))
         throw syntax_error(@1, std::string("A constructor cannot be final, abstract, static or native"));
+        if ($1[0] == 0 && $1[1] == 0) throw syntax_error(@1, std::string("Every method/constructor/field is required to have an access modifier.")); 
     }
-    | ClassBodyDeclarationOpt2 Block
+    | ClassBodyDeclarationOpt2 Block {$$ = false;}
     ;
 
 ClassBodyDeclarationOpt1
@@ -412,11 +421,17 @@ ClassBodyDeclarationOpt2
 
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
-    | IDENTIFIER ConstructorDeclaratorRest {$$ = MemberType::CONSTRUCTOR;}
+    | IDENTIFIER ConstructorDeclaratorRest {
+        $$ = MemberType::CONSTRUCTOR;
+        if ($1 != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
+    }
     ;
 
-MethodOrFieldDecl
-    : Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
+MethodOrFieldDecl:
+    Type IDENTIFIER MethodOrFieldRest {
+        $$ = $3;
+        if ($1 == DataType::VOID && $3 == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
+    } 
     ;
 
 MethodOrFieldRest
