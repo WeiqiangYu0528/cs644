@@ -5,10 +5,11 @@
 %code requires {
     #include <string>
     #include <vector>
+    #include "weeder.hpp"
     #ifndef yyFlexLexerOnce // https://stackoverflow.com/questions/40663527/how-to-inherit-from-yyflexlexer
     #include <FlexLexer.h>
     #endif
-    #include "weeder.hpp"
+
     namespace yy
     {
         class MyLexer;
@@ -30,15 +31,19 @@
     #define yylex lexer.yylex
 }
 
+
 %code provides {
     namespace yy
     {
         class MyLexer : public yyFlexLexer 
         {
+        private:
+            std::string filename;
         public:
             MyLexer() { }
-            MyLexer(std::istream &in) : yyFlexLexer(&in) { }
+            MyLexer(std::istream &in, std::string& fn) : yyFlexLexer(&in), filename(fn) { }
             int yylex(parser::value_type *const yylval, location *const yylloc);
+            inline std::string getFilename() const {return filename;}
         };
     }
 }
@@ -46,8 +51,9 @@
 
 %start Program
 
-%token <std::string> IDENTIFIER 
+%token <std::string> IDENTIFIER
 %token DOT
+%token STAR
 %token ASSIGN
 %token INTEGER 	
 %token OR_OR AND_AND OR XOR AND EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL 
@@ -68,14 +74,38 @@
 %nonassoc ELSE
 
 %type <Modifiers> Modifier
-%type <std::vector<int>> ModifierOptions ClassBodyDeclarationOpt1
+%type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
 
 %%
 
 Program
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration 
+    ;
+
+ClassOrInterfaceDeclaration
     :
-    | Program ClassDeclaration
+    | ClassDeclaration
+    | InterfaceDeclaration
+    ;  
+
+PackageDeclaration
+    :
+    | PACKAGE QualifiedIdentifier SEMICOLON
+    ;
+
+ImportStatements
+    :
+    | ImportStatement ImportStatements
+    ;
+
+ImportStatement
+    : IMPORT QualifiedIdentifier SEMICOLON
+    | IMPORT PackageImportIdentifier SEMICOLON
+    ;
+
+PackageImportIdentifier    
+    : QualifiedIdentifier DOT STAR
     ;
 
 QualifiedIdentifier 
@@ -88,26 +118,66 @@ QualifiedIdentifierList
     | QualifiedIdentifierList COMMA QualifiedIdentifier 
     ;
 
+InterfaceDeclaration 
+    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
+        if ($4 != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
+     }
+    ;
+
+InterfaceOpt1
+    :
+    | ABSTRACT
+    ;
+
+InterfaceOpt2
+    :
+    | EXTENDS IDENTIFIER
+    ;
+
+InterfaceBody
+    : LEFT_BRACE MethodDeclarations RIGHT_BRACE
+    ;
+
+MethodDeclarations 
+    : 
+    | MethodDeclaration MethodDeclarations
+    ;
+
+MethodDeclaration
+    : PUBLIC MethodDeclarationOpt Type IDENTIFIER FormalParameters SEMICOLON
+    ;    
+
+MethodDeclarationOpt
+    : 
+    | ABSTRACT
+    ;
+
 ClassDeclaration
-    : ModifierOptions NormalClassDeclaration {
-        for (int val: $1) {
-            if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
-        }
-        if ($1[1] > 0 && $1[2] > 0) throw syntax_error(@1, std::string("A class cannot be both abstract and final.")); 
-    }
+    : PUBLIC ClassDeclarationOpt NormalClassDeclaration
+    ;
+
+ClassDeclarationOpt
+    : 
+    | ABSTRACT
+    | FINAL
     ;
 
 NormalClassDeclaration
-    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody
+    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
+        if ($2 != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
+    }
     ;
+
 NormalClassDeclarationOpt1
     :
     | TypeParameters
-    ;    
+    ;
+
 NormalClassDeclarationOpt2
     :
     | EXTENDS Type
     ;
+
 NormalClassDeclarationOpt3
     :
     | IMPLEMENTS TypeList
@@ -117,6 +187,7 @@ Type
     : BasicType BracketsOpt
     | ReferenceType BracketsOpt
     ;
+
 BracketsOpt
     :
     | LEFT_BRACKET RIGHT_BRACKET
@@ -136,10 +207,12 @@ BasicType
 ReferenceType
     : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
     ;
+
 ReferenceTypeOpt1
     :
     | TypeArguments
     ;
+
 ReferenceTypeOpt2
     :
     | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
@@ -148,6 +221,7 @@ ReferenceTypeOpt2
 TypeArguments
     : LESS TypeArgument TypeArgumentsOpt1 GREATER
     ;
+
 TypeArgumentsOpt1
     : 
     | COMMA TypeArgument TypeArgumentsOpt1
@@ -157,6 +231,7 @@ TypeArgument
     : ReferenceType
     | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
     ;
+
 TypeArgumentOpt1
     : EXTENDS
     | SUPER
@@ -170,6 +245,7 @@ TypeList
 TypeParameters
     : LESS TypeParameter TypeParametersOpt1 GREATER
     ;
+
 TypeParametersOpt1
     : 
     | COMMA TypeParameter TypeParametersOpt1
@@ -178,6 +254,7 @@ TypeParametersOpt1
 TypeParameter
     : IDENTIFIER TypeParameterOpt1
     ;
+
 TypeParameterOpt1
     : 
     | EXTENDS Bound
@@ -193,9 +270,9 @@ Statement:
     | SEMICOLON
     | IF ParExpression Statement %prec THEN
     | IF ParExpression Statement ELSE Statement
-
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
+    | ReturnStatements
     ;
 
 ForControl:
@@ -247,6 +324,15 @@ StatementExpression:
     | ClassInstanceCreationExpression
     ;
 
+ReturnStatements
+    : RETURN ReturnStatement SEMICOLON
+    ;
+    
+ReturnStatement
+    : Literal
+    | QualifiedIdentifier
+    ;
+
 MethodInvocation:
     IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
     ;
@@ -260,26 +346,13 @@ ArgumentList:
 
 /* Modifier
     : Annotation */
-Modifier: 
-    PUBLIC {$$ = Modifiers::PUBLIC;}
+Modifier
+    : PUBLIC {$$ = Modifiers::PUBLIC;}
     | PROTECTED {$$ = Modifiers::PROTECTED;}
     | STATIC {$$ = Modifiers::STATIC;}
     | ABSTRACT  {$$ = Modifiers::ABSTRACT;}
     | FINAL {$$ = Modifiers::FINAL;}
     | NATIVE {$$ = Modifiers::NATIVE;}
-    ;
-
-ModifierOptions
-    : {$$ = std::vector<int>(3, 0);}
-    | Modifier ModifierOptions {
-        $$ = $2;
-        switch ($1) {
-            case Modifiers::PUBLIC: {$$[0]++; break;};
-            case Modifiers::FINAL: {$$[1]++; break;}
-            case Modifiers::ABSTRACT: {$$[2]++; break;}
-            default: throw syntax_error(@1, std::string("Invalid modifier for class declaration"));
-        }
-    }
     ;
 
 /* Annotations
@@ -337,62 +410,68 @@ ClassBodyDeclarationOpt2
     | STATIC
     ;
 
-MemberDecl:
-    MethodOrFieldDecl {$$ = $1;}
+MemberDecl
+    : MethodOrFieldDecl {$$ = $1;}
     | IDENTIFIER ConstructorDeclaratorRest {$$ = MemberType::CONSTRUCTOR;}
     ;
 
-MethodOrFieldDecl:
-    Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
+MethodOrFieldDecl
+    : Type IDENTIFIER MethodOrFieldRest {$$ = $3;}
     ;
 
-MethodOrFieldRest:  
-    FieldDeclaratorsRest SEMICOLON {$$ = MemberType::FIELD;}
+MethodOrFieldRest
+    : FieldDeclaratorsRest SEMICOLON {$$ = MemberType::FIELD;}
     | MethodDeclaratorRest
     ;
 
-MethodDeclaratorRest:
-    FormalParameters Block {$$ = MemberType::METHODWITHBODY;}
+MethodDeclaratorRest
+    : FormalParameters Block {$$ = MemberType::METHODWITHBODY;}
     | FormalParameters SEMICOLON  {$$ = MemberType::METHODWITHOUTBODY;}
     ;
 
-FieldDeclaratorsRest:
-    VariableDeclaratorRest
+FieldDeclaratorsRest
+    : VariableDeclaratorRest
     ;
 
-VariableDeclaratorRest:
+VariableDeclaratorRest
+    :
     | EQUAL VariableInitializer
-
-VariableInitializer:
     ;
 
-ConstructorDeclaratorRest:
-    FormalParameters Block
+VariableInitializer
+    :
+    ;
+
+ConstructorDeclaratorRest
+    : FormalParameters Block
     ;
 
 FormalParameters: 
     LEFT_PAREN FormalParameterDecls RIGHT_PAREN
     ;
 
+
 FormalParameterDecls:
     | Type FormalParameterDeclsRest
     ;
 
-FormalParameterDeclsRest: 
-    VariableDeclaratorId
+FormalParameterDeclsRest
+    : VariableDeclaratorId
     | VariableDeclaratorId COMMA FormalParameterDecls
+    ;
 
-VariableDeclaratorId:
-    IDENTIFIER 
+VariableDeclaratorId
+    : IDENTIFIER 
     | IDENTIFIER MultiDimensionArray
+    ;
 
-MultiDimensionArray:
-    LEFT_BRACKET RIGHT_BRACKET
+MultiDimensionArray
+    : LEFT_BRACKET RIGHT_BRACKET
     | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
     ;
 
-Block:
-    LEFT_BRACE BlockStatements RIGHT_BRACE
+Block
+    : LEFT_BRACE BlockStatements RIGHT_BRACE
     ;
 
 BlockStatements:
@@ -406,6 +485,7 @@ BlockStatement:
 Literal
     : IntegerLiteral
     ;
+
 IntegerLiteral
     : INTEGER
     ;
