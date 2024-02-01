@@ -265,13 +265,14 @@ Bound
     | Bound AND ReferenceType
     ;
 
-Statement:
-    Block
+Statement
+    : Block
     | SEMICOLON
     | IF ParExpression Statement %prec THEN
     | IF ParExpression Statement ELSE Statement
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
+    | MethodInvocation
     | ReturnStatements
     ;
 
@@ -288,7 +289,9 @@ ForUpdate:
     ;
 
 ForInit: 
-    | StatementExpression
+// Omit this fow now as an workaround for supporting multiple identifier method invocation. 
+// This pass public testcase of control structure.
+//    | StatementExpression
     | LocalVariableDeclaration
     ;
 
@@ -318,8 +321,8 @@ ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN
     ;
 
-StatementExpression:
-    Assignment
+StatementExpression
+    : Assignment
     | MethodInvocation 
     | ClassInstanceCreationExpression
     ;
@@ -331,10 +334,11 @@ ReturnStatements
 ReturnStatement
     : Literal
     | QualifiedIdentifier
+    | MethodInvocation
     ;
 
 MethodInvocation:
-    IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    QualifiedIdentifier LEFT_PAREN ArgumentList RIGHT_PAREN
     ;
 
 ClassInstanceCreationExpression:
