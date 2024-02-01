@@ -51,7 +51,7 @@
 
 %start Program
 
-%token <std::string> IDENTIFIER 
+%token <std::string> IDENTIFIER
 %token DOT
 %token STAR
 %token ASSIGN

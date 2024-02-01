@@ -7,7 +7,7 @@
     #include "parser.h"
     #include <variant>
     #undef  YY_DECL 
-    #define YY_DECL int yy::MyLexer::yylex(yy::parser::value_type *const yylval, location *const yylloc)    
+    #define YY_DECL int yy::MyLexer::yylex(yy::parser::value_type *const yylval, location *const yylloc)
     using Token = yy::parser::token;  
     int prev_token_length = 0;
     #define update_yylloc do { \
