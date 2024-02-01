@@ -301,15 +301,132 @@ VariableInitializer:
     Expression
     ;
 
-Assignment:
-    IDENTIFIER ASSIGN Expression
-    ;
+
+
 
 Expression:
-    TRUE
-    | FALSE
-    | MethodInvocation 
+    AssignmentExpression
     ;
+AssignmentExpression:
+    ConditionalExpression
+    | Assignment
+    ;
+
+Assignment:
+    LeftHandSide ASSIGN AssignmentExpression
+    ;
+
+LeftHandSide:
+    IDENTIFIER
+    | FieldAccess
+    | ArrayAccess
+    ;
+
+ConditionalExpression:
+    ConditionalOrExpression
+    | ConditionalOrExpression QUESTION_MARK Expression COLON ConditionalExpression { throw syntax_error(@1, std::string("conditional operator not supported")); }
+    ;
+
+ConditionalOrExpression:
+    ConditionalAndExpression
+    | ConditionalOrExpression OR_OR ConditionalAndExpression
+    ;
+
+ConditionalAndExpression:
+    InclusiveOrExpression
+    | ConditionalAndExpression AND_AND InclusiveOrExpression
+    ;
+
+InclusiveOrExpression:
+    ExclusiveOrExpression
+    | InclusiveOrExpression OR ExclusiveOrExpression
+    ;
+
+ExclusiveOrExpression:
+    AndExpression
+    | ExclusiveOrExpression XOR AndExpression
+    ;
+
+AndExpression:
+    EqualityExpression
+    | AndExpression AND EqualityExpression
+    ;
+
+EqualityExpression:
+    RelationalExpression
+    | EqualityExpression EQUAL RelationalExpression
+    | EqualityExpression NOT_EQUAL RelationalExpression
+    ;
+
+RelationalExpression:
+    ShiftExpression
+    | RelationalExpression RelationalExpressionOpt ShiftExpression
+    | RelationalExpression INSTANCEOF ReferenceType
+    ;
+
+RelationalExpressionOpt:
+    LESS | GREATER | LESS_EQUAL | GREATER_EQUAL;
+
+  
+    
+
+ShiftExpression:
+    AdditiveExpression
+    | ShiftExpression LEFT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("left shift operator not supported")); }
+    | ShiftExpression RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("right shift operator not supported")); }
+    | ShiftExpression UNSIGNED_RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("unsigned right shift operator not supported")); }
+    ;
+
+AdditiveExpression:
+    MultiplicativeExpression
+    | AdditiveExpression PLUS MultiplicativeExpression
+    | AdditiveExpression MINUS MultiplicativeExpression
+    ;
+
+MultiplicativeExpression:
+    UnaryExpression
+    | MultiplicativeExpression STAR UnaryExpression
+    | MultiplicativeExpression DIVIDE UnaryExpression
+    | MultiplicativeExpression MODULO UnaryExpression
+    ;
+
+CastExpression:
+    LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression
+    ;
+
+UnaryExpression:
+    ;
+
+FieldAccess:
+    Primary DOT IDENTIFIER
+    | SUPER DOT IDENTIFIER { throw syntax_error(@1, std::string("super not supported")); }
+    ;
+
+Primary:
+    PrimaryNoNewArray
+    | ArrayCreationExpression
+    ;
+
+PrimaryNoNewArray:
+    Literal
+    | THIS
+    | LEFT_PAREN Expression RIGHT_PAREN
+    | ClassInstanceCreationExpression
+    | FieldAccess
+    | MethodInvocation
+    | ArrayAccess
+    ;
+
+ArrayAccess:
+    IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+    | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET
+    ;
+
+ArrayCreationExpression:
+    | NEW BasicType LEFT_BRACKET Expression RIGHT_BRACKET
+    | NEW IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+    ;
+
 
 ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN
@@ -343,7 +460,8 @@ ClassInstanceCreationExpression:
     NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
     ;
 
-ArgumentList: 
+ArgumentList:
+    | ArgumentList COMMA Expression
     ;
 
 /* Modifier
