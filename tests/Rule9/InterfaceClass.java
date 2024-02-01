@@ -1,1 +1,1 @@
-interface InterfaceClass {}
+public interface InterfaceClass {}

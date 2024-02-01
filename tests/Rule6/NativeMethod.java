@@ -1,13 +1,13 @@
 public class NativeMethod {
 
-    NativeMethod(){}
+    public NativeMethod(){}
     
-    native static void doo() {
+    public native static void doo() {
 
     }
 
     // expected an error because of rule 6: `A native method must be static.`
-    native void eoo() {
+    public native void eoo() {
 
     }
 }

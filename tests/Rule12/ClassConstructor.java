@@ -1,3 +1,3 @@
 public class ClassConstructor {
-    ClassConstructor(){}    
+    public ClassConstructor(){}    
 }

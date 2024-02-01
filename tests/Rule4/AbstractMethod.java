@@ -1,14 +1,14 @@
 public class AbstractMethod {
 
-    AbstractMethod(){}
+    public AbstractMethod(){}
     
     // expected an error because of rule 4: `An abstract method cannot be static or final`.
-    static abstract void aoo() {
+    public static abstract void aoo() {
     }
 
     // expected an error because of rule 4: `An abstract method cannot be static or final`.
-    final abstract void boo() {
+    public final abstract void boo() {
     }
 
-    abstract void coo() {}
+    public abstract void coo() {}
 }

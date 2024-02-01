@@ -1,3 +1,3 @@
 public class ClassName {
-    ClassName(){}
+    public ClassName(){}
 }

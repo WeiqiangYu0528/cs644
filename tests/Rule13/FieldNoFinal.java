@@ -1,9 +1,9 @@
-class FieldNoFinal {
+public class FieldNoFinal {
     // expecting an error because of rule 13: `No field can be final.`
-    final Object a;
+    public final Object a;
 
-    Object b;
+    public Object b;
 
-    FieldNoFinal(){}
+    public FieldNoFinal(){}
 
 }

@@ -1,18 +1,18 @@
 public class MethodBody {
 
-    MethodBody(){}
+    public MethodBody(){}
 
-    abstract void foo() {
+    public abstract void foo() {
         // expected an error because of rule 3: `A method has a body if and only if it is neither abstract nor native.`
         Object obj = new Object();
     }
 
-    native void koo() {
+    public native void koo() {
         // expected an error because of rule 3: `A method has a body if and only if it is neither abstract nor native.`
         Object obj = new Object();
     }
 
-    void joo() {
+    public void joo() {
         Object obj = new Object();
     }
 }

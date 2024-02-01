@@ -1,3 +1,3 @@
-interface InterfaceName {
+public interface InterfaceName {
     
 }

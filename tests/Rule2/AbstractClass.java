@@ -1,3 +1,3 @@
-abstract class AbstractClass {
-    AbstractClass(){}
+public abstract class AbstractClass {
+    public AbstractClass(){}
 }
