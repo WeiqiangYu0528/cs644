@@ -333,12 +333,13 @@ ReturnStatements
     
 ReturnStatement
     : Literal
+    // This QualifiedIdentifier is to return class e.g x or field of class e.g. x.length.
     | QualifiedIdentifier
     | MethodInvocation
     ;
 
-MethodInvocation:
-    QualifiedIdentifier LEFT_PAREN ArgumentList RIGHT_PAREN
+MethodInvocation
+    : QualifiedIdentifier LEFT_PAREN ArgumentList RIGHT_PAREN
     ;
 
 ClassInstanceCreationExpression:
