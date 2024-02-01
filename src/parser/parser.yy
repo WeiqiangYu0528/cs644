@@ -528,7 +528,7 @@ ExpressionOpt:
     ;
 
 ForUpdateOpt:
-    | ForUpdateOpt
+    | ForUpdate
     ;
 
 ForInit: 
