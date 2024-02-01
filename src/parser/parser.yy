@@ -5,6 +5,7 @@
 %code requires {
     #include <string>
     #include <vector>
+    #include <limits.h>
     #include "weeder.hpp"
     #ifndef yyFlexLexerOnce // https://stackoverflow.com/questions/40663527/how-to-inherit-from-yyflexlexer
     #include <FlexLexer.h>
@@ -55,7 +56,7 @@
 %token DOT
 %token STAR
 %token ASSIGN
-%token INTEGER CHARACTER NUL
+%token <std::string> INTEGER CHARACTER NUL
 %token ESCAPE
 %token OR_OR AND_AND OR XOR AND EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL 
 %token LEFT_SHIFT RIGHT_SHIFT UNSIGNED_RIGHT_SHIFT PLUS MINUS MULTIPLY DIVIDE MODULO
@@ -502,7 +503,9 @@ Literal
     ;
 
 IntegerLiteral
-    : INTEGER
+    : INTEGER {
+        if (stol($1) > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+    }
     ;
 
 BooleanLiteral
