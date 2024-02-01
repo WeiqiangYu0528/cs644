@@ -75,7 +75,7 @@
 %nonassoc ELSE
 
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <DataType> Type BasicType ReferenceType
+%type <DataType> Type BasicType ReferenceType ResultType
 %type <Modifiers> Modifier
 %type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
@@ -182,18 +182,12 @@ NormalClassDeclarationOpt3
     ;
 
 Type
-    : BasicType BracketsOpt {$$ = $1;}
-    | ReferenceType BracketsOpt {$$ = $1;}
-    ;
-
-BracketsOpt
-    :
-    | LEFT_BRACKET RIGHT_BRACKET
-    ;    
+    : BasicType {$$ = $1;}
+    | ReferenceType {$$ = $1;}
+    ;   
 
 BasicType
-    : VOID {$$ = DataType::VOID;}
-    | BYTE {$$ = DataType::BYTE;}
+    : BYTE {$$ = DataType::BYTE;}
     | SHORT {$$ = DataType::SHORT;}
     | CHAR {$$ = DataType::CHAR;}
     | INT {$$ = DataType::INT;}
@@ -202,7 +196,16 @@ BasicType
 
 ReferenceType
     : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
+    | ArrayType {$$ = DataType::ARRAY;}
     ;
+
+ArrayType
+    : Type LEFT_BRACKET RIGHT_BRACKET
+    ;
+
+ResultType
+    : Type {$$ = $1;}
+    | VOID {$$ = DataType::VOID;}
 
 ReferenceTypeOpt1
     :
@@ -306,9 +309,9 @@ Assignment:
     ;
 
 Expression:
-    TRUE
-    | FALSE
+    Literal
     | MethodInvocation 
+    | NEW Type LEFT_BRACKET INTEGER RIGHT_BRACKET
     ;
 
 ParExpression:
@@ -330,6 +333,7 @@ ReturnStatement
     | QualifiedIdentifier
     | MethodInvocation
     | ClassInstanceCreationExpression
+    | THIS
     ;
 
 MethodInvocation:
@@ -423,7 +427,7 @@ MemberDecl
     ;
 
 MethodOrFieldDecl:
-    Type IDENTIFIER MethodOrFieldRest {
+    ResultType IDENTIFIER MethodOrFieldRest {
         $$ = $3;
         if ($1 == DataType::VOID && $3 == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
@@ -445,7 +449,7 @@ FieldDeclaratorsRest
 
 VariableDeclaratorRest
     :
-    | EQUAL VariableInitializer
+    | ASSIGN VariableInitializer
     ;
 
 ConstructorDeclaratorRest
@@ -486,6 +490,7 @@ BlockStatements:
 
 BlockStatement:
     Statement
+    | LocalVariableDeclaration
     ;
 
 Literal
