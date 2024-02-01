@@ -292,11 +292,17 @@ StatementExpression:
     Assignment
     | MethodInvocation 
     | ClassInstanceCreationExpression
+    | ReturnStatements
+    ;
+
+ReturnStatements
+    : RETURN ReturnStatement SEMICOLON
     ;
     
-ReturnStatements
+ReturnStatement
     : Literal
-    | QualifiedIdentifie
+    | QualifiedIdentifier
+    ;
 
 MethodInvocation:
     IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
@@ -423,6 +429,11 @@ VariableInitializer
 ConstructorDeclaratorRest
     : FormalParameters Block
     ;
+
+FormalParameters: 
+    LEFT_PAREN FormalParameterDecls RIGHT_PAREN
+    ;
+
 
 FormalParameterDecls:
     | Type FormalParameterDeclsRest
