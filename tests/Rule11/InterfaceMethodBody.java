@@ -1,11 +1,9 @@
-public class InterfaceMethodBody {
-
-    public InterfaceMethodBody(){}
+public interface InterfaceMethodBody {
     
     // expecting an error because of rule 11: An interface method cannot have a body.
-    public interface joo {
+    public void joo {
         Object a = new Object();
     }
 
-    public interface loo {}
+    public void loo()
 }
