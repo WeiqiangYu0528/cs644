@@ -74,7 +74,7 @@
 %nonassoc ELSE
 
 %type <Modifiers> Modifier
-%type <std::vector<int>> ModifierOptions ClassBodyDeclarationOpt1
+%type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
 
 %%
