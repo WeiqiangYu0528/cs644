@@ -196,7 +196,7 @@ BasicType
     ;
 
 ReferenceType
-    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
+    : IDENTIFIER {$$ = DataType::OBJECT;}
     | ArrayType {$$ = DataType::ARRAY;}
     ;
 
@@ -207,35 +207,6 @@ ArrayType
 ResultType
     : Type {$$ = $1;}
     | VOID {$$ = DataType::VOID;}
-
-ReferenceTypeOpt1
-    :
-    | TypeArguments
-    ;
-
-ReferenceTypeOpt2
-    :
-    | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
-    ;
-
-TypeArguments
-    : LESS TypeArgument TypeArgumentsOpt1 GREATER
-    ;
-
-TypeArgumentsOpt1
-    : 
-    | COMMA TypeArgument TypeArgumentsOpt1
-    ;
-
-TypeArgument
-    : ReferenceType
-    | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
-    ;
-
-TypeArgumentOpt1
-    : EXTENDS
-    | SUPER
-    ;
 
 TypeList
     : ReferenceType
@@ -305,15 +276,93 @@ VariableInitializer:
     Expression
     ;
 
-Assignment:
-    IDENTIFIER ASSIGN Expression
+Expression:
+    AssignmentExpression
+    ;
+AssignmentExpression:
+    ConditionalExpression
+    | Assignment
     ;
 
-Expression:
-    Literal
-    | MethodInvocation 
-    | NEW Type LEFT_BRACKET INTEGER RIGHT_BRACKET
+Assignment:
+    LeftHandSide ASSIGN AssignmentExpression
     ;
+
+LeftHandSide:
+    IDENTIFIER
+    | FieldAccess
+    ;
+    
+
+ConditionalExpression:
+    ConditionalOrExpression
+    | ConditionalOrExpression QUESTION_MARK Expression COLON ConditionalExpression { throw syntax_error(@1, std::string("conditional operator not supported")); }
+    ;
+
+ConditionalOrExpression:
+    ConditionalAndExpression
+    | ConditionalOrExpression OR_OR ConditionalAndExpression
+    ;
+
+ConditionalAndExpression:
+    InclusiveOrExpression
+    | ConditionalAndExpression AND_AND InclusiveOrExpression
+    ;
+
+InclusiveOrExpression:
+    ExclusiveOrExpression
+    | InclusiveOrExpression OR ExclusiveOrExpression
+    ;
+
+ExclusiveOrExpression:
+    AndExpression
+    | ExclusiveOrExpression XOR AndExpression
+    ;
+
+AndExpression:
+    EqualityExpression
+    | AndExpression AND EqualityExpression
+    ;
+
+EqualityExpression:
+    RelationalExpression
+    | EqualityExpression EQUAL RelationalExpression
+    | EqualityExpression NOT_EQUAL RelationalExpression
+    ;
+
+RelationalExpression:
+    ShiftExpression
+    | RelationalExpression LESS ShiftExpression
+    | RelationalExpression GREATER ShiftExpression
+    | RelationalExpression LESS_EQUAL ShiftExpression
+    | RelationalExpression GREATER_EQUAL ShiftExpression
+    ;
+
+ShiftExpression:
+    AdditiveExpression
+    | ShiftExpression LEFT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("left shift not supported")); }
+    | ShiftExpression RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("right shift not supported")); }
+    | ShiftExpression UNSIGNED_RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("unsigned right shift not supported")); }
+    ;
+
+AdditiveExpression:
+    COMMA;
+
+FieldAccess:
+    Primary DOT IDENTIFIER
+    | SUPER DOT IDENTIFIER { throw syntax_error(@1, std::string("super not supported")); }
+    ;
+
+Primary:
+    PrimaryNoNewArray
+    ;
+
+PrimaryNoNewArray:
+    Literal
+    ;
+
+
+
 
 ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN
