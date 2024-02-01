@@ -4,11 +4,10 @@
 %x java_comment
 
 %{
-    #include "lexer.h"
     #include "parser.h"
     #include <variant>
     #undef  YY_DECL 
-    #define YY_DECL int yy::MyLexer::yylex(void * yylval, location *const yylloc)
+    #define YY_DECL int yy::MyLexer::yylex(yy::parser::value_type *const yylval, location *const yylloc)    
     using Token = yy::parser::token;  
     int prev_token_length = 0;
     #define update_yylloc do { \
@@ -74,7 +73,7 @@ WHITESPACE [ \t\r]+
 "true"                  { update_yylloc; return Token::TRUE; }
 "false"                 { update_yylloc; return Token::FALSE; }
 [-]?{DIGIT}+            { update_yylloc; return Token::INTEGER; }
-{IDENTIFIER}            { update_yylloc; yylval = new std::string(yytext); return Token::IDENTIFIER; }
+{IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 {WHITESPACE}            { update_yylloc; }
 .                       { update_yylloc; }
 %%

@@ -5,9 +5,15 @@
 %code requires {
     #include <string>
     #include <vector>
-    #include <variant>
-    #include "lexer.h"
     #include "weeder.hpp"
+    #ifndef yyFlexLexerOnce // https://stackoverflow.com/questions/40663527/how-to-inherit-from-yyflexlexer
+    #include <FlexLexer.h>
+    #endif
+
+    namespace yy
+    {
+        class MyLexer;
+    }
 }
 
 %define api.value.type variant
@@ -25,9 +31,27 @@
     #define yylex lexer.yylex
 }
 
+
+%code provides {
+    namespace yy
+    {
+        class MyLexer : public yyFlexLexer 
+        {
+        private:
+            std::string filename;
+        public:
+            MyLexer() { }
+            MyLexer(std::istream &in, std::string& fn) : yyFlexLexer(&in), filename(fn) { }
+            int yylex(parser::value_type *const yylval, location *const yylloc);
+            inline std::string getFilename() const {return filename;}
+        };
+    }
+}
+
+
 %start Program
 
-%token <std::string> IDENTIFIER
+%token <std::string> IDENTIFIER 
 %token DOT
 %token STAR
 %token ASSIGN

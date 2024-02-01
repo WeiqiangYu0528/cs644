@@ -1,4 +1,3 @@
-#include "lexer.h"
 #include "parser.h"
 #include <fstream>
 #include <iostream>
@@ -23,7 +22,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::string filename = {extractFilename(argv[1])};
+    std::string filename{extractFilename(argv[1])};
     yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile), filename);
     yy::parser parser(lexer);
     int ret = parser.parse();
