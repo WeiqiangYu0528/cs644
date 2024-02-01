@@ -1,5 +1,7 @@
 public class A {
-  public A() {}
+  public A() {
+    
+  }
   public int m(int x) {
     for(int a = true; true; a = false){}
     for (i = foo(); true; a = false) {}
