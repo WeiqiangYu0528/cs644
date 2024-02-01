@@ -98,7 +98,7 @@ WHITESPACE [ \t\r]+
 "true"                  { update_yylloc; return Token::TRUE; }
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
-(0|[1-9]{DIGIT}*)       { update_yylloc; return Token::INTEGER; }
+(0|[1-9]{DIGIT}*)       { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::INTEGER; }
 [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7]) { update_yylloc; return Token::ESCAPE; }
 ['][\x00-\x7F][']       { update_yylloc; return Token::CHARACTER; }
 {WHITESPACE}            { update_yylloc; }
