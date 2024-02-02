@@ -101,6 +101,10 @@ PackageDeclaration
     | PACKAGE QualifiedIdentifier SEMICOLON
     ;
 
+PackageName
+    : IDENTIFIER
+    | PackageName DOT IDENTIFIER
+
 ImportStatements
     :
     | ImportStatement ImportStatements
@@ -199,12 +203,18 @@ BasicType
     ;
 
 ReferenceType
-    : IDENTIFIER {$$ = DataType::OBJECT;}
+    : ClassOrInterfaceType {$$ = DataType::OBJECT;}
     | ArrayType {$$ = DataType::ARRAY;}
     ;
 
+ClassOrInterfaceType
+    :
+    IDENTIFIER
+    | PackageName DOT IDENTIFIER
+
 ArrayType
-    : Type LEFT_BRACKET RIGHT_BRACKET
+    : BasicType LEFT_BRACKET RIGHT_BRACKET
+    | ClassOrInterfaceType LEFT_BRACKET RIGHT_BRACKET
     ;
 
 ResultType
@@ -272,8 +282,13 @@ LocalVariableDeclaration :
     ;
 
 VariableDeclarator :
-    IDENTIFIER ASSIGN VariableInitializer
+    VariableDeclaratorId
+    | VariableDeclaratorId ASSIGN VariableInitializer
     ;
+
+VariableDeclaratorId
+    : IDENTIFIER
+    | IDENTIFIER LEFT_BRACKET RIGHT_BRACKET
 
 VariableInitializer:
     Expression
@@ -396,7 +411,6 @@ Primary:
 PrimaryNoNewArray:
     Literal
     | THIS
-    | LEFT_PAREN Expression RIGHT_PAREN
     | ClassInstanceCreationExpression
     | FieldAccess
     | MethodInvocation
@@ -412,7 +426,6 @@ ArrayCreationExpression:
     NEW BasicType LEFT_BRACKET Expression RIGHT_BRACKET
     | NEW IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
     ;  
-
 
 ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN
@@ -571,16 +584,6 @@ FormalParameterDecls:
 FormalParameterDeclsRest
     : VariableDeclaratorId
     | VariableDeclaratorId COMMA FormalParameterDecls
-    ;
-
-VariableDeclaratorId
-    : IDENTIFIER 
-    | IDENTIFIER MultiDimensionArray
-    ;
-
-MultiDimensionArray
-    : LEFT_BRACKET RIGHT_BRACKET
-    | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
     ;
 
 Block
