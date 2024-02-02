@@ -197,7 +197,7 @@ ReferenceType
     ;
 
 Name:
-    SimpleName
+    SimpleName 
     | QualifiedName;
 
 SimpleName:
@@ -214,7 +214,8 @@ ClassType:
 
 ArrayType
     : BasicType LEFT_BRACKET RIGHT_BRACKET
-    | ClassOrInterfaceType LEFT_BRACKET RIGHT_BRACKET
+    | Name LEFT_BRACKET RIGHT_BRACKET
+    | ArrayType LEFT_BRACKET RIGHT_BRACKET
     ;
 
 ResultType
@@ -405,7 +406,7 @@ MultiplicativeExpression:
 CastExpression:
     LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression 
     | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
-    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus 
+    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus
     | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus
     ;
 
@@ -434,7 +435,7 @@ DimExpr:
 
 DimExprs:
     DimExpr
-    | DimExprs DimExpr
+    | DimExprs DimExpr { throw syntax_error(@1, std::string("multidimensional array not allowed")); }
     ;
 
 
@@ -467,7 +468,7 @@ ArrayCreationExpression:
     NEW BasicType DimExprs Dims
     | NEW BasicType DimExprs 
     | NEW ClassOrInterfaceType DimExprs Dims
-    | NEW ClassOrInterfaceType DimExprs ;
+    | NEW ClassOrInterfaceType DimExprs
     ;  
 
 ParExpression:

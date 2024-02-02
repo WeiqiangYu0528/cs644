@@ -4,7 +4,7 @@ public class cast_test {
     b = (int)!a;
     a = (Object)(int)(Object)(Integer)a;
     a = (Object)(int)(Object)(Integer[][])(a);
-
+    int a = 2, b = 3, d = 4;
     return java.util.Calendar.MONDAY;
 
     return (int)x;;

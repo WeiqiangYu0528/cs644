@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
     std::string filename{extractFilename(argv[1])};
     yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile), filename);
     yy::parser parser(lexer);
-    parser.set_debug_level(argc - 2);
     int ret = parser.parse();
     if (ret == 0)
         return 0;
