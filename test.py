@@ -31,10 +31,10 @@ directory_path7 = 'tests/syntax-supported/literals-and-names'
 directory_path8 = 'tests/syntax-supported/operations'
 
 run_joosc_on_java_files(directory_path1)
-# run_joosc_on_java_files(directory_path2)
+run_joosc_on_java_files(directory_path2)
 run_joosc_on_java_files(directory_path3)
 run_joosc_on_java_files(directory_path4)
-# run_joosc_on_java_files(directory_path5)
+run_joosc_on_java_files(directory_path5)
 run_joosc_on_java_files(directory_path6)
 run_joosc_on_java_files(directory_path7)
-# run_joosc_on_java_files(directory_path8)
+run_joosc_on_java_files(directory_path8)

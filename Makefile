@@ -7,7 +7,7 @@ BISON_SRC=src/parser/parser.yy
 BISON_OUT=src/parser/parser.tab.cpp
 BISON_HEADER=include/parser.h
 BISON_LOCATION_HEADER=include/location.h
-BISON_OPTS=-d 
+BISON_OPTS=-d -Wcounterexamples
 
 FLEX=flex
 FLEX_SRC=src/lexer/lexer.ll

@@ -1,6 +1,3 @@
-%precedence IDENTIFIER
-%precedence LEFT_BRACKET
-
 %require "3.2"
 %language "c++"
 %define lr.type lalr
@@ -27,7 +24,7 @@
 %define api.location.include {"location.h"}
 %header "include/parser.h"
 %define parse.error detailed
-
+%define parse.trace
 %parse-param {MyLexer &lexer}
 
 
@@ -98,12 +95,8 @@ ClassOrInterfaceDeclaration
 
 PackageDeclaration
     :
-    | PACKAGE QualifiedIdentifier SEMICOLON
+    | PACKAGE Name SEMICOLON
     ;
-
-PackageName
-    : IDENTIFIER
-    | PackageName DOT IDENTIFIER
 
 ImportStatements
     :
@@ -111,18 +104,14 @@ ImportStatements
     ;
 
 ImportStatement
-    : IMPORT QualifiedIdentifier SEMICOLON
+    : IMPORT Name SEMICOLON
     | IMPORT PackageImportIdentifier SEMICOLON
     ;
 
 PackageImportIdentifier    
-    : QualifiedIdentifier DOT STAR
+    : Name DOT STAR
     ;
 
-QualifiedIdentifier 
-    : IDENTIFIER
-    | QualifiedIdentifier DOT IDENTIFIER
-    ;
 
 InterfaceDeclaration 
     : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
@@ -207,10 +196,21 @@ ReferenceType
     | ArrayType {$$ = DataType::ARRAY;}
     ;
 
-ClassOrInterfaceType
-    :
-    IDENTIFIER
-    | PackageName DOT IDENTIFIER
+Name:
+	SimpleName
+    | QualifiedName;
+
+SimpleName:
+	IDENTIFIER;
+
+QualifiedName:
+	Name DOT IDENTIFIER;
+
+ClassOrInterfaceType:
+    Name;
+
+ClassType:
+	ClassOrInterfaceType;
 
 ArrayType
     : BasicType LEFT_BRACKET RIGHT_BRACKET
@@ -257,10 +257,24 @@ Statement:
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
     | ReturnStatements
-    | StatementExpression
+    | ExpressionStatement
     ;
+
 ExpressionStatement:
     StatementExpression SEMICOLON
+    ;
+
+VariableInitializers:
+
+	VariableInitializer
+    | VariableInitializers COMMA VariableInitializer
+    ;
+
+ArrayInitializer:
+	LEFT_BRACE VariableInitializers COMMA RIGHT_BRACE
+    | LEFT_BRACE VariableInitializers RIGHT_BRACE
+    | LEFT_BRACE COMMA RIGHT_BRACE
+    | LEFT_BRACE RIGHT_BRACE
     ;
 
 
@@ -281,8 +295,13 @@ ForInit:
     | LocalVariableDeclaration
     ;
 
-LocalVariableDeclaration :
-    Type VariableDeclarator
+LocalVariableDeclaration:
+    Type VariableDeclarators
+    ;
+
+VariableDeclarators:
+    VariableDeclarator
+    | VariableDeclarators COMMA VariableDeclarator
     ;
 
 VariableDeclarator :
@@ -293,14 +312,16 @@ VariableDeclarator :
 VariableDeclaratorId
     : IDENTIFIER
     | IDENTIFIER LEFT_BRACKET RIGHT_BRACKET
-
+    ;
 VariableInitializer:
     Expression
+    | ArrayInitializer
     ;
 
 Expression:
-    AssignmentExpression
+	AssignmentExpression
     ;
+
 AssignmentExpression:
     ConditionalExpression
     | Assignment
@@ -311,11 +332,11 @@ Assignment:
     ;
 
 LeftHandSide:
-    IDENTIFIER
+	Name
     | FieldAccess
     | ArrayAccess
     ;
-    
+
 
 ConditionalExpression:
     ConditionalOrExpression
@@ -383,23 +404,39 @@ MultiplicativeExpression:
     ;
 
 CastExpression:
-    LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
-    | LEFT_PAREN ReferenceType RIGHT_PAREN UnaryExpresionNotPlusMinus
+    LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression 
+    | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
+    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus 
+    | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus
     ;
 
 UnaryExpression:
-    PLUS UnaryExpression
-    | MINUS UnaryExpression
-    | UnaryExpresionNotPlusMinus
+    MINUS UnaryExpression
+    | UnaryExpressionNotPlusMinus
     ;
 
-
-UnaryExpresionNotPlusMinus:
-    Primary
-    | IDENTIFIER
+UnaryExpressionNotPlusMinus:
+	PostfixExpression
     | NOT UnaryExpression
-    | CastExpression
-    ; 
+    | CastExpression;
+
+PostfixExpression:
+	Primary
+    | Name
+    ;
+
+Dims:
+	LEFT_BRACKET RIGHT_BRACKET
+    | Dims LEFT_BRACKET RIGHT_BRACKET
+    ;
+
+DimExpr:
+	LEFT_BRACKET Expression RIGHT_BRACKET;
+
+DimExprs:
+	DimExpr
+    | DimExprs DimExpr
+    ;
 
 
 FieldAccess:
@@ -415,6 +452,7 @@ Primary:
 PrimaryNoNewArray:
     Literal
     | THIS
+    | LEFT_PAREN Expression RIGHT_PAREN
     | ClassInstanceCreationExpression
     | FieldAccess
     | MethodInvocation
@@ -422,13 +460,15 @@ PrimaryNoNewArray:
     ;
 
 ArrayAccess:
-    IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+    Name LEFT_BRACKET Expression RIGHT_BRACKET
     | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET
     ;
 
 ArrayCreationExpression:
-    NEW BasicType LEFT_BRACKET Expression RIGHT_BRACKET
-    | NEW IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+	NEW BasicType DimExprs Dims
+    | NEW BasicType DimExprs 
+    | NEW ClassOrInterfaceType DimExprs Dims
+    | NEW ClassOrInterfaceType DimExprs ;
     ;  
 
 ParExpression:
@@ -441,33 +481,28 @@ StatementExpression:
     | ClassInstanceCreationExpression
     ;
 
-ReturnStatements
-    : RETURN ReturnStatement SEMICOLON
+ReturnStatements:
+	RETURN Expression SEMICOLON
+    | RETURN SEMICOLON
     ;
     
-ReturnStatement
-    : Literal
-    | QualifiedIdentifier
-    | MethodInvocation
-    | ClassInstanceCreationExpression
-    | THIS
-    ;
-
 MethodInvocation:
-    IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
-    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
-    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    Name LEFT_PAREN ArgumentList RIGHT_PAREN
+    | Name LEFT_PAREN RIGHT_PAREN
+    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    | Primary DOT IDENTIFIER LEFT_PAREN RIGHT_PAREN
+    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    | SUPER DOT IDENTIFIER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
-    NEW IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
+	NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN
+    | NEW ClassType LEFT_PAREN RIGHT_PAREN;
     ;
 
-ArgumentListOpt:
-    | ArgumentList
-    ;
 ArgumentList: 
-    Expression | ArgumentList COMMA Expression
+    Expression 
+    | ArgumentList COMMA Expression
     ;
 
 /* Modifier
@@ -592,16 +627,24 @@ FormalParameterDeclsRest
 
 Block
     : LEFT_BRACE BlockStatements RIGHT_BRACE
+    | LEFT_BRACE RIGHT_BRACE 
     ;
 
 BlockStatements:
-    | BlockStatement BlockStatements
+	BlockStatement
+    | BlockStatements BlockStatement
     ;
 
+
 BlockStatement:
-    Statement
-    | LocalVariableDeclaration
+	LocalVariableDeclarationStatement
+    | Statement
     ;
+
+LocalVariableDeclarationStatement:
+	LocalVariableDeclaration SEMICOLON;
+
+
 
 Literal
     : IntegerLiteral
