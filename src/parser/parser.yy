@@ -197,20 +197,20 @@ ReferenceType
     ;
 
 Name:
-	SimpleName
+    SimpleName
     | QualifiedName;
 
 SimpleName:
-	IDENTIFIER;
+    IDENTIFIER;
 
 QualifiedName:
-	Name DOT IDENTIFIER;
+    Name DOT IDENTIFIER;
 
 ClassOrInterfaceType:
     Name;
 
 ClassType:
-	ClassOrInterfaceType;
+    ClassOrInterfaceType;
 
 ArrayType
     : BasicType LEFT_BRACKET RIGHT_BRACKET
@@ -265,13 +265,12 @@ ExpressionStatement:
     ;
 
 VariableInitializers:
-
-	VariableInitializer
+    VariableInitializer
     | VariableInitializers COMMA VariableInitializer
     ;
 
 ArrayInitializer:
-	LEFT_BRACE VariableInitializers COMMA RIGHT_BRACE
+    LEFT_BRACE VariableInitializers COMMA RIGHT_BRACE
     | LEFT_BRACE VariableInitializers RIGHT_BRACE
     | LEFT_BRACE COMMA RIGHT_BRACE
     | LEFT_BRACE RIGHT_BRACE
@@ -319,7 +318,7 @@ VariableInitializer:
     ;
 
 Expression:
-	AssignmentExpression
+    AssignmentExpression
     ;
 
 AssignmentExpression:
@@ -332,7 +331,7 @@ Assignment:
     ;
 
 LeftHandSide:
-	Name
+    Name
     | FieldAccess
     | ArrayAccess
     ;
@@ -416,25 +415,25 @@ UnaryExpression:
     ;
 
 UnaryExpressionNotPlusMinus:
-	PostfixExpression
+    PostfixExpression
     | NOT UnaryExpression
     | CastExpression;
 
 PostfixExpression:
-	Primary
+    Primary
     | Name
     ;
 
 Dims:
-	LEFT_BRACKET RIGHT_BRACKET
+    LEFT_BRACKET RIGHT_BRACKET
     | Dims LEFT_BRACKET RIGHT_BRACKET
     ;
 
 DimExpr:
-	LEFT_BRACKET Expression RIGHT_BRACKET;
+    LEFT_BRACKET Expression RIGHT_BRACKET;
 
 DimExprs:
-	DimExpr
+    DimExpr
     | DimExprs DimExpr
     ;
 
@@ -465,7 +464,7 @@ ArrayAccess:
     ;
 
 ArrayCreationExpression:
-	NEW BasicType DimExprs Dims
+    NEW BasicType DimExprs Dims
     | NEW BasicType DimExprs 
     | NEW ClassOrInterfaceType DimExprs Dims
     | NEW ClassOrInterfaceType DimExprs ;
@@ -482,7 +481,7 @@ StatementExpression:
     ;
 
 ReturnStatements:
-	RETURN Expression SEMICOLON
+    RETURN Expression SEMICOLON
     | RETURN SEMICOLON
     ;
     
@@ -496,7 +495,7 @@ MethodInvocation:
     ;
 
 ClassInstanceCreationExpression:
-	NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN
+    NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN
     | NEW ClassType LEFT_PAREN RIGHT_PAREN;
     ;
 
@@ -631,18 +630,18 @@ Block
     ;
 
 BlockStatements:
-	BlockStatement
+    BlockStatement
     | BlockStatements BlockStatement
     ;
 
 
 BlockStatement:
-	LocalVariableDeclarationStatement
+    LocalVariableDeclarationStatement
     | Statement
     ;
 
 LocalVariableDeclarationStatement:
-	LocalVariableDeclaration SEMICOLON;
+    LocalVariableDeclaration SEMICOLON;
 
 
 
