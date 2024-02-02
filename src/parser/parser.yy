@@ -259,6 +259,10 @@ Statement:
     | ReturnStatements
     | StatementExpression
     ;
+ExpressionStatement:
+    StatementExpression SEMICOLON
+    ;
+
 
 ForControl:
     ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
