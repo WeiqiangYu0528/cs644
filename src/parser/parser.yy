@@ -76,7 +76,7 @@
 %nonassoc ELSE
 
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <DataType> Type BasicType ReferenceType ResultType
+%type <DataType> Type PrimitiveType ReferenceType ResultType
 %type <Modifiers> Modifier
 %type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
@@ -183,11 +183,11 @@ NormalClassDeclarationOpt3
     ;
 
 Type
-    : BasicType {$$ = $1;}
+    : PrimitiveType {$$ = $1;}
     | ReferenceType {$$ = $1;}
     ;   
 
-BasicType
+PrimitiveType
     : BYTE {$$ = DataType::BYTE;}
     | SHORT {$$ = DataType::SHORT;}
     | CHAR {$$ = DataType::CHAR;}
@@ -196,7 +196,8 @@ BasicType
     ;
 
 ReferenceType
-    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
+//    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
+    : QualifiedIdentifier {$$ = DataType::OBJECT;}
     | ArrayType {$$ = DataType::ARRAY;}
     ;
 
@@ -208,34 +209,34 @@ ResultType
     : Type {$$ = $1;}
     | VOID {$$ = DataType::VOID;}
 
-ReferenceTypeOpt1
-    :
-    | TypeArguments
-    ;
+// ReferenceTypeOpt1
+//    :
+//    | TypeArguments
+//    ;
 
-ReferenceTypeOpt2
-    :
-    | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
-    ;
+// ReferenceTypeOpt2
+//   :
+//    | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
+//    ;
 
-TypeArguments
-    : LESS TypeArgument TypeArgumentsOpt1 GREATER
-    ;
+// TypeArguments
+//    : LESS TypeArgument TypeArgumentsOpt1 GREATER
+//    ;
 
-TypeArgumentsOpt1
-    : 
-    | COMMA TypeArgument TypeArgumentsOpt1
-    ;
+// TypeArgumentsOpt1
+//    : 
+//    | COMMA TypeArgument TypeArgumentsOpt1
+//    ;
 
-TypeArgument
-    : ReferenceType
-    | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
-    ;
+// TypeArgument
+//    : ReferenceType
+//    | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
+//    ;
 
-TypeArgumentOpt1
-    : EXTENDS
-    | SUPER
-    ;
+// TypeArgumentOpt1
+//    : EXTENDS
+//    | SUPER
+//    ;
 
 TypeList
     : ReferenceType
@@ -268,9 +269,9 @@ Bound
 Statement:
     Block
     | SEMICOLON
-    | IF ParExpression Statement %prec THEN
-    | IF ParExpression Statement ELSE Statement
-    | WHILE ParExpression Statement
+    | IF LEFT_PAREN Expression RIGHT_PAREN Statement %prec THEN
+    | IF LEFT_PAREN Expression RIGHT_PAREN Statement ELSE Statement
+    | WHILE LEFT_PAREN Expression RIGHT_PAREN Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
     | ReturnStatements
     | StatementExpression
@@ -305,18 +306,16 @@ VariableInitializer:
     Expression
     ;
 
-Assignment:
-    IDENTIFIER ASSIGN Expression
+Assignment
+    : IDENTIFIER ASSIGN Expression
+    // WORKAROUND for NonThisFieldAccess.java
+    | NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN DOT IDENTIFIER ASSIGN Expression
     ;
 
-Expression:
-    Literal
+Expression
+    : Literal
     | MethodInvocation 
     | NEW Type LEFT_BRACKET INTEGER RIGHT_BRACKET
-    ;
-
-ParExpression:
-    LEFT_PAREN Expression RIGHT_PAREN
     ;
 
 StatementExpression:
@@ -334,11 +333,12 @@ ReturnStatement
     | QualifiedIdentifier
     | MethodInvocation
     | ClassInstanceCreationExpression
-    | THIS
+    | THIS 
+    | THIS DOT MethodInvocation
     ;
 
-MethodInvocation:
-    IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+MethodInvocation
+    : QualifiedIdentifier LEFT_PAREN ArgumentList RIGHT_PAREN
     | THIS LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("this call not allowed")); }
     | SUPER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super call not allowed")); }
     | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
@@ -348,8 +348,15 @@ ClassInstanceCreationExpression:
     NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
     ;
 
-ArgumentList: 
+ArgumentList
+    : Expression RestOfArgumentList
+    | /* empty */
     ;
+
+RestOfArgumentList
+    : /* empty */
+    | RestOfArgumentList COMMA Expression
+    ;    
 
 /* Modifier
     : Annotation */
