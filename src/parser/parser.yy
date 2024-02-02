@@ -363,8 +363,25 @@ MultiplicativeExpression:
     | MultiplicativeExpression MODULO UnaryExpression
     ;
 
+CastExpression:
+    LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
+    | LEFT_PAREN ReferenceType RIGHT_PAREN UnaryExpresionNotPlusMinus
+    ;
+
 UnaryExpression:
-    COMMA;
+    PLUS UnaryExpression
+    | MINUS UnaryExpression
+    | UnaryExpresionNotPlusMinus
+    ;
+
+
+UnaryExpresionNotPlusMinus:
+    Primary
+    | IDENTIFIER
+    | NOT UnaryExpression
+    | CastExpression
+    ; 
+
 
 FieldAccess:
     Primary DOT IDENTIFIER
@@ -420,17 +437,20 @@ ReturnStatement
     ;
 
 MethodInvocation:
-    IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
-    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
-    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
+    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
+    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
-    NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    NEW IDENTIFIER LEFT_PAREN ArgumentListOpt RIGHT_PAREN
     ;
 
+ArgumentListOpt:
+    | ArgumentList
+    ;
 ArgumentList: 
-    | ArgumentList COMMA Expression
+    Expression | ArgumentList COMMA Expression
     ;
 
 /* Modifier
