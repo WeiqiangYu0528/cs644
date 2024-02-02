@@ -294,6 +294,7 @@ Assignment:
 LeftHandSide:
     IDENTIFIER
     | FieldAccess
+    | ArrayAccess
     ;
     
 
@@ -372,7 +373,8 @@ FieldAccess:
 
 Primary:
     PrimaryNoNewArray
-    ;
+    | ArrayCreationExpression
+    ;  
 
 PrimaryNoNewArray:
     Literal
@@ -381,9 +383,18 @@ PrimaryNoNewArray:
     | ClassInstanceCreationExpression
     | FieldAccess
     | MethodInvocation
+    | ArrayAccess
     ;
 
+ArrayAccess:
+    IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+    | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET
+    ;
 
+ArrayCreationExpression:
+    NEW BasicType LEFT_BRACKET Expression RIGHT_BRACKET
+    | NEW IDENTIFIER LEFT_BRACKET Expression RIGHT_BRACKET
+    ;  
 
 
 ParExpression:
@@ -410,8 +421,7 @@ ReturnStatement
 
 MethodInvocation:
     IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
-    | THIS LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("this call not allowed")); }
-    | SUPER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super call not allowed")); }
+    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
     | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
