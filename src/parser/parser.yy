@@ -1,3 +1,6 @@
+%precedence IDENTIFIER
+%precedence LEFT_BRACKET
+
 %require "3.2"
 %language "c++"
 %define lr.type lalr
@@ -336,6 +339,7 @@ RelationalExpression:
     | RelationalExpression GREATER ShiftExpression
     | RelationalExpression LESS_EQUAL ShiftExpression
     | RelationalExpression GREATER_EQUAL ShiftExpression
+    | RelationalExpression INSTANCEOF ReferenceType
     ;
 
 ShiftExpression:
@@ -346,6 +350,19 @@ ShiftExpression:
     ;
 
 AdditiveExpression:
+    MultiplicativeExpression
+    | AdditiveExpression PLUS MultiplicativeExpression
+    | AdditiveExpression MINUS MultiplicativeExpression
+    ;
+
+MultiplicativeExpression:
+    UnaryExpression
+    | MultiplicativeExpression STAR UnaryExpression
+    | MultiplicativeExpression DIVIDE UnaryExpression
+    | MultiplicativeExpression MODULO UnaryExpression
+    ;
+
+UnaryExpression:
     COMMA;
 
 FieldAccess:
@@ -359,6 +376,11 @@ Primary:
 
 PrimaryNoNewArray:
     Literal
+    | THIS
+    | LEFT_PAREN Expression RIGHT_PAREN
+    | ClassInstanceCreationExpression
+    | FieldAccess
+    | MethodInvocation
     ;
 
 
@@ -398,6 +420,7 @@ ClassInstanceCreationExpression:
     ;
 
 ArgumentList: 
+    | ArgumentList COMMA Expression
     ;
 
 /* Modifier
