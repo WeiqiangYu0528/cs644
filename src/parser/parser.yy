@@ -170,7 +170,7 @@ NormalClassDeclarationOpt1
 
 NormalClassDeclarationOpt2
     :
-    | EXTENDS Type
+    | EXTENDS TypeList
     ;
 
 NormalClassDeclarationOpt3
