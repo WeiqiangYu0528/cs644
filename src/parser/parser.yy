@@ -85,7 +85,7 @@
 %%
 
 Program
-    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration 
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
     ;
 
 ClassOrInterfaceDeclaration
@@ -692,7 +692,6 @@ StringLiteral
 
 CharLiteral
     : CHARACTER
-    | EscapeSequence
     ;     
 
 EscapeSequence
