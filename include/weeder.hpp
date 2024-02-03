@@ -30,6 +30,12 @@ const std::vector<std::string> keywords {
     "volatile",
 };
 
+const std::vector<std::string> invalidStr {
+    "\\u",
+    "\\8",
+    "\\9",
+};
+
 enum class Modifiers {
     PUBLIC = 0,
     PROTECTED,

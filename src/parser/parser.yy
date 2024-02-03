@@ -56,7 +56,7 @@
 %token DOT
 %token STAR
 %token ASSIGN
-%token <std::string> INTEGER CHARACTER NUL
+%token <std::string> INTEGER CHARACTER STRING NUL
 %token ESCAPE
 %token OR_OR AND_AND OR XOR AND EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL 
 %token LEFT_SHIFT RIGHT_SHIFT UNSIGNED_RIGHT_SHIFT PLUS MINUS MULTIPLY DIVIDE MODULO
@@ -70,7 +70,8 @@
 %token PUBLIC PROTECTED PRIVATE STATIC ABSTRACT FINAL NATIVE SYNCHRONIZED TRANSIENT VOLATILE STRICTFP
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
 %token IF ELSE WHILE FOR
-%token TRUE FALSE STRING
+%token TRUE FALSE
+%token INVALID
 
 %nonassoc THEN
 %nonassoc ELSE
@@ -687,7 +688,9 @@ BooleanLiteral
     ;
 
 StringLiteral
-    : STRING
+    : STRING {
+        if ($1.length() >= 2 && (std::find(invalidStr.begin(), invalidStr.end(), $1.substr(1, 2)) != invalidStr.end())) throw syntax_error(@1, std::string("Invalid string input"));
+    }
     ;
 
 CharLiteral

@@ -24,7 +24,6 @@
 %}
 
 DIGIT   [0-9]
-OCTALESCAPE [\\][0-7]{1,3}
 LETTER  [a-zA-Z]
 IDENTIFIER  ({LETTER}|_)({LETTER}|{DIGIT}|_)*
 NEWLINE \n
@@ -98,9 +97,9 @@ ESCAPE [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7])
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 (0|[1-9]{DIGIT}*)       { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::INTEGER; }
-\"({ESCAPE}|{OCTALESCAPE}|[\x00-\x7F])*\"  { update_yylloc; return Token::STRING; }
-\'({ESCAPE}|{OCTALESCAPE}|[\x00-\x7F])\' { update_yylloc; return Token::CHARACTER; }
+\"({ESCAPE}|[\x00-\x7F])*\"  { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::STRING; }
+\'({ESCAPE}|[\x00-\x7F])\' { update_yylloc; return Token::CHARACTER; }
 {WHITESPACE}            { update_yylloc; }
-.                       { update_yylloc; }
+.                       { update_yylloc; return Token::INVALID; }
 %%
 
