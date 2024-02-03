@@ -217,7 +217,6 @@ ClassType:
 ArrayType
     : BasicType LEFT_BRACKET RIGHT_BRACKET
     | Name LEFT_BRACKET RIGHT_BRACKET
-    | ArrayType LEFT_BRACKET RIGHT_BRACKET
     ;
 
 ResultType
