@@ -222,9 +222,10 @@ ResultType
     : Type {$$ = $1;}
     | VOID {$$ = DataType::VOID;}
 
+// Do not use ReferenceType as arraytype is not supported here
 TypeList
-    : ReferenceType
-    | TypeList COMMA ReferenceType
+    : ClassOrInterfaceType
+    | TypeList COMMA ClassOrInterfaceType
     ;
 
 TypeParameters
