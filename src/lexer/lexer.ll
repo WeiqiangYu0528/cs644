@@ -28,21 +28,19 @@ LETTER  [a-zA-Z]
 IDENTIFIER  ({LETTER}|_)({LETTER}|{DIGIT}|_)*
 NEWLINE \n
 WHITESPACE [ \t\r]+ 
+ESCAPE [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7])
 
 %%
 [/][/].* { }
-"/*"   { BEGIN(java_comment); }
+"/"+"*"   { BEGIN(java_comment); }
 <java_comment>[^*]*        { update_linenumber; }
 <java_comment>"*"+[^*/]*   { update_linenumber; }
-<java_comment>"*/"         { BEGIN(INITIAL); }
+<java_comment>"*"+"/"      { BEGIN(INITIAL); }
 
 {NEWLINE}               { yylloc->lines(1); yylloc->step(); yylloc->columns(0); prev_token_length = 0;  }
 ","                     { update_yylloc; return Token::COMMA; }
 ";"                     { update_yylloc; return Token::SEMICOLON; }
 "."                     { update_yylloc; return Token::DOT; }
-
-[']                     { update_yylloc; return Token::APOSTROPHE; }
-\"                      { update_yylloc; return Token::QUOTE; }
 "||"                    { update_yylloc; return Token::OR_OR; }
 "&&"                    { update_yylloc; return Token::AND_AND; }
 "|"                     { update_yylloc; return Token::OR; }
@@ -99,9 +97,9 @@ WHITESPACE [ \t\r]+
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 (0|[1-9]{DIGIT}*)       { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::INTEGER; }
-[\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7]) { update_yylloc; return Token::ESCAPE; }
-['][\x00-\x7F][']       { update_yylloc; return Token::CHARACTER; }
+\"({ESCAPE}|[\x00-\x7F])*\"  { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::STRING; }
+\'({ESCAPE}|[\x00-\x7F])\' { update_yylloc; return Token::CHARACTER; }
 {WHITESPACE}            { update_yylloc; }
-.                       { update_yylloc; }
+.                       { update_yylloc; return Token::INVALID; }
 %%
 

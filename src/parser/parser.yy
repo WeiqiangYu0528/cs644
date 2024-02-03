@@ -24,7 +24,7 @@
 %define api.location.include {"location.h"}
 %header "include/parser.h"
 %define parse.error detailed
-
+%define parse.trace
 %parse-param {MyLexer &lexer}
 
 
@@ -52,11 +52,11 @@
 
 %start Program
 
-%token <std::string> IDENTIFIER
+%token <std::string> IDENTIFIER 
 %token DOT
 %token STAR
 %token ASSIGN
-%token <std::string> INTEGER CHARACTER NUL
+%token <std::string> INTEGER CHARACTER STRING NUL
 %token ESCAPE
 %token OR_OR AND_AND OR XOR AND EQUAL NOT_EQUAL LESS GREATER LESS_EQUAL GREATER_EQUAL 
 %token LEFT_SHIFT RIGHT_SHIFT UNSIGNED_RIGHT_SHIFT PLUS MINUS MULTIPLY DIVIDE MODULO
@@ -71,10 +71,12 @@
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
 %token IF ELSE WHILE FOR
 %token TRUE FALSE
+%token INVALID
 
 %nonassoc THEN
 %nonassoc ELSE
 
+%type <std::string> Variable
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
 %type <DataType> Type BasicType ReferenceType ResultType
 %type <Modifiers> Modifier
@@ -84,7 +86,7 @@
 %%
 
 Program
-    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration 
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
     ;
 
 ClassOrInterfaceDeclaration
@@ -95,7 +97,7 @@ ClassOrInterfaceDeclaration
 
 PackageDeclaration
     :
-    | PACKAGE QualifiedIdentifier SEMICOLON
+    | PACKAGE Name SEMICOLON
     ;
 
 ImportStatements
@@ -104,21 +106,17 @@ ImportStatements
     ;
 
 ImportStatement
-    : IMPORT QualifiedIdentifier SEMICOLON
+    : IMPORT Name SEMICOLON
     | IMPORT PackageImportIdentifier SEMICOLON
     ;
 
 PackageImportIdentifier    
-    : QualifiedIdentifier DOT STAR
+    : Name DOT STAR
     ;
 
-QualifiedIdentifier 
-    : IDENTIFIER
-    | QualifiedIdentifier DOT IDENTIFIER
-    ;
 
 InterfaceDeclaration 
-    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
+    : PUBLIC InterfaceOpt1 INTERFACE Variable InterfaceOpt2 InterfaceBody {
         if ($4 != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
      }
     ;
@@ -130,7 +128,7 @@ InterfaceOpt1
 
 InterfaceOpt2
     :
-    | EXTENDS IDENTIFIER
+    | EXTENDS Variable
     ;
 
 InterfaceBody
@@ -143,7 +141,7 @@ MethodDeclarations
     ;
 
 MethodDeclaration
-    : PUBLIC MethodDeclarationOpt Type IDENTIFIER FormalParameters SEMICOLON
+    : PUBLIC MethodDeclarationOpt Type Variable FormalParameters SEMICOLON
     ;    
 
 MethodDeclarationOpt
@@ -162,7 +160,7 @@ ClassDeclarationOpt
     ;
 
 NormalClassDeclaration
-    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
+    : CLASS Variable NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
         if ($2 != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
     }
     ;
@@ -174,7 +172,7 @@ NormalClassDeclarationOpt1
 
 NormalClassDeclarationOpt2
     :
-    | EXTENDS Type
+    | EXTENDS TypeList
     ;
 
 NormalClassDeclarationOpt3
@@ -196,50 +194,39 @@ BasicType
     ;
 
 ReferenceType
-    : IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2 {$$ = DataType::OBJECT;}
+    : ClassOrInterfaceType {$$ = DataType::OBJECT;}
     | ArrayType {$$ = DataType::ARRAY;}
     ;
 
+Name:
+    SimpleName 
+    | QualifiedName;
+
+SimpleName:
+    Variable;
+
+QualifiedName:
+    Name DOT Variable;
+
+ClassOrInterfaceType:
+    Name;
+
+ClassType:
+    ClassOrInterfaceType;
+
 ArrayType
-    : Type LEFT_BRACKET RIGHT_BRACKET
+    : BasicType LEFT_BRACKET RIGHT_BRACKET
+    | Name LEFT_BRACKET RIGHT_BRACKET
     ;
 
 ResultType
     : Type {$$ = $1;}
     | VOID {$$ = DataType::VOID;}
 
-ReferenceTypeOpt1
-    :
-    | TypeArguments
-    ;
-
-ReferenceTypeOpt2
-    :
-    | DOT IDENTIFIER ReferenceTypeOpt1 ReferenceTypeOpt2
-    ;
-
-TypeArguments
-    : LESS TypeArgument TypeArgumentsOpt1 GREATER
-    ;
-
-TypeArgumentsOpt1
-    : 
-    | COMMA TypeArgument TypeArgumentsOpt1
-    ;
-
-TypeArgument
-    : ReferenceType
-    | QUESTION_MARK LEFT_BRACKET TypeArgumentOpt1 ReferenceType RIGHT_BRACKET
-    ;
-
-TypeArgumentOpt1
-    : EXTENDS
-    | SUPER
-    ;
-
+// Do not use ReferenceType as arraytype is not supported here
 TypeList
-    : ReferenceType
-    | TypeList COMMA ReferenceType
+    : ClassOrInterfaceType
+    | TypeList COMMA ClassOrInterfaceType
     ;
 
 TypeParameters
@@ -252,7 +239,7 @@ TypeParametersOpt1
     ;
 
 TypeParameter
-    : IDENTIFIER TypeParameterOpt1
+    : Variable TypeParameterOpt1
     ;
 
 TypeParameterOpt1
@@ -273,8 +260,24 @@ Statement:
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
     | ReturnStatements
-    | StatementExpression
+    | ExpressionStatement
     ;
+
+ExpressionStatement:
+    StatementExpression SEMICOLON
+    ;
+
+VariableInitializers:
+    VariableInitializer
+    | VariableInitializers COMMA VariableInitializer
+    ;
+
+/* ArrayInitializer:
+    LEFT_BRACE VariableInitializers RIGHT_BRACE
+    | LEFT_BRACE COMMA RIGHT_BRACE
+    | LEFT_BRACE RIGHT_BRACE
+    ; */
+
 
 ForControl:
     ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
@@ -293,27 +296,195 @@ ForInit:
     | LocalVariableDeclaration
     ;
 
-LocalVariableDeclaration :
-    Type VariableDeclarator
+LocalVariableDeclaration:
+    Type VariableDeclarators
+    ;
+
+VariableDeclarators:
+    VariableDeclarator
     ;
 
 VariableDeclarator :
-    IDENTIFIER ASSIGN VariableInitializer
+    VariableDeclaratorId
+    | VariableDeclaratorId ASSIGN VariableInitializer
+    ;
+
+VariableDeclaratorId
+    : Variable
     ;
 
 VariableInitializer:
     Expression
-    ;
-
-Assignment:
-    IDENTIFIER ASSIGN Expression
+//    | ArrayInitializer
     ;
 
 Expression:
-    Literal
-    | MethodInvocation 
-    | NEW Type LEFT_BRACKET INTEGER RIGHT_BRACKET
+    AssignmentExpression
     ;
+
+AssignmentExpression:
+    ConditionalExpression
+    | Assignment
+    ;
+
+Assignment:
+    LeftHandSide ASSIGN AssignmentExpression
+    ;
+
+LeftHandSide:
+    Name
+    | FieldAccess
+    | ArrayAccess
+    ;
+
+
+ConditionalExpression:
+    ConditionalOrExpression
+    | ConditionalOrExpression QUESTION_MARK Expression COLON ConditionalExpression { throw syntax_error(@1, std::string("conditional operator not supported")); }
+    ;
+
+ConditionalOrExpression:
+    ConditionalAndExpression
+    | ConditionalOrExpression OR_OR ConditionalAndExpression
+    ;
+
+ConditionalAndExpression:
+    InclusiveOrExpression
+    | ConditionalAndExpression AND_AND InclusiveOrExpression
+    ;
+
+InclusiveOrExpression:
+    ExclusiveOrExpression
+    | InclusiveOrExpression OR ExclusiveOrExpression
+    ;
+
+ExclusiveOrExpression:
+    AndExpression
+    | ExclusiveOrExpression XOR AndExpression
+    ;
+
+AndExpression:
+    EqualityExpression
+    | AndExpression AND EqualityExpression
+    ;
+
+EqualityExpression:
+    RelationalExpression
+    | EqualityExpression EQUAL RelationalExpression
+    | EqualityExpression NOT_EQUAL RelationalExpression
+    ;
+
+RelationalExpression:
+    ShiftExpression
+    | RelationalExpression LESS ShiftExpression
+    | RelationalExpression GREATER ShiftExpression
+    | RelationalExpression LESS_EQUAL ShiftExpression
+    | RelationalExpression GREATER_EQUAL ShiftExpression
+    | RelationalExpression INSTANCEOF ReferenceType
+    ;
+
+ShiftExpression:
+    AdditiveExpression
+    | ShiftExpression LEFT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("left shift not supported")); }
+    | ShiftExpression RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("right shift not supported")); }
+    | ShiftExpression UNSIGNED_RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("unsigned right shift not supported")); }
+    ;
+
+AdditiveExpression:
+    MultiplicativeExpression
+    | AdditiveExpression PLUS MultiplicativeExpression
+    | AdditiveExpression MINUS MultiplicativeExpression
+    ;
+
+MultiplicativeExpression:
+    UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression STAR UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression DIVIDE UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression MODULO UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    ;
+
+CastExpression:
+    LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression 
+    | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
+    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus
+    | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus
+    ;
+
+UnaryExpression:
+    MINUS UnaryExpression {
+        if (integerVal > 1LL + INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | UnaryExpressionNotPlusMinus
+    ;
+
+UnaryExpressionNotPlusMinus:
+    PostfixExpression
+    | NOT UnaryExpression
+    | CastExpression;
+
+PostfixExpression:
+    Primary
+    | Name
+    ;
+
+Dims:
+    LEFT_BRACKET RIGHT_BRACKET
+    | Dims LEFT_BRACKET RIGHT_BRACKET
+    ;
+
+DimExpr:
+    LEFT_BRACKET Expression RIGHT_BRACKET;
+
+DimExprs:
+    DimExpr
+    | DimExprs DimExpr { throw syntax_error(@1, std::string("multidimensional array not allowed")); }
+    ;
+
+
+FieldAccess:
+    Primary DOT Variable
+    | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
+    ;
+
+Primary:
+    PrimaryNoNewArray
+    | ArrayCreationExpression
+    ;  
+
+PrimaryNoNewArray:
+    Literal
+    | THIS
+    | LEFT_PAREN Expression RIGHT_PAREN
+    | ClassInstanceCreationExpression
+    | FieldAccess
+    | MethodInvocation
+    | ArrayAccess
+    ;
+
+ArrayAccess:
+    Name LEFT_BRACKET Expression RIGHT_BRACKET
+    | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET
+    ;
+
+ArrayCreationExpression:
+    NEW BasicType DimExprs Dims
+    | NEW BasicType DimExprs 
+    | NEW ClassOrInterfaceType DimExprs Dims
+    | NEW ClassOrInterfaceType DimExprs
+    ;  
 
 ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN
@@ -325,30 +496,28 @@ StatementExpression:
     | ClassInstanceCreationExpression
     ;
 
-ReturnStatements
-    : RETURN ReturnStatement SEMICOLON
+ReturnStatements:
+    RETURN Expression SEMICOLON
+    | RETURN SEMICOLON
     ;
     
-ReturnStatement
-    : Literal
-    | QualifiedIdentifier
-    | MethodInvocation
-    | ClassInstanceCreationExpression
-    | THIS
-    ;
-
 MethodInvocation:
-    IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
-    | THIS LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("this call not allowed")); }
-    | SUPER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super call not allowed")); }
-    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    Name LEFT_PAREN ArgumentList RIGHT_PAREN
+    | Name LEFT_PAREN RIGHT_PAREN
+    | Primary DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN
+    | Primary DOT Variable LEFT_PAREN RIGHT_PAREN
+    | SUPER DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    | SUPER DOT Variable LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
-    NEW IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
+    NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN
+    | NEW ClassType LEFT_PAREN RIGHT_PAREN;
     ;
 
 ArgumentList: 
+    Expression 
+    | ArgumentList COMMA Expression
     ;
 
 /* Modifier
@@ -421,14 +590,14 @@ ClassBodyDeclarationOpt1
 
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
-    | IDENTIFIER ConstructorDeclaratorRest {
+    | Variable ConstructorDeclaratorRest {
         $$ = MemberType::CONSTRUCTOR;
         if ($1 != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
     }
     ;
 
 MethodOrFieldDecl:
-    ResultType IDENTIFIER MethodOrFieldRest {
+    ResultType Variable MethodOrFieldRest {
         $$ = $3;
         if ($1 == DataType::VOID && $3 == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
@@ -471,27 +640,31 @@ FormalParameterDeclsRest
     | VariableDeclaratorId COMMA FormalParameterDecls
     ;
 
-VariableDeclaratorId
-    : IDENTIFIER 
-    | IDENTIFIER MultiDimensionArray
-    ;
-
-MultiDimensionArray
-    : LEFT_BRACKET RIGHT_BRACKET
-    | MultiDimensionArray LEFT_BRACKET RIGHT_BRACKET
-    ;
-
 Block
     : LEFT_BRACE BlockStatements RIGHT_BRACE
+    | LEFT_BRACE RIGHT_BRACE 
     ;
 
 BlockStatements:
-    | BlockStatement BlockStatements
+    BlockStatement
+    | BlockStatements BlockStatement
     ;
 
+
 BlockStatement:
-    Statement
-    | LocalVariableDeclaration
+    LocalVariableDeclarationStatement
+    | Statement
+    ;
+
+LocalVariableDeclarationStatement:
+    LocalVariableDeclaration SEMICOLON
+    ;
+
+Variable
+    : IDENTIFIER {
+        if (std::find(keywords.begin(), keywords.end(), $1) != keywords.end()) throw syntax_error(@1, std::string("Invalid identifier: " + $1 + " is a Java reserved keyword"));
+        $$ = $1;
+    }
     ;
 
 Literal
@@ -504,7 +677,7 @@ Literal
 
 IntegerLiteral
     : INTEGER {
-        if (stol($1) > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = stol($1);
     }
     ;
 
@@ -514,22 +687,13 @@ BooleanLiteral
     ;
 
 StringLiteral
-    : QUOTE StringCharacters QUOTE
-    ;
-
-StringCharacters
-    : StringCharacter
-    | StringCharacter StringCharacters
-    ;
-
-StringCharacter
-    : IDENTIFIER
-    | ESCAPE
+    : STRING {
+        if ($1.length() >= 2 && (std::find(invalidStr.begin(), invalidStr.end(), $1.substr(1, 2)) != invalidStr.end())) throw syntax_error(@1, std::string("Invalid string input"));
+    }
     ;
 
 CharLiteral
     : CHARACTER
-    | EscapeSequence
     ;     
 
 EscapeSequence
