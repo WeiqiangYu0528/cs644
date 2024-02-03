@@ -1,5 +1,35 @@
 #pragma once
 
+#include <vector>
+#include <string>
+
+const std::vector<std::string> keywords {
+    "assert",
+    "break",
+    "case",
+    "catch",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "enum",
+    "finally",
+    "float",
+    "goto",
+    "long",
+    "private",
+    "strictfp",
+    "super",
+    "switch",
+    "synchronized",
+    "throw",
+    "throws",
+    "transient",
+    "try",
+    "volatile",
+};
+
 enum class Modifiers {
     PUBLIC = 0,
     PROTECTED,
@@ -42,3 +72,5 @@ inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
     }
     return true;
 }
+
+inline long long integerVal{0};

@@ -52,7 +52,7 @@
 
 %start Program
 
-%token <std::string> IDENTIFIER
+%token <std::string> IDENTIFIER 
 %token DOT
 %token STAR
 %token ASSIGN
@@ -70,11 +70,12 @@
 %token PUBLIC PROTECTED PRIVATE STATIC ABSTRACT FINAL NATIVE SYNCHRONIZED TRANSIENT VOLATILE STRICTFP
 %token IMPORT PACKAGE INTERFACE RETURN VOID NEW
 %token IF ELSE WHILE FOR
-%token TRUE FALSE
+%token TRUE FALSE STRING
 
 %nonassoc THEN
 %nonassoc ELSE
 
+%type <std::string> Variable
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
 %type <DataType> Type BasicType ReferenceType ResultType
 %type <Modifiers> Modifier
@@ -114,7 +115,7 @@ PackageImportIdentifier
 
 
 InterfaceDeclaration 
-    : PUBLIC InterfaceOpt1 INTERFACE IDENTIFIER InterfaceOpt2 InterfaceBody {
+    : PUBLIC InterfaceOpt1 INTERFACE Variable InterfaceOpt2 InterfaceBody {
         if ($4 != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
      }
     ;
@@ -126,7 +127,7 @@ InterfaceOpt1
 
 InterfaceOpt2
     :
-    | EXTENDS IDENTIFIER
+    | EXTENDS Variable
     ;
 
 InterfaceBody
@@ -139,7 +140,7 @@ MethodDeclarations
     ;
 
 MethodDeclaration
-    : PUBLIC MethodDeclarationOpt Type IDENTIFIER FormalParameters SEMICOLON
+    : PUBLIC MethodDeclarationOpt Type Variable FormalParameters SEMICOLON
     ;    
 
 MethodDeclarationOpt
@@ -158,7 +159,7 @@ ClassDeclarationOpt
     ;
 
 NormalClassDeclaration
-    : CLASS IDENTIFIER NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
+    : CLASS Variable NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
         if ($2 != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
     }
     ;
@@ -201,10 +202,10 @@ Name:
     | QualifiedName;
 
 SimpleName:
-    IDENTIFIER;
+    Variable;
 
 QualifiedName:
-    Name DOT IDENTIFIER;
+    Name DOT Variable;
 
 ClassOrInterfaceType:
     Name;
@@ -238,7 +239,7 @@ TypeParametersOpt1
     ;
 
 TypeParameter
-    : IDENTIFIER TypeParameterOpt1
+    : Variable TypeParameterOpt1
     ;
 
 TypeParameterOpt1
@@ -302,7 +303,6 @@ LocalVariableDeclaration:
 
 VariableDeclarators:
     VariableDeclarator
-    | VariableDeclarators COMMA VariableDeclarator
     ;
 
 VariableDeclarator :
@@ -311,8 +311,8 @@ VariableDeclarator :
     ;
 
 VariableDeclaratorId
-    : IDENTIFIER
-    | IDENTIFIER LEFT_BRACKET RIGHT_BRACKET
+    : Variable
+    | Variable LEFT_BRACKET RIGHT_BRACKET
     ;
 VariableInitializer:
     Expression
@@ -398,10 +398,22 @@ AdditiveExpression:
     ;
 
 MultiplicativeExpression:
-    UnaryExpression
-    | MultiplicativeExpression STAR UnaryExpression
-    | MultiplicativeExpression DIVIDE UnaryExpression
-    | MultiplicativeExpression MODULO UnaryExpression
+    UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression STAR UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression DIVIDE UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
+    | MultiplicativeExpression MODULO UnaryExpression {
+        if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
     ;
 
 CastExpression:
@@ -412,7 +424,10 @@ CastExpression:
     ;
 
 UnaryExpression:
-    MINUS UnaryExpression
+    MINUS UnaryExpression {
+        if (integerVal > 1LL + INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = 0;
+    }
     | UnaryExpressionNotPlusMinus
     ;
 
@@ -441,8 +456,8 @@ DimExprs:
 
 
 FieldAccess:
-    Primary DOT IDENTIFIER
-    | SUPER DOT IDENTIFIER { throw syntax_error(@1, std::string("super not supported")); }
+    Primary DOT Variable
+    | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
     ;
 
 Primary:
@@ -490,10 +505,10 @@ ReturnStatements:
 MethodInvocation:
     Name LEFT_PAREN ArgumentList RIGHT_PAREN
     | Name LEFT_PAREN RIGHT_PAREN
-    | Primary DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN
-    | Primary DOT IDENTIFIER LEFT_PAREN RIGHT_PAREN
-    | SUPER DOT IDENTIFIER LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
-    | SUPER DOT IDENTIFIER LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    | Primary DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN
+    | Primary DOT Variable LEFT_PAREN RIGHT_PAREN
+    | SUPER DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
+    | SUPER DOT Variable LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
@@ -576,14 +591,14 @@ ClassBodyDeclarationOpt1
 
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
-    | IDENTIFIER ConstructorDeclaratorRest {
+    | Variable ConstructorDeclaratorRest {
         $$ = MemberType::CONSTRUCTOR;
         if ($1 != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
     }
     ;
 
 MethodOrFieldDecl:
-    ResultType IDENTIFIER MethodOrFieldRest {
+    ResultType Variable MethodOrFieldRest {
         $$ = $3;
         if ($1 == DataType::VOID && $3 == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
@@ -643,9 +658,15 @@ BlockStatement:
     ;
 
 LocalVariableDeclarationStatement:
-    LocalVariableDeclaration SEMICOLON;
+    LocalVariableDeclaration SEMICOLON
+    ;
 
-
+Variable
+    : IDENTIFIER {
+        if (std::find(keywords.begin(), keywords.end(), $1) != keywords.end()) throw syntax_error(@1, std::string("Invalid identifier: " + $1 + " is a Java reserved keyword"));
+        $$ = $1;
+    }
+    ;
 
 Literal
     : IntegerLiteral
@@ -657,7 +678,7 @@ Literal
 
 IntegerLiteral
     : INTEGER {
-        if (stol($1) > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
+        integerVal = stol($1);
     }
     ;
 
@@ -667,17 +688,7 @@ BooleanLiteral
     ;
 
 StringLiteral
-    : QUOTE StringCharacters QUOTE
-    ;
-
-StringCharacters
-    : StringCharacter
-    | StringCharacter StringCharacters
-    ;
-
-StringCharacter
-    : IDENTIFIER
-    | ESCAPE
+    : STRING
     ;
 
 CharLiteral
