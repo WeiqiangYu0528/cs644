@@ -272,12 +272,11 @@ VariableInitializers:
     | VariableInitializers COMMA VariableInitializer
     ;
 
-ArrayInitializer:
-    LEFT_BRACE VariableInitializers COMMA RIGHT_BRACE
-    | LEFT_BRACE VariableInitializers RIGHT_BRACE
+/* ArrayInitializer:
+    LEFT_BRACE VariableInitializers RIGHT_BRACE
     | LEFT_BRACE COMMA RIGHT_BRACE
     | LEFT_BRACE RIGHT_BRACE
-    ;
+    ; */
 
 
 ForControl:
@@ -312,11 +311,11 @@ VariableDeclarator :
 
 VariableDeclaratorId
     : Variable
-    | Variable LEFT_BRACKET RIGHT_BRACKET
     ;
+
 VariableInitializer:
     Expression
-    | ArrayInitializer
+//    | ArrayInitializer
     ;
 
 Expression:
