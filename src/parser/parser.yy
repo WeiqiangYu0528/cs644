@@ -83,7 +83,12 @@
 %type <std::vector<int>> ClassBodyDeclarationOpt1
 %type <MemberType> MemberDecl MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
 
-%%
+%type <ExpressionInfo> Expression AssignmentExpression Assignment LeftHandSide ConditionalAndExpression ConditionalOrExpression
+%type <ExpressionInfo> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
+%type <ExpressionInfo> ShiftExpression AdditiveExpression MultiplicativeExpression CastExpression UnaryExpression
+%type <ExpressionInfo> UnaryExpressionNotPlusMinus PostfixExpression Primary PrimaryNoNewArray ConditionalExpression
+%type <ExpressionInfo> FieldAccess 
+%% 
 
 Program
     : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
@@ -319,12 +324,12 @@ VariableInitializer:
     ;
 
 Expression:
-    AssignmentExpression
+    AssignmentExpression { $$.notAName = $1.notAName; }
     ;
 
 AssignmentExpression:
-    ConditionalExpression
-    | Assignment
+    ConditionalExpression   { $$.notAName = $1.notAName; }
+    | Assignment            { $$.notAName = true; }
     ;
 
 Assignment:
@@ -339,105 +344,110 @@ LeftHandSide:
 
 
 ConditionalExpression:
-    ConditionalOrExpression
+    ConditionalOrExpression  { $$.notAName = $1.notAName; }
     | ConditionalOrExpression QUESTION_MARK Expression COLON ConditionalExpression { throw syntax_error(@1, std::string("conditional operator not supported")); }
     ;
 
 ConditionalOrExpression:
-    ConditionalAndExpression
+    ConditionalAndExpression { $$.notAName = $1.notAName; }
     | ConditionalOrExpression OR_OR ConditionalAndExpression
     ;
 
 ConditionalAndExpression:
-    InclusiveOrExpression
+    InclusiveOrExpression   { $$.notAName = $1.notAName; }
     | ConditionalAndExpression AND_AND InclusiveOrExpression
     ;
 
 InclusiveOrExpression:
-    ExclusiveOrExpression
+    ExclusiveOrExpression   { $$.notAName = $1.notAName; }
     | InclusiveOrExpression OR ExclusiveOrExpression
     ;
 
 ExclusiveOrExpression:
-    AndExpression
+    AndExpression           { $$.notAName = $1.notAName; }
     | ExclusiveOrExpression XOR AndExpression
     ;
 
 AndExpression:
-    EqualityExpression
+    EqualityExpression      { $$.notAName = $1.notAName; }
     | AndExpression AND EqualityExpression
     ;
 
 EqualityExpression:
-    RelationalExpression
-    | EqualityExpression EQUAL RelationalExpression
-    | EqualityExpression NOT_EQUAL RelationalExpression
+    RelationalExpression   { $$.notAName = $1.notAName; }
+    | EqualityExpression EQUAL RelationalExpression     { $$.notAName = true; }
+    | EqualityExpression NOT_EQUAL RelationalExpression { $$.notAName = true; }
     ;
 
 RelationalExpression:
-    ShiftExpression
-    | RelationalExpression LESS ShiftExpression
-    | RelationalExpression GREATER ShiftExpression
-    | RelationalExpression LESS_EQUAL ShiftExpression
-    | RelationalExpression GREATER_EQUAL ShiftExpression
-    | RelationalExpression INSTANCEOF ReferenceType
+    ShiftExpression         { $$.notAName = $1.notAName; }
+    | RelationalExpression LESS ShiftExpression { $$.notAName = true; }
+    | RelationalExpression GREATER ShiftExpression  { $$.notAName = true; }
+    | RelationalExpression LESS_EQUAL ShiftExpression   { $$.notAName = true; }
+    | RelationalExpression GREATER_EQUAL ShiftExpression    { $$.notAName = true; }
+    | RelationalExpression INSTANCEOF ReferenceType { $$.notAName = true; }
     ;
 
 ShiftExpression:
-    AdditiveExpression
+    AdditiveExpression  { $$.notAName = $1.notAName; }
     | ShiftExpression LEFT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("left shift not supported")); }
     | ShiftExpression RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("right shift not supported")); }
     | ShiftExpression UNSIGNED_RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("unsigned right shift not supported")); }
     ;
 
 AdditiveExpression:
-    MultiplicativeExpression
-    | AdditiveExpression PLUS MultiplicativeExpression
-    | AdditiveExpression MINUS MultiplicativeExpression
-    ;
+    MultiplicativeExpression    { $$.notAName = $1.notAName; }
+    | AdditiveExpression PLUS MultiplicativeExpression  { $$.notAName = true; }
+    | AdditiveExpression MINUS MultiplicativeExpression { $$.notAName = true; }
+    ;   
 
 MultiplicativeExpression:
     UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
+        $$.notAName = $1.notAName;
     }
     | MultiplicativeExpression STAR UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
+        $$.notAName = true;
     }
     | MultiplicativeExpression DIVIDE UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
+        $$.notAName = true;
     }
     | MultiplicativeExpression MODULO UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
+        $$.notAName = true;
     }
     ;
 
 CastExpression:
-    LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression 
-    | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression 
-    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus
-    | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus
+    LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression    { $$.notAName = true; }
+    | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression       { $$.notAName = true; }
+    | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus  { $$.notAName = true; if($2.notAName)  throw syntax_error(@1, std::string("invalid casting.")); }
+    | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus   { $$.notAName = true; }
     ;
 
 UnaryExpression:
     MINUS UnaryExpression {
         if (integerVal > 1LL + INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
+        $$.notAName = true;
     }
-    | UnaryExpressionNotPlusMinus
+    | UnaryExpressionNotPlusMinus   { $$.notAName = $1.notAName; }
     ;
 
 UnaryExpressionNotPlusMinus:
-    PostfixExpression
-    | NOT UnaryExpression
-    | CastExpression;
+    PostfixExpression   { $$.notAName = $1.notAName; }
+    | NOT UnaryExpression   { $$.notAName = true; }
+    | CastExpression   { $$.notAName = true; }
 
 PostfixExpression:
-    Primary
-    | Name
+    Primary { $$.notAName = $1.notAName; }
+    | Name  { $$.notAName = false; }
     ;
 
 Dims:
@@ -455,27 +465,27 @@ DimExprs:
 
 
 FieldAccess:
-    Primary DOT Variable
+    Primary DOT Variable    { $$.notAName = $1.notAName; }
     | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
     ;
 
 Primary:
-    PrimaryNoNewArray
-    | ArrayCreationExpression
+    PrimaryNoNewArray   { $$.notAName = true; }
+    | ArrayCreationExpression   { $$.notAName = true; }
     ;  
 
 PrimaryNoNewArray:
-    Literal
-    | THIS
+    Literal       
+    | THIS         
     | LEFT_PAREN Expression RIGHT_PAREN
-    | ClassInstanceCreationExpression
-    | FieldAccess
-    | MethodInvocation
-    | ArrayAccess
+    | ClassInstanceCreationExpression 
+    | FieldAccess   
+    | MethodInvocation 
+    | ArrayAccess 
     ;
 
 ArrayAccess:
-    Name LEFT_BRACKET Expression RIGHT_BRACKET
+    Name LEFT_BRACKET Expression RIGHT_BRACKET  
     | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET
     ;
 
