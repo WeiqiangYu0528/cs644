@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "visitor.hpp"
 #include <fstream>
 #include <iostream>
 
@@ -24,8 +25,15 @@ int main(int argc, char* argv[])
 
     std::string filename{extractFilename(argv[1])};
     yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile), filename);
-    yy::parser parser(lexer);
+    Ast ast;
+    yy::parser parser(lexer, ast);
     int ret = parser.parse();
+    Visitor visitor;
+    std::shared_ptr<Exp> exp = ast.getAst();
+    if (exp != nullptr) {
+        std::cout << "Visiting AST" << std::endl;
+    }
+    exp->accept(&visitor);
     if (ret == 0)
         return 0;
     else if (ret == 1)

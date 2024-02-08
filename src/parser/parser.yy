@@ -3,9 +3,11 @@
 %define lr.type lalr
 
 %code requires {
+    #include <memory>
     #include <string>
     #include <vector>
     #include <limits.h>
+    #include "ast.hpp"
     #include "weeder.hpp"
     #ifndef yyFlexLexerOnce // https://stackoverflow.com/questions/40663527/how-to-inherit-from-yyflexlexer
     #include <FlexLexer.h>
@@ -25,7 +27,7 @@
 %header "include/parser.h"
 %define parse.error detailed
 %define parse.trace
-%parse-param {MyLexer &lexer}
+%parse-param {MyLexer &lexer} {Ast& ast}
 
 
 %code {
@@ -85,9 +87,11 @@
 
 %type <ExpressionInfo> Expression AssignmentExpression Assignment LeftHandSide ConditionalAndExpression ConditionalOrExpression
 %type <ExpressionInfo> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
-%type <ExpressionInfo> ShiftExpression AdditiveExpression MultiplicativeExpression CastExpression UnaryExpression
+%type <ExpressionInfo> ShiftExpression CastExpression
 %type <ExpressionInfo> UnaryExpressionNotPlusMinus PostfixExpression Primary PrimaryNoNewArray ConditionalExpression
 %type <ExpressionInfo> FieldAccess 
+
+%type <std::shared_ptr<Exp>> AdditiveExpression MultiplicativeExpression UnaryExpression
 %% 
 
 Program
@@ -389,38 +393,41 @@ RelationalExpression:
     ;
 
 ShiftExpression:
-    AdditiveExpression  { $$.notAName = $1.notAName; }
+    AdditiveExpression  { $$.notAName = $1->notAName; }
     | ShiftExpression LEFT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("left shift not supported")); }
     | ShiftExpression RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("right shift not supported")); }
     | ShiftExpression UNSIGNED_RIGHT_SHIFT AdditiveExpression { throw syntax_error(@1, std::string("unsigned right shift not supported")); }
     ;
 
 AdditiveExpression:
-    MultiplicativeExpression    { $$.notAName = $1.notAName; }
-    | AdditiveExpression PLUS MultiplicativeExpression  { $$.notAName = true; }
-    | AdditiveExpression MINUS MultiplicativeExpression { $$.notAName = true; }
+    MultiplicativeExpression    {$$ = $1;}
+    | AdditiveExpression PLUS MultiplicativeExpression  {$$ = std::make_shared<PlusExp>($1, $3); $$->notAName = true; ast.setAst($$); }
+    | AdditiveExpression MINUS MultiplicativeExpression {$$ = std::make_shared<MinusExp>($1, $3); $$->notAName = true; }
     ;   
 
 MultiplicativeExpression:
     UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
-        $$.notAName = $1.notAName;
+        $$ = $1;
     }
     | MultiplicativeExpression STAR UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
-        $$.notAName = true;
+        $$ = std::make_shared<TimesExp>($1, $3);
+        $$->notAName = true;
     }
     | MultiplicativeExpression DIVIDE UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
-        $$.notAName = true;
+        $$ = std::make_shared<DivideExp>($1, $3);
+        $$->notAName = true;
     }
     | MultiplicativeExpression MODULO UnaryExpression {
         if (integerVal > INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
-        $$.notAName = true;
+        $$ = std::make_shared<ModuloExp>($1, $3);
+        $$->notAName = true;
     }
     ;
 
@@ -435,9 +442,10 @@ UnaryExpression:
     MINUS UnaryExpression {
         if (integerVal > 1LL + INT_MAX ) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         integerVal = 0;
-        $$.notAName = true;
+        $$ = $2;
+        $$->notAName = true;
     }
-    | UnaryExpressionNotPlusMinus   { $$.notAName = $1.notAName; }
+    | UnaryExpressionNotPlusMinus   {$$ = std::make_shared<Exp>();  $$->notAName = $1.notAName; }
     ;
 
 UnaryExpressionNotPlusMinus:
