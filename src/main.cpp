@@ -28,9 +28,8 @@ int main(int argc, char* argv[])
     Ast ast;
     yy::parser parser(lexer, ast);
     int ret = parser.parse();
-    Visitor visitor;
-    std::shared_ptr<Exp> exp = ast.getAst();
-    if (exp != nullptr) {
+    if (std::shared_ptr<Exp> exp = ast.getAst()) {
+        PrintVisitor visitor;
         std::cout << "Visiting AST" << std::endl;
         exp->accept(&visitor);
     }

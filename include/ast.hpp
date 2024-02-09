@@ -101,37 +101,37 @@ class IdentifierExp : public Exp, public std::enable_shared_from_this<Identifier
         void accept(Visitor* v) override;
 };
 
-class IntegerLiteral : public Exp, public std::enable_shared_from_this<IntegerLiteral> {
+class IntegerLiteralExp : public Exp, public std::enable_shared_from_this<IntegerLiteralExp> {
     public:
         long value;
-        IntegerLiteral(long val);
+        IntegerLiteralExp(long val);
         void accept(Visitor* v) override;
 };
 
-class BoolLiteral : public Exp, public std::enable_shared_from_this<BoolLiteral> {
+class BoolLiteralExp : public Exp, public std::enable_shared_from_this<BoolLiteralExp> {
     public:
         bool value;
-        BoolLiteral(bool val);
+        BoolLiteralExp(bool val);
         void accept(Visitor* v) override;
 };
 
-class CharLiteral : public Exp, public std::enable_shared_from_this<CharLiteral> {
+class CharLiteralExp : public Exp, public std::enable_shared_from_this<CharLiteralExp> {
     public:
         char value;
-        CharLiteral(char val);
+        CharLiteralExp(char val);
         void accept(Visitor* v) override;
 };
 
-class StringLiteral : public Exp, public std::enable_shared_from_this<StringLiteral> {
+class StringLiteralExp : public Exp, public std::enable_shared_from_this<StringLiteralExp> {
     public:
         std::string value;
-        StringLiteral(std::string& val);
+        StringLiteralExp(std::string& val);
         void accept(Visitor* v) override;
 };
 
-class NulLiteral : public Exp, public std::enable_shared_from_this<NulLiteral> {
+class NulLiteralExp : public Exp, public std::enable_shared_from_this<NulLiteralExp> {
     public:
-        NulLiteral();
+        NulLiteralExp();
         void accept(Visitor* v) override;
 };
 
@@ -166,9 +166,9 @@ class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAcce
 
 class NewArrayExp: public Exp, public std::enable_shared_from_this<NewArrayExp> {
     public:
-        std::shared_ptr<Type> type;
         std::shared_ptr<Exp> exp;
-        NewArrayExp(std::shared_ptr<Type> t, std::shared_ptr<Exp> e);
+        std::shared_ptr<Type> type;
+        NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
 };
 

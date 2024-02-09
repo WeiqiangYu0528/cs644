@@ -14,6 +14,8 @@ PlusExp::PlusExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), e
 }
 
 void PlusExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -22,6 +24,8 @@ MinusExp::MinusExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1),
 }
 
 void MinusExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -30,6 +34,8 @@ TimesExp::TimesExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1),
 }
 
 void TimesExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -38,6 +44,8 @@ DivideExp::DivideExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1
 }
 
 void DivideExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -46,6 +54,8 @@ ModuloExp::ModuloExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1
 }
 
 void ModuloExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -54,6 +64,7 @@ NotExp::NotExp(std::shared_ptr<Exp> e) : exp(e) {
 }
 
 void NotExp::accept(Visitor* v) {
+    exp->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -65,43 +76,43 @@ void IdentifierExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-IntegerLiteral::IntegerLiteral(long val) : value(val) {
+IntegerLiteralExp::IntegerLiteralExp(long val) : value(val) {
     std::cout << "IntegerLiteral constructor" << std::endl;
 }
 
-void IntegerLiteral::accept(Visitor* v) {
+void IntegerLiteralExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-BoolLiteral::BoolLiteral(bool val) : value(val) {
+BoolLiteralExp::BoolLiteralExp(bool val) : value(val) {
     std::cout << "BoolLiteral constructor" << std::endl;
 }
 
-void BoolLiteral::accept(Visitor* v) {
+void BoolLiteralExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-CharLiteral::CharLiteral(char val) : value(val) {
+CharLiteralExp::CharLiteralExp(char val) : value(val) {
     std::cout << "CharLiteral constructor" << std::endl;
 }
 
-void CharLiteral::accept(Visitor* v) {
+void CharLiteralExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-StringLiteral::StringLiteral(std::string& val) : value(val) {
+StringLiteralExp::StringLiteralExp(std::string& val) : value(val) {
     std::cout << "StringLiteral constructor" << std::endl;
 }
 
-void StringLiteral::accept(Visitor* v) {
+void StringLiteralExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-NulLiteral::NulLiteral() {
+NulLiteralExp::NulLiteralExp() {
     std::cout << "NulLiteral constructor" << std::endl;
 }
 
-void NulLiteral::accept(Visitor* v) {
+void NulLiteralExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
@@ -110,6 +121,8 @@ ArrayAccessExp::ArrayAccessExp(std::shared_ptr<Exp> arr, std::shared_ptr<Exp> id
 }
 
 void ArrayAccessExp::accept(Visitor* v) {
+    array->accept(v);
+    index->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -126,6 +139,8 @@ CastExp::CastExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t) : exp(e), type
 }
 
 void CastExp::accept(Visitor* v) {
+    exp->accept(v);
+    type->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -142,6 +157,7 @@ ArrayType::ArrayType(std::shared_ptr<Type> t) : Type(DataType::ARRAY), dataType(
 }
 
 void ArrayType::accept(Visitor* v) {
+    dataType->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -150,14 +166,17 @@ FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::string& s) : exp(e),
 }
 
 void FieldAccessExp::accept(Visitor* v) {
+    exp->accept(v);
     v->visit(shared_from_this());
 }
 
-NewArrayExp::NewArrayExp(std::shared_ptr<Type> t, std::shared_ptr<Exp> e) : type(t), exp(e) {
+NewArrayExp::NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t) : exp(e), type(t) {
     std::cout << "NewArrayExp constructor" << std::endl;
 }
 
 void NewArrayExp::accept(Visitor* v) {
+    exp->accept(v);
+    type->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -174,5 +193,6 @@ NegExp::NegExp(std::shared_ptr<Exp> e) : exp(e) {
 }
 
 void NegExp::accept(Visitor* v) {
+    exp->accept(v);
     v->visit(shared_from_this());
 }
