@@ -79,10 +79,6 @@ inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
     return true;
 }
 
-inline long long integerVal{0};
-
-
 typedef struct {
     bool notAName;
-
 } ExpressionInfo;

@@ -32,8 +32,8 @@ int main(int argc, char* argv[])
     std::shared_ptr<Exp> exp = ast.getAst();
     if (exp != nullptr) {
         std::cout << "Visiting AST" << std::endl;
+        exp->accept(&visitor);
     }
-    exp->accept(&visitor);
     if (ret == 0)
         return 0;
     else if (ret == 1)
