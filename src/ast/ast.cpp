@@ -9,6 +9,18 @@ std::shared_ptr<Exp> Ast::getAst() const {
     return exp;
 }
 
+void Exp::accept(Visitor* v) {
+    // may need to make this pure virtual later
+}
+
+Type::Type(DataType t) : type(t) {
+    std::cout << "Type constructor" << std::endl;
+}
+
+void Type::accept(Visitor* v) {
+    // may need to make this pure virtual later
+}
+
 PlusExp::PlusExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
     std::cout << "PlusExp constructor" << std::endl;
 }
@@ -68,7 +80,7 @@ void NotExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-IdentifierExp::IdentifierExp(std::string& s) : name(s) {
+IdentifierExp::IdentifierExp(std::shared_ptr<Identifier> i) : id(i) {
     std::cout << "Identifier expression constructor" << std::endl;
 }
 
@@ -144,7 +156,7 @@ void CastExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-IdentifierType::IdentifierType(std::string& s) : Type(DataType::OBJECT), name(s) {
+IdentifierType::IdentifierType(std::shared_ptr<Identifier> i) : Type(DataType::OBJECT), id(i) {
     std::cout << "IdentifierType constructor" << std::endl;
 }
 
@@ -161,7 +173,7 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::string& s) : exp(e), field(s) {
+FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
     std::cout << "FieldAccessExp constructor" << std::endl;
 }
 
@@ -195,4 +207,17 @@ NegExp::NegExp(std::shared_ptr<Exp> e) : exp(e) {
 void NegExp::accept(Visitor* v) {
     exp->accept(v);
     v->visit(shared_from_this());
+}
+
+ParExp::ParExp(std::shared_ptr<Exp> e) : exp(e) {
+    std::cout << "ParExp constructor" << std::endl;
+}
+
+void ParExp::accept(Visitor* v) {
+    exp->accept(v);
+    v->visit(shared_from_this());
+}
+
+Identifier::Identifier(std::string& s) : name(s) {
+    std::cout << "Identifier constructor" << std::endl;
 }

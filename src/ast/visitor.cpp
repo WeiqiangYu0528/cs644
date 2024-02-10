@@ -81,3 +81,7 @@ void PrintVisitor::visit(std::shared_ptr<NewArrayExp> n) {
 void PrintVisitor::visit(std::shared_ptr<NegExp> n) {
     std::cout << "Visiting NegExp" << std::endl;
 }
+
+void PrintVisitor::visit(std::shared_ptr<ParExp> n) {
+    std::cout << "Visiting ParExp" << std::endl;
+}

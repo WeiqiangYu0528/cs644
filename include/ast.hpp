@@ -8,18 +8,18 @@ class Visitor;
 
 class Exp {
     public:
-        bool notAName;
         ~Exp() = default;
-        virtual void accept(Visitor* v) {};
+        virtual void accept(Visitor* v);
 };
 
 class Type {
     public:
         DataType type;
+        // should delete this default constructor later, currently used as a placeholder for basic case types
         Type() = default;
-        Type(DataType t) : type(t) {};
+        Type(DataType t);
         ~Type() = default;
-        virtual void accept(Visitor* v) {};
+        virtual void accept(Visitor* v);
 };
 
 class Ast {
@@ -30,10 +30,16 @@ class Ast {
         std::shared_ptr<Exp> getAst() const;
 };
 
-class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
+class Identifier {
     public:
         std::string name;
-        IdentifierType(std::string& s);
+        Identifier(std::string& s);
+};
+
+class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
+    public:
+        std::shared_ptr<Identifier> id;
+        IdentifierType(std::shared_ptr<Identifier> i);
         void accept(Visitor* v) override;
 };
 
@@ -96,8 +102,8 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
-        std::string name;
-        IdentifierExp(std::string& s);
+        std::shared_ptr<Identifier> id;
+        IdentifierExp(std::shared_ptr<Identifier> i);
         void accept(Visitor* v) override;
 };
 
@@ -159,8 +165,8 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
 class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAccessExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::string field;
-        FieldAccessExp(std::shared_ptr<Exp> e, std::string& s);
+        std::shared_ptr<Identifier> id;
+        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i);
         void accept(Visitor* v) override;
 };
 
@@ -176,5 +182,12 @@ class NegExp : public Exp, public std::enable_shared_from_this<NegExp> {
     public:
         std::shared_ptr<Exp> exp;
         NegExp(std::shared_ptr<Exp> e);
+        void accept(Visitor* v) override;
+};
+
+class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
+    public:
+        std::shared_ptr<Exp> exp;
+        ParExp(std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };

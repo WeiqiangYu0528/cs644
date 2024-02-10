@@ -80,7 +80,8 @@
 %nonassoc ELSE
 
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <std::shared_ptr<IdentifierType>> Variable SimpleName QualifiedName Name ClassOrInterfaceType ClassType
+%type <std::shared_ptr<Identifier>> Variable
+%type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
 %type <std::vector<int>> ClassBodyDeclarationOpt1
@@ -214,13 +215,14 @@ Name:
     ;
 
 SimpleName:
-    Variable {$$ = $1;}
+    Variable {$$ = std::make_shared<IdentifierType>($1);}
     ;
 
 QualifiedName:
     Name DOT Variable {
         //$$ = std::make_shared<CompoundType>($1, $3);
-        std::string temp = $1->name + '.' + $3->name;
+        std::string newStr = $1->id->name + '.' + $3->name;
+        std::shared_ptr<Identifier> temp = std::make_shared<Identifier>(newStr);
         $$ = std::make_shared<IdentifierType>(temp);
     }
     ;
@@ -343,7 +345,7 @@ Expression:
 
 AssignmentExpression:
     ConditionalExpression   { $$ = $1; }
-    | Assignment            { $$ = $1; $$->notAName = true; }
+    | Assignment            { $$ = $1;}
     ;
 
 Assignment:
@@ -351,7 +353,7 @@ Assignment:
     ;
 
 LeftHandSide:
-    Name {$$ = std::make_shared<IdentifierExp>($1->name);}
+    Name {$$ = std::make_shared<IdentifierExp>($1->id);}
     | FieldAccess {$$ = $1;}
     | ArrayAccess {$$ = $1;}
     ;
@@ -388,17 +390,17 @@ AndExpression:
 
 EqualityExpression:
     RelationalExpression   { $$ = $1; }
-    | EqualityExpression EQUAL RelationalExpression     { $$ = std::make_shared<Exp>(); $$->notAName = true; }
-    | EqualityExpression NOT_EQUAL RelationalExpression { $$ = std::make_shared<Exp>(); $$->notAName = true; }
+    | EqualityExpression EQUAL RelationalExpression     { $$ = std::make_shared<Exp>();}
+    | EqualityExpression NOT_EQUAL RelationalExpression { $$ = std::make_shared<Exp>();}
     ;
 
 RelationalExpression:
     ShiftExpression { $$ = $1; }
-    | RelationalExpression LESS ShiftExpression { $$ = std::make_shared<Exp>(); $$->notAName = true; }
-    | RelationalExpression GREATER ShiftExpression  { $$ = std::make_shared<Exp>(); $$->notAName = true; }
-    | RelationalExpression LESS_EQUAL ShiftExpression   { $$ = std::make_shared<Exp>(); $$->notAName = true; }
-    | RelationalExpression GREATER_EQUAL ShiftExpression    { $$ = std::make_shared<Exp>(); $$->notAName = true; }
-    | RelationalExpression INSTANCEOF ReferenceType { $$ = std::make_shared<Exp>(); $$->notAName = true; }
+    | RelationalExpression LESS ShiftExpression { $$ = std::make_shared<Exp>();}
+    | RelationalExpression GREATER ShiftExpression  { $$ = std::make_shared<Exp>();}
+    | RelationalExpression LESS_EQUAL ShiftExpression   { $$ = std::make_shared<Exp>();}
+    | RelationalExpression GREATER_EQUAL ShiftExpression    { $$ = std::make_shared<Exp>();}
+    | RelationalExpression INSTANCEOF ReferenceType { $$ = std::make_shared<Exp>();}
     ;
 
 ShiftExpression:
@@ -410,8 +412,8 @@ ShiftExpression:
 
 AdditiveExpression:
     MultiplicativeExpression    {$$ = $1;}
-    | AdditiveExpression PLUS MultiplicativeExpression  {$$ = std::make_shared<PlusExp>($1, $3); $$->notAName = true; }
-    | AdditiveExpression MINUS MultiplicativeExpression {$$ = std::make_shared<MinusExp>($1, $3); $$->notAName = true; }
+    | AdditiveExpression PLUS MultiplicativeExpression  {$$ = std::make_shared<PlusExp>($1, $3);}
+    | AdditiveExpression MINUS MultiplicativeExpression {$$ = std::make_shared<MinusExp>($1, $3);}
     ;   
 
 MultiplicativeExpression:
@@ -426,21 +428,18 @@ MultiplicativeExpression:
             if (integral->value > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         }
         $$ = std::make_shared<TimesExp>($1, $3);
-        $$->notAName = true;
     }
     | MultiplicativeExpression DIVIDE UnaryExpression {
         if (auto integral = std::dynamic_pointer_cast<IntegerLiteralExp>($1)) {
             if (integral->value > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         }
         $$ = std::make_shared<DivideExp>($1, $3);
-        $$->notAName = true;
     }
     | MultiplicativeExpression MODULO UnaryExpression {
         if (auto integral = std::dynamic_pointer_cast<IntegerLiteralExp>($1)) {
             if (integral->value > INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         }
         $$ = std::make_shared<ModuloExp>($1, $3);
-        $$->notAName = true;
     }
     ;
 
@@ -448,25 +447,21 @@ CastExpression:
     LEFT_PAREN BasicType Dims RIGHT_PAREN UnaryExpression {
         std::shared_ptr<ArrayType> arr = std::make_shared<ArrayType>($2);
         $$ = std::make_shared<CastExp>($5, arr);  
-        $$->notAName = true;
         }
     | LEFT_PAREN BasicType RIGHT_PAREN UnaryExpression {
         $$ = std::make_shared<CastExp>($4, $2);
-        $$->notAName = true; 
         }
     | LEFT_PAREN Expression RIGHT_PAREN UnaryExpressionNotPlusMinus  {
-        if($2->notAName)  throw syntax_error(@1, std::string("invalid casting."));
-        // std::shared_ptr<IdentifierExp> temp = std::static_pointer_cast<IdentifierExp>($2);
-        // std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->name);
-        std::string temp{"placeholder"};
-        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp);
+        auto temp = std::dynamic_pointer_cast<IdentifierExp>($2);
+        if (!temp) {
+            throw syntax_error(@1, std::string("invalid casting."));
+        }
+        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->id);
         $$ = std::make_shared<CastExp>($4, type);
-        $$->notAName = true;
         }
     | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus {
         std::shared_ptr<ArrayType> arr = std::make_shared<ArrayType>($2);
         $$ = std::make_shared<CastExp>($5, arr);
-        $$->notAName = true; 
         }
     ;
 
@@ -476,7 +471,6 @@ UnaryExpression:
             if (integral->value > 1L + INT_MAX) throw syntax_error(@1, std::string("integer literal should be within the legal range for 32-bit signed integers."));
         }
         $$ = std::make_shared<NegExp>($2);
-        $$->notAName = true;
     }
     | UnaryExpressionNotPlusMinus {
         $$ = $1;
@@ -485,14 +479,13 @@ UnaryExpression:
 
 UnaryExpressionNotPlusMinus:
     PostfixExpression   { $$ = $1; }
-    | NOT UnaryExpression   { $$ = std::make_shared<NotExp>($2); $$->notAName = true; }
-    | CastExpression   { $$ = $1; $$->notAName = true; }
+    | NOT UnaryExpression   { $$ = std::make_shared<NotExp>($2); }
+    | CastExpression   { $$ = $1; }
 
 PostfixExpression:
     Primary { $$ = $1; }
     | Name {
-        $$ = std::make_shared<IdentifierExp>($1->name);
-        $$->notAName = false; 
+        $$ = std::make_shared<IdentifierExp>($1->id);
     }
     ;
 
@@ -511,19 +504,19 @@ DimExprs:
     ;
 
 FieldAccess:
-    Primary DOT Variable {$$ = std::make_shared<FieldAccessExp>($1, $3->name); $$->notAName = $1->notAName; }
+    Primary DOT Variable {$$ = std::make_shared<FieldAccessExp>($1, $3);}
     | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
     ;
 
 Primary:
-    PrimaryNoNewArray   { $$ = $1; $$->notAName = true; }
-    | ArrayCreationExpression   { $$ = $1; $$->notAName = true; }
-    ;  
+    PrimaryNoNewArray   { $$ = $1;}
+    | ArrayCreationExpression   { $$ = $1;}
+    ;
 
 PrimaryNoNewArray:
     Literal {$$ = $1;}    
     | THIS {$$ = std::make_shared<ThisExp>();}
-    | LEFT_PAREN Expression RIGHT_PAREN {$$ = $2;}
+    | LEFT_PAREN Expression RIGHT_PAREN {$$ = std::make_shared<ParExp>($2);}
     | ClassInstanceCreationExpression {$$ = std::make_shared<Exp>();}
     | FieldAccess {$$ = $1;}
     | MethodInvocation {$$ = std::make_shared<Exp>();}
@@ -532,7 +525,7 @@ PrimaryNoNewArray:
 
 ArrayAccess:
     Name LEFT_BRACKET Expression RIGHT_BRACKET {
-        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->name);
+        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->id);
         $$ = std::make_shared<ArrayAccessExp>(identifier, $3);
         }
     | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET {
@@ -723,7 +716,7 @@ LocalVariableDeclarationStatement:
 Variable
     : IDENTIFIER {
         if (std::find(keywords.begin(), keywords.end(), $1) != keywords.end()) throw syntax_error(@1, std::string("Invalid identifier: " + $1 + " is a Java reserved keyword"));
-        $$ = std::make_shared<IdentifierType>($1);
+        $$ = std::make_shared<Identifier>($1);
     }
     ;
 
@@ -747,10 +740,7 @@ BooleanLiteral
     ;
 
 StringLiteral
-    : STRING {
-        if ($1.length() >= 2 && (std::find(invalidStr.begin(), invalidStr.end(), $1.substr(1, 2)) != invalidStr.end())) throw syntax_error(@1, std::string("Invalid string input"));
-        $$ = std::make_shared<StringLiteralExp>($1);
-    }
+    : STRING {$$ = std::make_shared<StringLiteralExp>($1);}
     ;
 
 CharLiteral
