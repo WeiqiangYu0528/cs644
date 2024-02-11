@@ -26,6 +26,12 @@ class Visitor {
         // virtual void visit(std::shared_ptr<CompoundType> n) = 0;
         virtual void visit(std::shared_ptr<NegExp> n) = 0;
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
+
+        virtual void visit(std::shared_ptr<TypeParameter> n) = 0;
+        virtual void visit(std::shared_ptr<ClassBody> n) = 0;
+        virtual void visit(std::shared_ptr<NormalClassDecl> n) = 0;
+        virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
+        
 };
 
 class PrintVisitor: public Visitor {
@@ -52,4 +58,10 @@ class PrintVisitor: public Visitor {
         // void visit(std::shared_ptr<CompoundType> n) override;
         void visit(std::shared_ptr<NegExp> n) override;
         void visit(std::shared_ptr<ParExp> n) override;
+
+        void visit(std::shared_ptr<ClassBody> n) override;
+        void visit(std::shared_ptr<TypeParameter> n) override;
+        void visit(std::shared_ptr<NormalClassDecl> n) override;
+        void visit(std::shared_ptr<ClassDecl> n) override;
+        
 };

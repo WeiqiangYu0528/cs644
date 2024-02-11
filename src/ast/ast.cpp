@@ -1,13 +1,22 @@
 #include "ast.hpp"
 #include "visitor.hpp"
 
-void Ast::setAst(std::shared_ptr<Exp> e) {
+/*void Ast::setAst(std::shared_ptr<Exp> e) {
     exp = e;
 }
 
 std::shared_ptr<Exp> Ast::getAst() const {
     return exp;
+}*/
+
+void Ast::setAst(std::shared_ptr<ClassDecl> cd) {
+    cdecl = cd;
 }
+
+std::shared_ptr<ClassDecl> Ast::getAst() const {
+    return cdecl;
+}
+
 
 void Exp::accept(Visitor* v) {
     // may need to make this pure virtual later
@@ -220,4 +229,48 @@ void ParExp::accept(Visitor* v) {
 
 Identifier::Identifier(std::string& s) : name(s) {
     std::cout << "Identifier constructor" << std::endl;
+}
+
+
+
+ClassBody::ClassBody() {
+    std::cout << "ClassBody dummy constructor" << std::endl;
+}
+
+void ClassBody::accept(Visitor* v) {
+    //NOT YET IMPLEMENTED
+    v->visit(shared_from_this());
+}
+
+TypeParameter::TypeParameter(std::shared_ptr<Identifier> tPN, std::vector<std::shared_ptr<Type>> e) 
+: typeParameterName(tPN), extended(e) {
+    std::cout << "TypeParameter constructor" << std::endl;
+}
+
+void TypeParameter::accept(Visitor* v) {
+    for (auto e : extended) e->accept(v);
+    v->visit(shared_from_this());
+}
+
+NormalClassDecl::NormalClassDecl(std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<TypeParameter>> tp, 
+std::vector<std::shared_ptr<IdentifierType>> e, std::vector<std::shared_ptr<IdentifierType>> i, 
+std::shared_ptr<ClassBody> cb) : className(cn), typeParams(tp), extended(e), implemented(i), classBody(cb) {
+    std::cout << "NormalClassDecl constructor" << std::endl;
+}
+
+void NormalClassDecl::accept(Visitor* v) {
+    for (auto i : typeParams) i->accept(v);
+    for (auto i : extended) i->accept(v);
+    for (auto i : implemented) i->accept(v);
+    classBody->accept(v);
+    v->visit(shared_from_this());
+}
+
+ClassDecl::ClassDecl(std::string m, std::shared_ptr<NormalClassDecl> n) : modifier(m), ncdecl(n) {
+    std::cout << "ClassDecl constructor" << std::endl;
+}
+
+void ClassDecl::accept(Visitor* v) {
+    ncdecl->accept(v);
+    v->visit(shared_from_this());
 }

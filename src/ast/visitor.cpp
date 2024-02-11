@@ -85,3 +85,19 @@ void PrintVisitor::visit(std::shared_ptr<NegExp> n) {
 void PrintVisitor::visit(std::shared_ptr<ParExp> n) {
     std::cout << "Visiting ParExp" << std::endl;
 }
+
+void PrintVisitor::visit(std::shared_ptr<ClassBody> n) {
+    std::cout << "Visiting ClassBody" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<TypeParameter> n) {
+    std::cout << "Visiting TypeParameter" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<NormalClassDecl> n) {
+    std::cout << "Visiting NormalClassDecl" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ClassDecl> n) {
+    std::cout << "Visiting ClassDecl" << std::endl;
+}

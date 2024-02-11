@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 #include "weeder.hpp"
 
 class Visitor;
@@ -20,14 +21,6 @@ class Type {
         Type(DataType t);
         ~Type() = default;
         virtual void accept(Visitor* v);
-};
-
-class Ast {
-    private:
-        std::shared_ptr<Exp> exp;
-    public:
-        void setAst(std::shared_ptr<Exp> exp);
-        std::shared_ptr<Exp> getAst() const;
 };
 
 class Identifier {
@@ -191,3 +184,142 @@ class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
         ParExp(std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };
+
+
+
+
+//Imperative: Anything included here gets fully implemented in parser.yy, then test
+// then we add the necessary visitor stuff
+// then we test 
+//then we move things to ast.cpp as needed
+
+class MethodOrFieldRest {
+    public:
+        MemberType memberType;
+        MethodOrFieldRest(MemberType m) : memberType(m) {}
+};
+
+class FieldDeclaratorsRest : public MethodOrFieldRest {
+    public:
+        FieldDeclaratorsRest(MemberType m) : MethodOrFieldRest(m) {}
+};
+
+class MethodDeclaratorRest : public MethodOrFieldRest {
+    public:
+        MethodDeclaratorRest(MemberType m) : MethodOrFieldRest(m) {}
+};
+
+class MemberDecl {
+    public:
+        MemberType memberType;
+
+        MemberDecl(MemberType m) : memberType(m) {}
+};
+
+class MethodOrFieldDecl : public MemberDecl {
+    public:
+        std::shared_ptr<Type> resultType;
+        std::shared_ptr<Identifier> variable;
+        std::shared_ptr<MethodOrFieldRest> methodOrFieldRest;
+
+        MethodOrFieldDecl(std::shared_ptr<Type> rt, std::shared_ptr<Identifier> v, 
+        std::shared_ptr<MethodOrFieldRest> mofr) : resultType(rt), variable(v), methodOrFieldRest(mofr),
+        MemberDecl(mofr->memberType) {}
+};
+
+class ConstructorDecl : public MemberDecl {
+    public:
+        std::shared_ptr<Identifier> variable;
+        //std::shared_ptr<CDR> cdr; NOT YET IMPLEMENTED
+
+        ConstructorDecl(std::shared_ptr<Identifier> v/*, std::shared_ptr<CDR> c*/, MemberType m) : variable(v)/*, cdr(c)*/, 
+        MemberDecl(m){ assert(m == MemberType::CONSTRUCTOR); }
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class ClassBody : public std::enable_shared_from_this<ClassBody> {
+    public:
+
+        //classbody is made of a list of ClassBodyDeclaration
+        //ClassBodyDeclaration
+
+        ClassBody(); //Not yet implemented
+        ~ClassBody() = default;
+        void accept(Visitor* v);
+};
+
+class TypeParameter : public std::enable_shared_from_this<TypeParameter> {
+    public:
+        std::shared_ptr<Identifier> typeParameterName; //Variable
+        std::vector<std::shared_ptr<Type>> extended; //TypeParameterOpt1 -> List of ReferenceType
+
+        TypeParameter(std::shared_ptr<Identifier> tpn, std::vector<std::shared_ptr<Type>> e);
+        ~TypeParameter() = default;
+        void accept(Visitor* v);
+};
+
+class NormalClassDecl : public std::enable_shared_from_this<NormalClassDecl> {
+    public:
+        std::shared_ptr<Identifier> className; //Variable
+        std::vector<std::shared_ptr<TypeParameter>> typeParams; //NormalClassDeclarationOpt1 -> List of TypeParameter
+        std::vector<std::shared_ptr<IdentifierType>> extended; //NormalClassDeclarationOpt2 -> List of ClassOrInterfaceType
+        std::vector<std::shared_ptr<IdentifierType>> implemented; //NormalClassDeclarationOpt3 -> List of ClassOrInterfaceType
+        std::shared_ptr<ClassBody> classBody;
+
+        NormalClassDecl(std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<TypeParameter>> tp,
+        std::vector<std::shared_ptr<IdentifierType>> e, std::vector<std::shared_ptr<IdentifierType>> i,
+        std::shared_ptr<ClassBody> cb);
+        ~NormalClassDecl() = default;
+        void accept(Visitor* v);
+};
+
+class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
+    public:
+        std::string modifier;
+        std::shared_ptr<NormalClassDecl> ncdecl;
+        ClassDecl(std::string m, std::shared_ptr<NormalClassDecl> n);
+        ~ClassDecl() = default;
+        void accept(Visitor* v);
+};
+
+
+class Ast {
+    private:
+        //std::shared_ptr<Exp> exp;
+        std::shared_ptr<ClassDecl> cdecl;
+    public:
+        //void setAst(std::shared_ptr<Exp> exp);
+        void setAst(std::shared_ptr<ClassDecl> cdecl);
+        //std::shared_ptr<Exp> getAst() const;
+        std::shared_ptr<ClassDecl> getAst() const;
+};
+
+
+
+
+
