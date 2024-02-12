@@ -64,6 +64,10 @@ void PrintVisitor::visit(std::shared_ptr<ArrayType> n) {
     std::cout << "Visiting ArrayType" << std::endl;
 }
 
+void PrintVisitor::visit(std::shared_ptr<ResultType> n) { 
+    std::cout << "Visiting ResultType" << std::endl;
+}
+
 void PrintVisitor::visit(std::shared_ptr<IdentifierType> n) { 
     std::cout << "Visiting IdentifierType" << std::endl;
 }
@@ -100,4 +104,18 @@ void PrintVisitor::visit(std::shared_ptr<NormalClassDecl> n) {
 
 void PrintVisitor::visit(std::shared_ptr<ClassDecl> n) {
     std::cout << "Visiting ClassDecl" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<FieldDeclaratorsRest> n) {
+    std::cout << "Visiting FieldDeclaratorsRest" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<MethodDeclaratorRest> n) {
+    std::cout << "Visiting MethodDeclaratorRest" << std::endl;
+}
+void PrintVisitor::visit(std::shared_ptr<MethodOrFieldDecl> n) {
+    std::cout << "Visiting MethodOrFieldDecl" << std::endl;
+}
+void PrintVisitor::visit(std::shared_ptr<ConstructorDecl> n) {
+    std::cout << "Visiting ConstructorDecl" << std::endl;
 }

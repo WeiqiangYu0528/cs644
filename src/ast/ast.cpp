@@ -182,6 +182,11 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
+void ResultType::accept(Visitor* v) {
+    dataType->accept(v);
+    v->visit(shared_from_this());
+}
+
 FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
     std::cout << "FieldAccessExp constructor" << std::endl;
 }
@@ -229,6 +234,27 @@ void ParExp::accept(Visitor* v) {
 
 Identifier::Identifier(std::string& s) : name(s) {
     std::cout << "Identifier constructor" << std::endl;
+}
+
+
+
+void FieldDeclaratorsRest::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+void MethodDeclaratorRest::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+void MethodOrFieldDecl::accept(Visitor* v) {
+    resultType->accept(v);
+    methodOrFieldRest->accept(v);
+    v->visit(shared_from_this());
+}
+
+void ConstructorDecl::accept(Visitor* v)  {
+    //cdr->accept(v); NOT YET IMPLEMENTED
+    v->visit(shared_from_this());
 }
 
 

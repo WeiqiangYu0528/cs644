@@ -260,8 +260,14 @@ ArrayType
     ;
 
 ResultType
-    : Type {$$ = $1;}
-    | VOID {$$ = std::make_shared<Type>(); $$->type = DataType::VOID;}
+    : Type {
+        //$$ = $1;
+        $$ = std::make_shared<ResultType>($1);
+    }
+    | VOID {
+        //$$ = std::make_shared<Type>(); $$->type = DataType::VOID;
+        $$ = std::make_shared<ResultType>(std::make_shared<Type>(DataType::VOID));
+    }
     ;
 
 // Do not use ReferenceType as arraytype is not supported here

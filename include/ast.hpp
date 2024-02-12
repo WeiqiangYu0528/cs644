@@ -43,6 +43,15 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         void accept(Visitor* v) override;
 };
 
+class ResultType : public Type, public std::enable_shared_from_this<ResultType> {
+    public:
+        std::shared_ptr<Type> dataType;
+        ResultType(std::shared_ptr<Type> t) : Type(t->type), dataType(t) {
+            std::cout << "ResultType constructor" << std::endl;
+        }
+        void accept(Visitor* v) override;
+};
+
 // class CompoundType : public Type, public std::enable_shared_from_this<CompoundType> {
 //     public:
 //         std::shared_ptr<Type> type;
@@ -196,44 +205,64 @@ class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
 class MethodOrFieldRest {
     public:
         MemberType memberType;
-        MethodOrFieldRest(MemberType m) : memberType(m) {}
+        MethodOrFieldRest(MemberType m) : memberType(m) {
+            std::cout << "MethodOrFieldRest constructor" << std::endl;
+        }
+        virtual void accept(Visitor* v) = 0;
 };
 
-class FieldDeclaratorsRest : public MethodOrFieldRest {
+class FieldDeclaratorsRest : public MethodOrFieldRest, public std::enable_shared_from_this<FieldDeclaratorsRest> {
     public:
-        FieldDeclaratorsRest(MemberType m) : MethodOrFieldRest(m) {}
+        FieldDeclaratorsRest(MemberType m) : MethodOrFieldRest(m) {
+            std::cout << "FieldDeclaratorsRest constructor" << std::endl;
+        }
+        void accept(Visitor* v) override;
 };
 
-class MethodDeclaratorRest : public MethodOrFieldRest {
+class MethodDeclaratorRest : public MethodOrFieldRest, public std::enable_shared_from_this<MethodDeclaratorRest> {
     public:
-        MethodDeclaratorRest(MemberType m) : MethodOrFieldRest(m) {}
+        MethodDeclaratorRest(MemberType m) : MethodOrFieldRest(m) {
+            std::cout << "MethodDeclaratorRest constructor" << std::endl;
+        }
+        void accept(Visitor* v) override;
 };
 
 class MemberDecl {
     public:
         MemberType memberType;
-
         MemberDecl(MemberType m) : memberType(m) {}
+
+        ~MemberDecl() = default;
+        virtual void accept(Visitor* v) = 0;
 };
 
-class MethodOrFieldDecl : public MemberDecl {
+class MethodOrFieldDecl : public MemberDecl, public std::enable_shared_from_this<MethodOrFieldDecl> {
     public:
         std::shared_ptr<Type> resultType;
         std::shared_ptr<Identifier> variable;
         std::shared_ptr<MethodOrFieldRest> methodOrFieldRest;
 
         MethodOrFieldDecl(std::shared_ptr<Type> rt, std::shared_ptr<Identifier> v, 
-        std::shared_ptr<MethodOrFieldRest> mofr) : resultType(rt), variable(v), methodOrFieldRest(mofr),
-        MemberDecl(mofr->memberType) {}
+        std::shared_ptr<MethodOrFieldRest> mofr) : MemberDecl(mofr->memberType), resultType(rt), variable(v), methodOrFieldRest(mofr)
+         {
+            std::cout << "MethodOrFieldDecl constructor" << std::endl;
+        }
+
+        void accept(Visitor* v) override;
 };
 
-class ConstructorDecl : public MemberDecl {
+class ConstructorDecl : public MemberDecl, public std::enable_shared_from_this<ConstructorDecl> {
     public:
         std::shared_ptr<Identifier> variable;
         //std::shared_ptr<CDR> cdr; NOT YET IMPLEMENTED
 
-        ConstructorDecl(std::shared_ptr<Identifier> v/*, std::shared_ptr<CDR> c*/, MemberType m) : variable(v)/*, cdr(c)*/, 
-        MemberDecl(m){ assert(m == MemberType::CONSTRUCTOR); }
+        ConstructorDecl(std::shared_ptr<Identifier> v/*, std::shared_ptr<CDR> c*/, MemberType m) : MemberDecl(m), 
+        variable(v)/*, cdr(c)*/ 
+        { assert(m == MemberType::CONSTRUCTOR); 
+            std::cout << "ConstructorDecl constructor" << std::endl;
+        }
+
+        void accept(Visitor* v) override;
 
 };
 
