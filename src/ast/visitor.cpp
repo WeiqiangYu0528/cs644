@@ -90,6 +90,10 @@ void PrintVisitor::visit(std::shared_ptr<ParExp> n) {
     std::cout << "Visiting ParExp" << std::endl;
 }
 
+void PrintVisitor::visit(std::shared_ptr<ClassBodyDeclaration> n) {
+    std::cout << "Visiting ClassBodyDeclaration" << std::endl;
+}
+
 void PrintVisitor::visit(std::shared_ptr<ClassBody> n) {
     std::cout << "Visiting ClassBody" << std::endl;
 }
@@ -113,9 +117,15 @@ void PrintVisitor::visit(std::shared_ptr<FieldDeclaratorsRest> n) {
 void PrintVisitor::visit(std::shared_ptr<MethodDeclaratorRest> n) {
     std::cout << "Visiting MethodDeclaratorRest" << std::endl;
 }
+
 void PrintVisitor::visit(std::shared_ptr<MethodOrFieldDecl> n) {
     std::cout << "Visiting MethodOrFieldDecl" << std::endl;
 }
+
 void PrintVisitor::visit(std::shared_ptr<ConstructorDecl> n) {
     std::cout << "Visiting ConstructorDecl" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ConstructorDeclaratorRest> n) {
+    std::cout << "Visiting ConstructorDeclaratorRest" << std::endl;
 }

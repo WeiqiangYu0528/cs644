@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "weeder.hpp"
 
@@ -196,42 +197,48 @@ class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
 
 
 
+class Block {
+    //Needs to be implemented
+};
 
-//Imperative: Anything included here gets fully implemented in parser.yy, then test
-// then we add the necessary visitor stuff
-// then we test 
-//then we move things to ast.cpp as needed
+
+
+
 
 class MethodOrFieldRest {
     public:
         MemberType memberType;
-        MethodOrFieldRest(MemberType m) : memberType(m) {
-            std::cout << "MethodOrFieldRest constructor" << std::endl;
-        }
+
+        MethodOrFieldRest(MemberType m);
         virtual void accept(Visitor* v) = 0;
 };
 
 class FieldDeclaratorsRest : public MethodOrFieldRest, public std::enable_shared_from_this<FieldDeclaratorsRest> {
     public:
-        FieldDeclaratorsRest(MemberType m) : MethodOrFieldRest(m) {
-            std::cout << "FieldDeclaratorsRest constructor" << std::endl;
-        }
+        bool initializer;
+        std::shared_ptr<Exp> exp;
+
+        FieldDeclaratorsRest(MemberType m);
+        FieldDeclaratorsRest(MemberType m, std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };
 
 class MethodDeclaratorRest : public MethodOrFieldRest, public std::enable_shared_from_this<MethodDeclaratorRest> {
     public:
-        MethodDeclaratorRest(MemberType m) : MethodOrFieldRest(m) {
-            std::cout << "MethodDeclaratorRest constructor" << std::endl;
-        }
+        bool hasBlock;
+        std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> formalParameters;
+        std::shared_ptr<Block> block; //Needs to be implemented!
+
+        MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp);
+        MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp, std::shared_ptr<Block> b);
         void accept(Visitor* v) override;
 };
 
 class MemberDecl {
     public:
         MemberType memberType;
-        MemberDecl(MemberType m) : memberType(m) {}
 
+        MemberDecl(MemberType m);
         ~MemberDecl() = default;
         virtual void accept(Visitor* v) = 0;
 };
@@ -243,61 +250,49 @@ class MethodOrFieldDecl : public MemberDecl, public std::enable_shared_from_this
         std::shared_ptr<MethodOrFieldRest> methodOrFieldRest;
 
         MethodOrFieldDecl(std::shared_ptr<Type> rt, std::shared_ptr<Identifier> v, 
-        std::shared_ptr<MethodOrFieldRest> mofr) : MemberDecl(mofr->memberType), resultType(rt), variable(v), methodOrFieldRest(mofr)
-         {
-            std::cout << "MethodOrFieldDecl constructor" << std::endl;
-        }
+        std::shared_ptr<MethodOrFieldRest> mofr);
 
         void accept(Visitor* v) override;
 };
+
+
+class ConstructorDeclaratorRest : public std::enable_shared_from_this<ConstructorDeclaratorRest> {
+    public:
+        std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> formalParameters;
+        std::shared_ptr<Block> block; //Needs to be implemented!
+
+        ConstructorDeclaratorRest(std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp, std::shared_ptr<Block> b);
+        void accept(Visitor* v);
+};
+
 
 class ConstructorDecl : public MemberDecl, public std::enable_shared_from_this<ConstructorDecl> {
     public:
         std::shared_ptr<Identifier> variable;
-        //std::shared_ptr<CDR> cdr; NOT YET IMPLEMENTED
+        std::shared_ptr<ConstructorDeclaratorRest> constructorDeclaratorRest;
 
-        ConstructorDecl(std::shared_ptr<Identifier> v/*, std::shared_ptr<CDR> c*/, MemberType m) : MemberDecl(m), 
-        variable(v)/*, cdr(c)*/ 
-        { assert(m == MemberType::CONSTRUCTOR); 
-            std::cout << "ConstructorDecl constructor" << std::endl;
-        }
-
+        ConstructorDecl(std::shared_ptr<Identifier> v, std::shared_ptr<ConstructorDeclaratorRest> c, MemberType m);
         void accept(Visitor* v) override;
+};
+
+class ClassBodyDeclaration : public std::enable_shared_from_this<ClassBodyDeclaration> {
+    public:
+        bool emptyClassBodyDeclaration;
+        std::vector<Modifiers> modifiers;
+        std::shared_ptr<MemberDecl> memberDecl;
+
+        ClassBodyDeclaration();
+        ClassBodyDeclaration(std::vector<Modifiers> m, std::shared_ptr<MemberDecl> md);
+        void accept(Visitor* v);
 
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class ClassBody : public std::enable_shared_from_this<ClassBody> {
     public:
+        std::vector<std::shared_ptr<ClassBodyDeclaration>> classBodyDeclarations;
 
-        //classbody is made of a list of ClassBodyDeclaration
-        //ClassBodyDeclaration
-
-        ClassBody(); //Not yet implemented
+        ClassBody(std::vector<std::shared_ptr<ClassBodyDeclaration>> cbd);
         ~ClassBody() = default;
         void accept(Visitor* v);
 };
@@ -331,6 +326,7 @@ class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
     public:
         std::string modifier;
         std::shared_ptr<NormalClassDecl> ncdecl;
+
         ClassDecl(std::string m, std::shared_ptr<NormalClassDecl> n);
         ~ClassDecl() = default;
         void accept(Visitor* v);

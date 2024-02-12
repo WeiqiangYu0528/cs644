@@ -30,8 +30,9 @@ class Visitor {
         virtual void visit(std::shared_ptr<NegExp> n) = 0;
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
 
-        virtual void visit(std::shared_ptr<TypeParameter> n) = 0;
+        virtual void visit(std::shared_ptr<ClassBodyDeclaration> n) = 0;
         virtual void visit(std::shared_ptr<ClassBody> n) = 0;
+        virtual void visit(std::shared_ptr<TypeParameter> n) = 0;
         virtual void visit(std::shared_ptr<NormalClassDecl> n) = 0;
         virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
 
@@ -39,8 +40,7 @@ class Visitor {
         virtual void visit(std::shared_ptr<MethodDeclaratorRest> n) = 0; //to be removed (MDR will be abstract)
         virtual void visit(std::shared_ptr<MethodOrFieldDecl> n) = 0;
         virtual void visit(std::shared_ptr<ConstructorDecl> n) = 0;
-
-
+        virtual void visit(std::shared_ptr<ConstructorDeclaratorRest> n) = 0;
         
 };
 
@@ -72,6 +72,7 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<NegExp> n) override;
         void visit(std::shared_ptr<ParExp> n) override;
 
+        void visit(std::shared_ptr<ClassBodyDeclaration> n) override;
         void visit(std::shared_ptr<ClassBody> n) override;
         void visit(std::shared_ptr<TypeParameter> n) override;
         void visit(std::shared_ptr<NormalClassDecl> n) override;
@@ -81,5 +82,6 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<MethodDeclaratorRest> n) override; //to be removed (MDR will be abstract)
         void visit(std::shared_ptr<MethodOrFieldDecl> n) override;
         void visit(std::shared_ptr<ConstructorDecl> n) override;
+        void visit(std::shared_ptr<ConstructorDeclaratorRest> n) override;
         
 };

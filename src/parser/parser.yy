@@ -79,13 +79,10 @@
 %nonassoc THEN
 %nonassoc ELSE
 
-%type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <std::shared_ptr<Identifier>> Variable
+%type <std::shared_ptr<Identifier>> Variable VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
-%type <std::vector<int>> ClassBodyDeclarationOpt1
-//%type <MemberwaefaweType> MemberDecl wefawfeawef MethodOrFieldDecl MethodOrFieldRest MethodDeclaratorRest
 
 
 %type <std::shared_ptr<Exp>> AdditiveExpression MultiplicativeExpression UnaryExpression UnaryExpressionNotPlusMinus
@@ -96,6 +93,8 @@
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
 %type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment
 
+%type <std::shared_ptr<Exp>> VariableInitializer
+
 %type <std::string> ClassDeclarationOpt
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration
 %type <std::shared_ptr<NormalClassDecl>> NormalClassDeclaration
@@ -105,9 +104,16 @@
 %type <std::vector<std::shared_ptr<Type>>> TypeParameterOpt1 Bound
 
 %type <std::shared_ptr<ClassBody>> ClassBody
-%type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl ConstructorDecl
-%type <std::shared_ptr<MethodOrFieldRest>> MethodOrFieldRest FieldDeclaratorsRest MethodDeclaratorRest
+%type <std::shared_ptr<ClassBodyDeclaration>> ClassBodyDeclaration
+%type <std::vector<std::shared_ptr<ClassBodyDeclaration>>> ClassBodyOpt1
+%type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
+%type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl
+%type <std::shared_ptr<MethodOrFieldRest>> MethodOrFieldRest FieldDeclaratorsRest MethodDeclaratorRest VariableDeclaratorRest
+%type <std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>> FormalParameters FormalParameterDecls
+%type <std::pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>> FormalParameterDeclsRest
+%type <std::shared_ptr<ConstructorDeclaratorRest>> ConstructorDeclaratorRest
 
+%type <std::shared_ptr<Block>> Block
 
 
 %%
@@ -357,11 +363,11 @@ VariableDeclarator :
     ;
 
 VariableDeclaratorId
-    : Variable
+    : Variable {$$ = $1;}
     ;
 
 VariableInitializer:
-    Expression
+    Expression {$$ = $1;}
     ;
 
 Expression:
@@ -621,45 +627,56 @@ Annotation
 
 ClassBody
     : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE {
-        if (!$2) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
-        else $$ = std::make_shared<ClassBody>();
+        //if (!$2) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
+        bool hasConstructor = false;
+        for (auto cbd : $2) if (cbd->memberDecl->memberType == MemberType::CONSTRUCTOR) {
+            hasConstructor = true;
+            break;
+        }
+        if (hasConstructor == false) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
+        $$ = std::make_shared<ClassBody>($2);
+
     }
     ;
 
 ClassBodyOpt1
-    : {$$ = false;}
+    : {$$ = {};}
     | ClassBodyDeclaration ClassBodyOpt1 {
-        $$ = $1 | $2;
+        $$ = {$1}; $$.insert($$.end(), $2.begin(), $2.end());
     }
     ;
 
 ClassBodyDeclaration
-    : SEMICOLON {$$ = false;}
+    : SEMICOLON {
+        $$ = std::make_shared<ClassBodyDeclaration>(); // This sets boolean field to true (see ClassBodyDeclaration in ast.hpp)
+    }
     | ClassBodyDeclarationOpt1 MemberDecl {
-        //$$ = $2 == MemberType::CONSTRUCTOR;
-        $$ = $2->memberType == MemberType::CONSTRUCTOR;
-        for (int val: $1) {
+        $$ = std::make_shared<ClassBodyDeclaration>($1, $2);
+
+        std::vector<int> modifiers = std::vector<int>(6, 0);
+        for (Modifiers m : $1) {
+            if (!validateModifier(modifiers, m)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
+        }
+
+        std::string error_message = "";
+
+        for (int val: modifiers) {
             if (val > 1) throw syntax_error(@1, std::string("Duplicate modifier is not allowed.")); 
         }
-        if ($1[0] > 0 && $1[1] > 0) throw syntax_error(@1, std::string("Multiple access modifiers are not allowed")); 
-        if ($1[2] > 0 && ($1[3] > 0 || $1[4] > 0)) throw syntax_error(@1, std::string("An abstract method cannot be static or final.")); 
-        if ($1[4] > 0 && $1[3] > 0) throw syntax_error(@1, std::string("A static method cannot be final.")); 
-        if ($1[5] > 0 && $1[4] == 0) throw syntax_error(@1, std::string("A native method must be static."));
-        /*if ($2 == MemberType::FIELD && ($1[2] + $1[3] + $1[5] > 0)) throw syntax_error(@1, std::string("No field can be final, abstract or native."));
-        if ( ($2 == MemberType::METHODWITHBODY && ($1[2] > 0 || $1[5] > 0)) || 
-             ($2 == MemberType::METHODWITHOUTBODY && ($1[2] == 0 && $1[5] == 0)) )
-        throw syntax_error(@1, std::string("A method has a body if and only if it is neither abstract nor native"));
-        if ($2 == MemberType::CONSTRUCTOR && ($1[2] + $1[3] + $1[4] + $1[5] > 0))
-        throw syntax_error(@1, std::string("A constructor cannot be final, abstract, static or native"));*/
 
-        if ($2->memberType == MemberType::FIELD && ($1[2] + $1[3] + $1[5] > 0)) throw syntax_error(@1, std::string("No field can be final, abstract or native."));
-        if ( ($2->memberType == MemberType::METHODWITHBODY && ($1[2] > 0 || $1[5] > 0)) || 
-             ($2->memberType == MemberType::METHODWITHOUTBODY && ($1[2] == 0 && $1[5] == 0)) )
-        throw syntax_error(@1, std::string("A method has a body if and only if it is neither abstract nor native"));
-        if ($2->memberType == MemberType::CONSTRUCTOR && ($1[2] + $1[3] + $1[4] + $1[5] > 0))
-        throw syntax_error(@1, std::string("A constructor cannot be final, abstract, static or native"));
+        if (modifiers[0] && modifiers[1]) error_message = "Multiple access modifiers are not allowed"; 
+        else if (modifiers[2] && (modifiers[3] || modifiers[4])) error_message = "An abstract method cannot be static or final."; 
+        else if (modifiers[4] && modifiers[3]) error_message = "A static method cannot be final."; 
+        else if (modifiers[5] && !modifiers[4]) error_message = "A native method must be static.";
+        else if ($2->memberType == MemberType::FIELD && (modifiers[2] || modifiers[3] || modifiers[5])) error_message = "No field can be final, abstract or native.";
+        else if ( ($2->memberType == MemberType::METHODWITHBODY && (modifiers[2] || modifiers[5])) || 
+             ($2->memberType == MemberType::METHODWITHOUTBODY && (!modifiers[2] && !modifiers[5])) )
+            error_message = "A method has a body if and only if it is neither abstract nor native";
+        else if ($2->memberType == MemberType::CONSTRUCTOR && (modifiers[2] || modifiers[3] || modifiers[4] || modifiers[5]))
+            error_message = "A constructor cannot be final, abstract, static or native";
+        else if (!modifiers[0] && !modifiers[1]) error_message = "Every method/constructor/field is required to have an access modifier."; 
 
-        if ($1[0] == 0 && $1[1] == 0) throw syntax_error(@1, std::string("Every method/constructor/field is required to have an access modifier.")); 
+        if (error_message != "") throw syntax_error(@1, error_message);
     }
     | STATIC Block { throw syntax_error(@1, std::string("static initializers not allowed.")); }    
     | Block { throw syntax_error(@1, std::string("instance initializers not allowed.")); }
@@ -668,20 +685,18 @@ ClassBodyDeclaration
 ClassBodyDeclarationOpt1
     : 
     Modifier {
-        $$ = std::vector<int>(6, 0);
-        if (!validateModifier($$, $1)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
+        $$ = {$1};
     }
     | Modifier ClassBodyDeclarationOpt1 {
-        $$ = $2;
-        if (!validateModifier($$, $1)) throw syntax_error(@1, std::string("Invalid modifier for member declaration"));
+        $$ = {$1};
+        $$.insert($$.end(), $2.begin(), $2.end());
     }
     ;
 
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
     | Variable ConstructorDeclaratorRest {
-        $$ = std::make_shared<ConstructorDecl>($1, MemberType::CONSTRUCTOR); //later, we'll add CDR
-        //$$ = MemberType::CONSTRUCTOR; 
+        $$ = std::make_shared<ConstructorDecl>($1, $2, MemberType::CONSTRUCTOR);
         if ($1->name != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
     }
     ;
@@ -689,15 +704,13 @@ MemberDecl
 MethodOrFieldDecl:
     ResultType Variable MethodOrFieldRest {
         $$ = std::make_shared<MethodOrFieldDecl>($1, $2, $3);
-        //$$ = $3;
-        //if ($1->type == DataType::VOID && $3 == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
         if ($1->type == DataType::VOID && $3->memberType == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
     ;
 
 MethodOrFieldRest
     : FieldDeclaratorsRest SEMICOLON {
-        $$ = std::make_shared<FieldDeclaratorsRest>(MemberType::FIELD);
+        $$ = $1;
         //$$ = MemberType::FIELD;
     }
     | MethodDeclaratorRest {
@@ -707,45 +720,63 @@ MethodOrFieldRest
 
 MethodDeclaratorRest
     : FormalParameters Block {
-        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHBODY);
-        //$$ = MemberType::METHODWITHBODY; //construct MDR here
+        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHBODY, $1, $2);
     }
     | FormalParameters SEMICOLON  {
-        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHOUTBODY);
-        //$$ = MemberType::METHODWITHOUTBODY; //construct MDR here
+        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHOUTBODY, $1);
     }
     ;
 
 FieldDeclaratorsRest
-    : VariableDeclaratorRest
+    : VariableDeclaratorRest {
+        $$ = $1;
+    }
     ;
 
 VariableDeclaratorRest
-    :
-    | ASSIGN VariableInitializer
+    : {$$ = std::make_shared<FieldDeclaratorsRest>(MemberType::FIELD);}
+    | ASSIGN VariableInitializer {
+        $$ = std::make_shared<FieldDeclaratorsRest>(MemberType::FIELD, $2);
+    }
     ;
 
 ConstructorDeclaratorRest
-    : FormalParameters Block
+    : FormalParameters Block {$$ = std::make_shared<ConstructorDeclaratorRest>($1, $2);}
     ;
 
 FormalParameters: 
-    LEFT_PAREN FormalParameterDecls RIGHT_PAREN
+    LEFT_PAREN FormalParameterDecls RIGHT_PAREN {$$ = $2;}
     ;
 
 
-FormalParameterDecls:
-    | Type FormalParameterDeclsRest
+FormalParameterDecls: {$$ = {};}
+    | Type FormalParameterDeclsRest {
+        $$ = {
+           // std::make_pair<std::shared_ptr<Type>&, std::shared_ptr<Identifier>&>($1, $2.first)
+            std::make_pair($1, $2.first)
+            };
+        $$.insert($$.end(), $2.second.begin(), $2.second.end());
+    }
     ;
 
 FormalParameterDeclsRest
-    : VariableDeclaratorId
+    : VariableDeclaratorId 
+    {
+        std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> tempvector = {};
+        $$ = std::make_pair($1, tempvector);
+    }
     | VariableDeclaratorId COMMA FormalParameterDecls
+    {
+        //$$ = std::make_pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>($1, $3);
+        $$ = std::make_pair($1, $3);
+    }
     ;
 
 Block
-    : LEFT_BRACE BlockStatements RIGHT_BRACE
-    | LEFT_BRACE RIGHT_BRACE 
+    : LEFT_BRACE BlockStatements RIGHT_BRACE {$$ = std::make_shared<Block>(); //To be expanded
+    }
+    | LEFT_BRACE RIGHT_BRACE {$$ = std::make_shared<Block>(); //To be expanded
+    }
     ;
 
 BlockStatements:
