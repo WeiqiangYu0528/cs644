@@ -1,11 +1,11 @@
 #include "ast.hpp"
 #include "visitor.hpp"
 
-void Ast::setAst(std::shared_ptr<Exp> e) {
+void Ast::setAst(std::shared_ptr<Package> e) {
     exp = e;
 }
 
-std::shared_ptr<Exp> Ast::getAst() const {
+std::shared_ptr<Package> Ast::getAst() const {
     return exp;
 }
 
@@ -81,7 +81,7 @@ void NotExp::accept(Visitor* v) {
 }
 
 IdentifierExp::IdentifierExp(std::shared_ptr<Identifier> i) : id(i) {
-    std::cout << "Identifier expression constructor" << std::endl;
+    std::cout << id->name << std::endl;
 }
 
 void IdentifierExp::accept(Visitor* v) {
@@ -157,7 +157,7 @@ void CastExp::accept(Visitor* v) {
 }
 
 IdentifierType::IdentifierType(std::shared_ptr<Identifier> i) : Type(DataType::OBJECT), id(i) {
-    std::cout << "IdentifierType constructor" << std::endl;
+    std::cout << id->name << std::endl;
 }
 
 void IdentifierType::accept(Visitor* v) {
@@ -219,9 +219,12 @@ void ParExp::accept(Visitor* v) {
 }
 
 Identifier::Identifier(std::string& s) : name(s) {
-    std::cout << "Identifier constructor" << std::endl;
+    std::cout << name << std::endl;
 }
 
+void Identifier::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
 
 void LessExp::accept(Visitor* v) {
     exp1->accept(v);
@@ -427,11 +430,33 @@ BooleanType::BooleanType() : Type(DataType::BOOLEAN) {
     std::cout << "BooleanType constructor" << std::endl;
 }
 
-
 void ByteType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 ByteType::ByteType() : Type(DataType::BYTE) {
     std::cout << "ByteType constructor" << std::endl;
+}
+
+Package::Package(std::shared_ptr<Identifier> i) : id(i) {
+    std::cout << "Package constructor" << std::endl;
+}
+
+void Package::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+ImportStatement::ImportStatement() {
+    std::cout << "ImportStatement constructor" << std::endl;
+}
+
+void ImportStatement::addImport(std::shared_ptr<Identifier> i) {
+    stmts.push_back(i);
+}
+
+void ImportStatement::accept(Visitor* v) {
+    for (auto stmt: stmts) {
+        stmt->accept(v);
+    }
+    v->visit(shared_from_this());
 }

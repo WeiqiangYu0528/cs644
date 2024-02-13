@@ -169,3 +169,15 @@ void PrintVisitor::visit(std::shared_ptr<VoidType> n) {
 void PrintVisitor::visit(std::shared_ptr<ByteType> n) { 
     std::cout << "Visiting ByteType" << std::endl;
 }
+
+void PrintVisitor::visit(std::shared_ptr<Package> n) { 
+    std::cout << "Visiting Package" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ImportStatement> n) { 
+    std::cout << "Visiting ImportStatement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<Identifier> n) { 
+    std::cout << n->name << std::endl;
+}

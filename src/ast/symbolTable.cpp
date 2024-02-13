@@ -1,4 +1,5 @@
 #include "symbolTable.hpp"
+
 void SymbolTable::put(std::string& key, std::shared_ptr<Exp> value) {
     stack_t.push(key);
     table[key] = value;

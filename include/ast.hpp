@@ -22,18 +22,11 @@ class Type {
         virtual void accept(Visitor* v);
 };
 
-class Ast {
-    private:
-        std::shared_ptr<Exp> exp;
-    public:
-        void setAst(std::shared_ptr<Exp> exp);
-        std::shared_ptr<Exp> getAst() const;
-};
-
-class Identifier {
+class Identifier : public std::enable_shared_from_this<Identifier> {
     public:
         std::string name;
         Identifier(std::string& s);
+        void accept(Visitor* v);
 };
 
 class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
@@ -48,6 +41,21 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         std::shared_ptr<Type> dataType;
         ArrayType(std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
+};
+
+class Package : public std::enable_shared_from_this<Package>  {
+    std::shared_ptr<Identifier> id;
+    public:
+        Package(std::shared_ptr<Identifier> i);
+        void accept(Visitor* v);
+};
+
+class ImportStatement : public std::enable_shared_from_this<ImportStatement> {
+    std::vector<std::shared_ptr<Identifier>> stmts;
+    public:
+        ImportStatement();
+        void addImport(std::shared_ptr<Identifier> i);
+        void accept(Visitor* v);
 };
 
 // class CompoundType : public Type, public std::enable_shared_from_this<CompoundType> {
@@ -347,4 +355,12 @@ class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
 public:
     VoidType();
     void accept(Visitor* v) override;
+};
+
+class Ast {
+    private:
+        std::shared_ptr<Package> exp;
+    public:
+        void setAst(std::shared_ptr<Package> exp);
+        std::shared_ptr<Package> getAst() const;
 };

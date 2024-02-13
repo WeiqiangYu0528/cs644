@@ -1,7 +1,10 @@
 #pragma once
+#include "symbolTable.hpp"
 #include "visitor.hpp"
 
-class PrintVisitor: public Visitor {
+class ContextVisitor: public Visitor {
+    private:
+        SymbolTable symbolTable;
     public:
         void visit(std::shared_ptr<PlusExp> n) override;
         void visit(std::shared_ptr<MinusExp> n) override;
@@ -46,7 +49,4 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<IntType> t) override;
         void visit(std::shared_ptr<BooleanType> t) override;
         void visit(std::shared_ptr<VoidType> t) override;      
-        void visit(std::shared_ptr<Package> n) override;
-        void visit(std::shared_ptr<ImportStatement> n) override;
-        void visit(std::shared_ptr<Identifier> n) override;
 };

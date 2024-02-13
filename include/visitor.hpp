@@ -46,5 +46,8 @@ class Visitor {
         virtual void visit(std::shared_ptr<CharType> t) = 0;
         virtual void visit(std::shared_ptr<IntType> t) = 0;
         virtual void visit(std::shared_ptr<BooleanType> t) = 0;
-        virtual void visit(std::shared_ptr<VoidType> t) = 0;        
+        virtual void visit(std::shared_ptr<VoidType> t) = 0;
+        virtual void visit(std::shared_ptr<Package> n) = 0;
+        virtual void visit(std::shared_ptr<ImportStatement> n) = 0;
+        virtual void visit(std::shared_ptr<Identifier> n) = 0;
 };

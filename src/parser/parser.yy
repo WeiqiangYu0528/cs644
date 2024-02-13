@@ -80,7 +80,7 @@
 %nonassoc ELSE
 
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <std::shared_ptr<Identifier>> Variable
+%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
@@ -95,11 +95,15 @@
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
 %type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment MethodInvocation ClassInstanceCreationExpression
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
+%type <std::shared_ptr<Package>> PackageDeclaration
+%type <std::shared_ptr<ImportStatement>> ImportStatements
 
 %%
 
 Program
-    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration {
+        ast.setAst($1);
+    }
     ;
 
 ClassOrInterfaceDeclaration
@@ -109,22 +113,28 @@ ClassOrInterfaceDeclaration
     ;  
 
 PackageDeclaration
-    :
-    | PACKAGE Name SEMICOLON
+    : {$$ = nullptr;}
+    | PACKAGE Name SEMICOLON {$$ = std::make_shared<Package>($2->id);}
     ;
 
 ImportStatements
-    :
-    | ImportStatement ImportStatements
+    : {$$ = std::make_shared<ImportStatement>();}
+    | ImportStatement ImportStatements {
+        $$ = $2;
+        $$->addImport($1);
+    }
     ;
 
 ImportStatement
-    : IMPORT Name SEMICOLON
-    | IMPORT PackageImportIdentifier SEMICOLON
+    : IMPORT Name SEMICOLON {$$ = std::make_shared<Identifier>($2->id->name);}
+    | IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
     ;
 
 PackageImportIdentifier    
-    : Name DOT STAR
+    : Name DOT STAR {
+        std::string temp = $1->id->name + ".*";
+        $$ = std::make_shared<Identifier>(temp);
+        }
     ;
 
 InterfaceDeclaration 
@@ -347,7 +357,7 @@ VariableInitializer:
     ;
 
 Expression:
-    AssignmentExpression {$$ = $1; ast.setAst($$);}
+    AssignmentExpression {$$ = $1;}
     ;
 
 AssignmentExpression:
