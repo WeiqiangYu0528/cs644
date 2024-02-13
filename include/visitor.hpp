@@ -26,6 +26,31 @@ class Visitor {
         // virtual void visit(std::shared_ptr<CompoundType> n) = 0;
         virtual void visit(std::shared_ptr<NegExp> n) = 0;
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
+
+        virtual void visit(std::shared_ptr<LessExp> n) = 0;
+        virtual void visit(std::shared_ptr<GreaterExp> n) = 0;
+        virtual void visit(std::shared_ptr<LessEqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<GreaterEqualExp> n) = 0;       
+        virtual void visit(std::shared_ptr<InstanceOfExp> n) = 0;  
+        
+        virtual void visit(std::shared_ptr<EqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<NotEqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<AndExp> n) = 0;
+        virtual void visit(std::shared_ptr<XorExp> n) = 0;
+        virtual void visit(std::shared_ptr<OrExp> n) = 0;
+        virtual void visit(std::shared_ptr<ConditionalAndExp> n) = 0;
+        virtual void visit(std::shared_ptr<ConditionalOrExp> n) = 0;        
+
+        virtual void visit(std::shared_ptr<Assignment> n) = 0;
+        virtual void visit(std::shared_ptr<MethodInvocation> n) = 0;
+        virtual void visit(std::shared_ptr<ClassInstanceCreationExp> n) = 0;
+
+        virtual void visit(std::shared_ptr<ByteType> t) = 0;
+        virtual void visit(std::shared_ptr<ShortType> t) = 0;
+        virtual void visit(std::shared_ptr<CharType> t) = 0;
+        virtual void visit(std::shared_ptr<IntType> t) = 0;
+        virtual void visit(std::shared_ptr<BooleanType> t) = 0;
+        virtual void visit(std::shared_ptr<VoidType> t) = 0;        
 };
 
 class PrintVisitor: public Visitor {
@@ -52,4 +77,28 @@ class PrintVisitor: public Visitor {
         // void visit(std::shared_ptr<CompoundType> n) override;
         void visit(std::shared_ptr<NegExp> n) override;
         void visit(std::shared_ptr<ParExp> n) override;
+
+        void visit(std::shared_ptr<LessExp> n) override;
+        void visit(std::shared_ptr<GreaterExp> n) override;
+        void visit(std::shared_ptr<LessEqualExp> n) override;
+        void visit(std::shared_ptr<GreaterEqualExp> n) override;   
+        void visit(std::shared_ptr<InstanceOfExp> n) override; 
+        void visit(std::shared_ptr<EqualExp> n) override;
+        void visit(std::shared_ptr<NotEqualExp> n) override;
+        void visit(std::shared_ptr<AndExp> n) override;
+        void visit(std::shared_ptr<XorExp> n) override;
+        void visit(std::shared_ptr<OrExp> n) override;
+        void visit(std::shared_ptr<ConditionalAndExp> n) override;
+        void visit(std::shared_ptr<ConditionalOrExp> n) override;  
+
+        void visit(std::shared_ptr<Assignment> n) override;     
+        void visit(std::shared_ptr<MethodInvocation> n) override;            
+        void visit(std::shared_ptr<ClassInstanceCreationExp> n) override; 
+
+        void visit(std::shared_ptr<ByteType> t) override;
+        void visit(std::shared_ptr<ShortType> t) override;
+        void visit(std::shared_ptr<CharType> t) override;
+        void visit(std::shared_ptr<IntType> t) override;
+        void visit(std::shared_ptr<BooleanType> t) override;
+        void visit(std::shared_ptr<VoidType> t) override;      
 };
