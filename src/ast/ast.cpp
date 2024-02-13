@@ -347,7 +347,7 @@ void Assignment::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 Assignment::Assignment(std::shared_ptr<Exp> l, std::shared_ptr<Exp> r) : left(l), right(r) {
-    std::cout << "ConditionalOrExp constructor" << std::endl;
+    std::cout << "Assignment constructor" << std::endl;
 }
 
 
