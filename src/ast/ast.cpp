@@ -221,3 +221,217 @@ void ParExp::accept(Visitor* v) {
 Identifier::Identifier(std::string& s) : name(s) {
     std::cout << "Identifier constructor" << std::endl;
 }
+
+
+void LessExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+
+LessExp::LessExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "LessExp constructor" << std::endl;
+}
+
+
+void GreaterExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+
+GreaterExp::GreaterExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "GreaterExp constructor" << std::endl;
+}
+
+
+void LessEqualExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+
+LessEqualExp::LessEqualExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "LessEqualExp constructor" << std::endl;
+}
+
+
+void GreaterEqualExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+
+GreaterEqualExp::GreaterEqualExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "GreaterEqual constructor" << std::endl;
+}
+
+void InstanceOfExp::accept(Visitor* v) {
+    exp->accept(v);
+    type->accept(v);
+    v->visit(shared_from_this());
+}
+
+InstanceOfExp::InstanceOfExp(std::shared_ptr<Exp> exp, std::shared_ptr<Type> type) : exp(exp), type(type) {
+    std::cout << "InstanceOfExp constructor" << std::endl;
+}
+
+void EqualExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+EqualExp::EqualExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "EqualExp constructor" << std::endl;
+}
+
+void NotEqualExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+NotEqualExp::NotEqualExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "NotEqualExp constructor" << std::endl;
+}
+
+void AndExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+AndExp::AndExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "AndExp constructor" << std::endl;
+}
+
+void XorExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+XorExp::XorExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "XorExp constructor" << std::endl;
+}
+
+void OrExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+OrExp::OrExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "OrExp constructor" << std::endl;
+}
+
+
+void ConditionalAndExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+ConditionalAndExp::ConditionalAndExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "ConditionalAndExp constructor" << std::endl;
+}
+
+void ConditionalOrExp::accept(Visitor* v) {
+    exp1->accept(v);
+    exp2->accept(v);
+    v->visit(shared_from_this());
+}
+ConditionalOrExp::ConditionalOrExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
+    std::cout << "ConditionalOrExp constructor" << std::endl;
+}
+
+
+void Assignment::accept(Visitor* v) {
+    left->accept(v);
+    right->accept(v);
+    v->visit(shared_from_this());
+}
+Assignment::Assignment(std::shared_ptr<Exp> l, std::shared_ptr<Exp> r) : left(l), right(r) {
+    std::cout << "ConditionalOrExp constructor" << std::endl;
+}
+
+
+void MethodInvocation::accept(Visitor* v) {
+    if (primary != nullptr)
+        primary->accept(v);
+
+    if(methodName != nullptr)
+        methodName->accept(v);
+
+    for (auto& arg : arguments) {
+        arg->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+MethodInvocation::MethodInvocation(std::shared_ptr<Exp> primary, 
+        std::shared_ptr<Identifier> primaryMethodName,
+        std::shared_ptr<IdentifierType> methodName, 
+        std::vector<std::shared_ptr<Exp>> arguments)
+        : primary(primary), primaryMethodName(primaryMethodName), methodName(methodName), arguments(arguments) {
+        std::cout << "MethodInvocation constructor" << std::endl;
+}
+
+void ClassInstanceCreationExp::accept(Visitor* v) {
+    classType->accept(v);
+
+    for (auto& arg : arguments) {
+        arg->accept(v);
+    }
+
+    v->visit(shared_from_this());
+}
+
+ClassInstanceCreationExp::ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments)
+    : classType(classType), arguments(arguments)
+{
+    std::cout << "ClassInstanceCreationExpression constructor" << std::endl;
+}
+
+void IntType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+IntType::IntType() : Type(DataType::INT) {
+    std::cout << "IntType constructor" << std::endl;
+}
+
+void CharType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+CharType::CharType() : Type(DataType::CHAR) {
+    std::cout << "CharType constructor" << std::endl;
+}
+
+void ShortType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+ShortType::ShortType() : Type(DataType::SHORT) {
+    std::cout << "ShortType constructor" << std::endl;
+}
+
+void VoidType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+VoidType::VoidType() : Type(DataType::VOID) {
+    std::cout << "VoidType constructor" << std::endl;
+}
+
+void BooleanType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+BooleanType::BooleanType() : Type(DataType::BOOLEAN) {
+    std::cout << "BooleanType constructor" << std::endl;
+}
+
+
+void ByteType::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+ByteType::ByteType() : Type(DataType::BYTE) {
+    std::cout << "ByteType constructor" << std::endl;
+}
