@@ -139,7 +139,13 @@ InterfaceOpt1
 
 InterfaceOpt2
     :
-    | EXTENDS Variable
+    | EXTENDS InterfaceTypeList
+    ;
+
+InterfaceTypeList
+    :
+    Variable
+    | InterfaceTypeList COMMA Variable
     ;
 
 InterfaceBody
