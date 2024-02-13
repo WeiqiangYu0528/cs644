@@ -20,9 +20,6 @@ class Visitor {
         virtual void visit(std::shared_ptr<ThisExp> n) = 0;
         virtual void visit(std::shared_ptr<CastExp> n) = 0;
         virtual void visit(std::shared_ptr<ArrayType> n) = 0;
-
-        virtual void visit(std::shared_ptr<ResultType> n) = 0;
-
         virtual void visit(std::shared_ptr<IdentifierType> n) = 0;
         virtual void visit(std::shared_ptr<FieldAccessExp> n) = 0;
         virtual void visit(std::shared_ptr<NewArrayExp> n) = 0;
@@ -30,17 +27,11 @@ class Visitor {
         virtual void visit(std::shared_ptr<NegExp> n) = 0;
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
 
+        virtual void visit(std::shared_ptr<FormalParameter> n) = 0;
+        virtual void visit(std::shared_ptr<MemberDecl> n) = 0;
         virtual void visit(std::shared_ptr<ClassBodyDeclaration> n) = 0;
         virtual void visit(std::shared_ptr<ClassBody> n) = 0;
-        virtual void visit(std::shared_ptr<TypeParameter> n) = 0;
-        virtual void visit(std::shared_ptr<NormalClassDecl> n) = 0;
         virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
-
-        virtual void visit(std::shared_ptr<FieldDeclaratorsRest> n) = 0;
-        virtual void visit(std::shared_ptr<MethodDeclaratorRest> n) = 0; //to be removed (MDR will be abstract)
-        virtual void visit(std::shared_ptr<MethodOrFieldDecl> n) = 0;
-        virtual void visit(std::shared_ptr<ConstructorDecl> n) = 0;
-        virtual void visit(std::shared_ptr<ConstructorDeclaratorRest> n) = 0;
         
 };
 
@@ -62,9 +53,6 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<ThisExp> n) override;
         void visit(std::shared_ptr<CastExp> n) override;
         void visit(std::shared_ptr<ArrayType> n) override;
-
-        void visit(std::shared_ptr<ResultType> n) override;
-
         void visit(std::shared_ptr<IdentifierType> n) override;
         void visit(std::shared_ptr<FieldAccessExp> n) override;
         void visit(std::shared_ptr<NewArrayExp> n) override;
@@ -72,16 +60,10 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<NegExp> n) override;
         void visit(std::shared_ptr<ParExp> n) override;
 
+        void visit(std::shared_ptr<FormalParameter> n) override;
+        void visit(std::shared_ptr<MemberDecl> n) override;
         void visit(std::shared_ptr<ClassBodyDeclaration> n) override;
         void visit(std::shared_ptr<ClassBody> n) override;
-        void visit(std::shared_ptr<TypeParameter> n) override;
-        void visit(std::shared_ptr<NormalClassDecl> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
-
-        void visit(std::shared_ptr<FieldDeclaratorsRest> n) override;
-        void visit(std::shared_ptr<MethodDeclaratorRest> n) override; //to be removed (MDR will be abstract)
-        void visit(std::shared_ptr<MethodOrFieldDecl> n) override;
-        void visit(std::shared_ptr<ConstructorDecl> n) override;
-        void visit(std::shared_ptr<ConstructorDeclaratorRest> n) override;
         
 };

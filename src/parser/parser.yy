@@ -5,6 +5,7 @@
 %code requires {
     #include <memory>
     #include <string>
+    #include <tuple>
     #include <vector>
     #include <limits.h>
     #include "ast.hpp"
@@ -97,23 +98,23 @@
 
 %type <std::string> ClassDeclarationOpt
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration
-%type <std::shared_ptr<NormalClassDecl>> NormalClassDeclaration
-%type <std::vector<std::shared_ptr<TypeParameter>>> NormalClassDeclarationOpt1 TypeParameters TypeParametersOpt1
+%type <std::tuple<std::shared_ptr<Identifier>, std::vector<std::shared_ptr<IdentifierType>>, std::vector<std::shared_ptr<IdentifierType>>, std::shared_ptr<ClassBody>>> NormalClassDeclaration
+
 %type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList
-%type <std::shared_ptr<TypeParameter>> TypeParameter
-%type <std::vector<std::shared_ptr<Type>>> TypeParameterOpt1 Bound
 
 %type <std::shared_ptr<ClassBody>> ClassBody
 %type <std::shared_ptr<ClassBodyDeclaration>> ClassBodyDeclaration
 %type <std::vector<std::shared_ptr<ClassBodyDeclaration>>> ClassBodyOpt1
 %type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
 %type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl
-%type <std::shared_ptr<MethodOrFieldRest>> MethodOrFieldRest FieldDeclaratorsRest MethodDeclaratorRest VariableDeclaratorRest
-%type <std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>> FormalParameters FormalParameterDecls
-%type <std::pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>> FormalParameterDeclsRest
-%type <std::shared_ptr<ConstructorDeclaratorRest>> ConstructorDeclaratorRest
 
+%type <std::tuple<MemberType, std::shared_ptr<Exp>, std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> MethodOrFieldRest FieldDeclaratorsRest VariableDeclaratorRest MethodDeclaratorRest
+%type <std::tuple<std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> ConstructorDeclaratorRest
 %type <std::shared_ptr<Block>> Block
+
+%type <std::vector<std::shared_ptr<FormalParameter>>> FormalParameters
+%type <std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>> FormalParameterDecls
+%type <std::pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>> FormalParameterDeclsRest
 
 
 %%
@@ -183,7 +184,7 @@ MethodDeclarationOpt
 
 ClassDeclaration
     : PUBLIC ClassDeclarationOpt NormalClassDeclaration {
-        $$ = std::make_shared<ClassDecl>($2, $3);
+        $$ = std::make_shared<ClassDecl>($2, std::get<0>($3), std::get<1>($3), std::get<2>($3), std::get<3>($3));
         ast.setAst($$);
     }
     ;
@@ -197,13 +198,13 @@ ClassDeclarationOpt
 NormalClassDeclaration
     : CLASS Variable NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
         if ($2->name != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
-        $$ = std::make_shared<NormalClassDecl>($2, $3, $4, $5, $6);
+        $$ = std::make_tuple($2, $4, $5, $6);
     }
     ;
 
 NormalClassDeclarationOpt1
-    : {$$ = {};}
-    | TypeParameters {$$ = $1;}
+    :
+    | TypeParameters
     ;
 
 NormalClassDeclarationOpt2
@@ -267,12 +268,10 @@ ArrayType
 
 ResultType
     : Type {
-        //$$ = $1;
-        $$ = std::make_shared<ResultType>($1);
+        $$ = $1;
     }
     | VOID {
-        //$$ = std::make_shared<Type>(); $$->type = DataType::VOID;
-        $$ = std::make_shared<ResultType>(std::make_shared<Type>(DataType::VOID));
+        $$ = std::make_shared<Type>(); $$->type = DataType::VOID;
     }
     ;
 
@@ -283,26 +282,26 @@ TypeList
     ;
 
 TypeParameters
-    : LESS TypeParameter TypeParametersOpt1 GREATER {$$ = {$2}; $$.insert($$.end(), $3.begin(), $3.end());}
+    : LESS TypeParameter TypeParametersOpt1 GREATER
     ;
 
 TypeParametersOpt1
-    : {$$ = {};}
-    | COMMA TypeParameter TypeParametersOpt1 {$$ = {$2}; $$.insert($$.end(), $3.begin(), $3.end());}
+    :
+    | COMMA TypeParameter TypeParametersOpt1
     ;
 
 TypeParameter
-    : Variable TypeParameterOpt1 {$$ = std::make_shared<TypeParameter>($1, $2);}
+    : Variable TypeParameterOpt1
     ;
 
 TypeParameterOpt1
-    : {$$ = {};}
-    | EXTENDS Bound {$$ = $2;}
+    :
+    | EXTENDS Bound
     ;
 
 Bound  
-    : ReferenceType {$$ = {$1};}
-    | Bound AND ReferenceType {$$ = $1; $$.push_back($3);}
+    : ReferenceType 
+    | Bound AND ReferenceType
     ;
 
 Statement:
@@ -696,22 +695,31 @@ ClassBodyDeclarationOpt1
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
     | Variable ConstructorDeclaratorRest {
-        $$ = std::make_shared<ConstructorDecl>($1, $2, MemberType::CONSTRUCTOR);
+        $$ = std::make_shared<MemberDecl>(MemberType::CONSTRUCTOR, $1, std::get<0>($2), std::get<1>($2));
         if ($1->name != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
     }
     ;
 
 MethodOrFieldDecl:
     ResultType Variable MethodOrFieldRest {
-        $$ = std::make_shared<MethodOrFieldDecl>($1, $2, $3);
-        if ($1->type == DataType::VOID && $3->memberType == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
+        //$3 is a 4-tuple of MemberType, Exp, FPs, and Block
+        MemberType memberType = std::get<0>($3);
+        if (memberType == MemberType::FIELD) {
+            if (std::get<1>($3) == nullptr) $$ = std::make_shared<MemberDecl>(memberType, $1, $2);
+            else $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<1>($3));
+        } else if (memberType == MemberType::METHODWITHOUTBODY) {
+            $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<2>($3));
+        } else {
+            assert(memberType == MemberType::METHODWITHBODY);
+            $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<2>($3), std::get<3>($3));
+        }
+        if ($1->type == DataType::VOID && memberType == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
     ;
 
 MethodOrFieldRest
     : FieldDeclaratorsRest SEMICOLON {
         $$ = $1;
-        //$$ = MemberType::FIELD;
     }
     | MethodDeclaratorRest {
         $$ = $1; //$1 should be a constructed MDR
@@ -720,10 +728,10 @@ MethodOrFieldRest
 
 MethodDeclaratorRest
     : FormalParameters Block {
-        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHBODY, $1, $2);
+        $$ = std::make_tuple(MemberType::METHODWITHBODY, nullptr, $1, $2);
     }
     | FormalParameters SEMICOLON  {
-        $$ = std::make_shared<MethodDeclaratorRest>(MemberType::METHODWITHOUTBODY, $1);
+        $$ = std::make_tuple(MemberType::METHODWITHOUTBODY, nullptr, $1, nullptr);
     }
     ;
 
@@ -734,27 +742,33 @@ FieldDeclaratorsRest
     ;
 
 VariableDeclaratorRest
-    : {$$ = std::make_shared<FieldDeclaratorsRest>(MemberType::FIELD);}
+    : {
+        $$ = std::make_tuple(MemberType::FIELD, nullptr, std::vector<std::shared_ptr<FormalParameter>>{}, nullptr);
+    }
     | ASSIGN VariableInitializer {
-        $$ = std::make_shared<FieldDeclaratorsRest>(MemberType::FIELD, $2);
+        $$ = std::make_tuple(MemberType::FIELD, $2, std::vector<std::shared_ptr<FormalParameter>>{}, nullptr);
     }
     ;
 
 ConstructorDeclaratorRest
-    : FormalParameters Block {$$ = std::make_shared<ConstructorDeclaratorRest>($1, $2);}
+    : FormalParameters Block {
+        $$ = std::make_tuple($1, $2);
+        }
     ;
 
 FormalParameters: 
-    LEFT_PAREN FormalParameterDecls RIGHT_PAREN {$$ = $2;}
+    LEFT_PAREN FormalParameterDecls RIGHT_PAREN {
+        $$ = {};
+        for (auto fp : $2) {
+            $$.push_back(std::make_shared<FormalParameter>(fp.first, fp.second));
+        }
+    }
     ;
 
 
 FormalParameterDecls: {$$ = {};}
     | Type FormalParameterDeclsRest {
-        $$ = {
-           // std::make_pair<std::shared_ptr<Type>&, std::shared_ptr<Identifier>&>($1, $2.first)
-            std::make_pair($1, $2.first)
-            };
+        $$ = {std::make_pair($1, $2.first)};
         $$.insert($$.end(), $2.second.begin(), $2.second.end());
     }
     ;
@@ -767,7 +781,6 @@ FormalParameterDeclsRest
     }
     | VariableDeclaratorId COMMA FormalParameterDecls
     {
-        //$$ = std::make_pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>($1, $3);
         $$ = std::make_pair($1, $3);
     }
     ;

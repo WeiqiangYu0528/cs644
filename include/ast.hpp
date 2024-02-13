@@ -44,15 +44,6 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         void accept(Visitor* v) override;
 };
 
-class ResultType : public Type, public std::enable_shared_from_this<ResultType> {
-    public:
-        std::shared_ptr<Type> dataType;
-        ResultType(std::shared_ptr<Type> t) : Type(t->type), dataType(t) {
-            std::cout << "ResultType constructor" << std::endl;
-        }
-        void accept(Visitor* v) override;
-};
-
 // class CompoundType : public Type, public std::enable_shared_from_this<CompoundType> {
 //     public:
 //         std::shared_ptr<Type> type;
@@ -201,78 +192,41 @@ class Block {
     //Needs to be implemented
 };
 
-
-
-
-
-class MethodOrFieldRest {
+class FormalParameter : public std::enable_shared_from_this<FormalParameter> {
     public:
-        MemberType memberType;
+        std::shared_ptr<Type> type;
+        std::shared_ptr<Identifier> variableName;
 
-        MethodOrFieldRest(MemberType m);
-        virtual void accept(Visitor* v) = 0;
-};
-
-class FieldDeclaratorsRest : public MethodOrFieldRest, public std::enable_shared_from_this<FieldDeclaratorsRest> {
-    public:
-        bool initializer;
-        std::shared_ptr<Exp> exp;
-
-        FieldDeclaratorsRest(MemberType m);
-        FieldDeclaratorsRest(MemberType m, std::shared_ptr<Exp> e);
-        void accept(Visitor* v) override;
-};
-
-class MethodDeclaratorRest : public MethodOrFieldRest, public std::enable_shared_from_this<MethodDeclaratorRest> {
-    public:
-        bool hasBlock;
-        std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> formalParameters;
-        std::shared_ptr<Block> block; //Needs to be implemented!
-
-        MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp);
-        MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp, std::shared_ptr<Block> b);
-        void accept(Visitor* v) override;
-};
-
-class MemberDecl {
-    public:
-        MemberType memberType;
-
-        MemberDecl(MemberType m);
-        ~MemberDecl() = default;
-        virtual void accept(Visitor* v) = 0;
-};
-
-class MethodOrFieldDecl : public MemberDecl, public std::enable_shared_from_this<MethodOrFieldDecl> {
-    public:
-        std::shared_ptr<Type> resultType;
-        std::shared_ptr<Identifier> variable;
-        std::shared_ptr<MethodOrFieldRest> methodOrFieldRest;
-
-        MethodOrFieldDecl(std::shared_ptr<Type> rt, std::shared_ptr<Identifier> v, 
-        std::shared_ptr<MethodOrFieldRest> mofr);
-
-        void accept(Visitor* v) override;
-};
-
-
-class ConstructorDeclaratorRest : public std::enable_shared_from_this<ConstructorDeclaratorRest> {
-    public:
-        std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> formalParameters;
-        std::shared_ptr<Block> block; //Needs to be implemented!
-
-        ConstructorDeclaratorRest(std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp, std::shared_ptr<Block> b);
+        FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn);
         void accept(Visitor* v);
 };
 
-
-class ConstructorDecl : public MemberDecl, public std::enable_shared_from_this<ConstructorDecl> {
+class MemberDecl : public std::enable_shared_from_this<MemberDecl> {
     public:
-        std::shared_ptr<Identifier> variable;
-        std::shared_ptr<ConstructorDeclaratorRest> constructorDeclaratorRest;
+        MemberType memberType; //method or field or constructor or something
 
-        ConstructorDecl(std::shared_ptr<Identifier> v, std::shared_ptr<ConstructorDeclaratorRest> c, MemberType m);
-        void accept(Visitor* v) override;
+        std::shared_ptr<Type> returnType; //field / method
+        std::shared_ptr<Identifier> name; //all
+        bool initializer; //field
+        std::shared_ptr<Exp> exp; //field
+        std::vector<std::shared_ptr<FormalParameter>> formalParameters; //method / constructor
+        std::shared_ptr<Block> block; //method with body / constructor
+
+        //uninitialized field
+        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n); 
+        //initialized field
+        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::shared_ptr<Exp> e); 
+        //method without body
+        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp);
+        //method with body
+        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
+        std::shared_ptr<Block> b);
+        //constructor
+        MemberDecl(MemberType mt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
+        std::shared_ptr<Block> b);
+
+        ~MemberDecl() = default;
+        void accept(Visitor* v);
 };
 
 class ClassBodyDeclaration : public std::enable_shared_from_this<ClassBodyDeclaration> {
@@ -297,37 +251,16 @@ class ClassBody : public std::enable_shared_from_this<ClassBody> {
         void accept(Visitor* v);
 };
 
-class TypeParameter : public std::enable_shared_from_this<TypeParameter> {
-    public:
-        std::shared_ptr<Identifier> typeParameterName; //Variable
-        std::vector<std::shared_ptr<Type>> extended; //TypeParameterOpt1 -> List of ReferenceType
-
-        TypeParameter(std::shared_ptr<Identifier> tpn, std::vector<std::shared_ptr<Type>> e);
-        ~TypeParameter() = default;
-        void accept(Visitor* v);
-};
-
-class NormalClassDecl : public std::enable_shared_from_this<NormalClassDecl> {
-    public:
-        std::shared_ptr<Identifier> className; //Variable
-        std::vector<std::shared_ptr<TypeParameter>> typeParams; //NormalClassDeclarationOpt1 -> List of TypeParameter
-        std::vector<std::shared_ptr<IdentifierType>> extended; //NormalClassDeclarationOpt2 -> List of ClassOrInterfaceType
-        std::vector<std::shared_ptr<IdentifierType>> implemented; //NormalClassDeclarationOpt3 -> List of ClassOrInterfaceType
-        std::shared_ptr<ClassBody> classBody;
-
-        NormalClassDecl(std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<TypeParameter>> tp,
-        std::vector<std::shared_ptr<IdentifierType>> e, std::vector<std::shared_ptr<IdentifierType>> i,
-        std::shared_ptr<ClassBody> cb);
-        ~NormalClassDecl() = default;
-        void accept(Visitor* v);
-};
-
 class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
     public:
         std::string modifier;
-        std::shared_ptr<NormalClassDecl> ncdecl;
+        std::shared_ptr<Identifier> className;
+        std::vector<std::shared_ptr<IdentifierType>> extended;
+        std::vector<std::shared_ptr<IdentifierType>> implemented;
+        std::shared_ptr<ClassBody> classBody;
 
-        ClassDecl(std::string m, std::shared_ptr<NormalClassDecl> n);
+        ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e,
+        std::vector<std::shared_ptr<IdentifierType>> i, std::shared_ptr<ClassBody> cb);
         ~ClassDecl() = default;
         void accept(Visitor* v);
 };

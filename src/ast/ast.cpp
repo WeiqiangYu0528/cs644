@@ -182,11 +182,6 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-void ResultType::accept(Visitor* v) {
-    dataType->accept(v);
-    v->visit(shared_from_this());
-}
-
 FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
     std::cout << "FieldAccessExp constructor" << std::endl;
 }
@@ -236,77 +231,56 @@ Identifier::Identifier(std::string& s) : name(s) {
     std::cout << "Identifier constructor" << std::endl;
 }
 
-
-MethodOrFieldRest::MethodOrFieldRest(MemberType m) : memberType(m) {
-    std::cout << "MethodOrFieldRest constructor" << std::endl;
+FormalParameter::FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn) : type(t), variableName(vn) {
+    std::cout << "FormalParameter constructor" << std::endl;
 }
 
-FieldDeclaratorsRest::FieldDeclaratorsRest(MemberType m) : MethodOrFieldRest(m), initializer(false) {
-    std::cout << "FieldDeclaratorsRest declaration constructor" << std::endl;
-}
-
-FieldDeclaratorsRest::FieldDeclaratorsRest(MemberType m, std::shared_ptr<Exp> e) : MethodOrFieldRest(m), initializer(true), exp(e) {
-    std::cout << "FieldDeclaratorsRest initialization constructor" << std::endl;
-}
-
-void FieldDeclaratorsRest::accept(Visitor* v) {
-    if (initializer) exp->accept(v);
+void FormalParameter::accept(Visitor* v) {
+    type->accept(v);
     v->visit(shared_from_this());
 }
 
-
-MethodDeclaratorRest::MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp) 
-: MethodOrFieldRest(m), hasBlock(false), formalParameters(fp) {
-    std::cout << "MethodDeclaratorRest (no block) constructor" << std::endl;
+MemberDecl::MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n) 
+: memberType(mt), returnType(rt), name(n), initializer(false) {
+    std::cout << "MemberDecl constructor (uninitialized field)" << std::endl;
 }
 
-MethodDeclaratorRest::MethodDeclaratorRest(MemberType m, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp,
-std::shared_ptr<Block> b) : MethodOrFieldRest(m), hasBlock(true), formalParameters(fp), block(b)  {
-    std::cout << "MethodDeclaratorRest (with block) constructor" << std::endl;
+MemberDecl::MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::shared_ptr<Exp> e) 
+: memberType(mt), returnType(rt), name(n), initializer(true), exp(e) {
+    std::cout << "MemberDecl constructor (initialized field)" << std::endl;
+} 
+
+MemberDecl::MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp)
+: memberType(mt), returnType(rt), name(n), formalParameters(fp) {
+    std::cout << "MemberDecl constructor (method without body)" << std::endl;
 }
 
-void MethodDeclaratorRest::accept(Visitor* v) {
-    //depending on what we do with visitor, we might want these to be different
-    for (auto fp : formalParameters) (fp.first)->accept(v); 
-    if (hasBlock) {
-        //block->accept(v); //To be uncommented once Block is implemented
+MemberDecl::MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
+std::shared_ptr<Block> b) : memberType(mt), returnType(rt), name(n), formalParameters(fp), block(b) {
+    std::cout << "MemberDecl constructor (method with body)" << std::endl;
+}
+
+MemberDecl::MemberDecl(MemberType mt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
+std::shared_ptr<Block> b) : memberType(mt), name(n), formalParameters(fp), block(b) {
+    std::cout << "MemberDecl constructor (constructor)" << std::endl;
+}
+
+void MemberDecl::accept(Visitor* v) {
+    if (memberType == MemberType::FIELD) {
+        returnType->accept(v);
+        if (initializer) exp->accept(v);
+    } else if (memberType == MemberType::METHODWITHOUTBODY) {
+        returnType->accept(v);
+        for (auto fp : formalParameters) fp->accept(v);
+    } else if (memberType == MemberType::METHODWITHBODY) {
+        returnType->accept(v);
+        for (auto fp : formalParameters) fp->accept(v);
+        //block->accept(b); //Uncomment this once block is implemented
+    } else {
+        assert(memberType == MemberType::CONSTRUCTOR);
+        for (auto fp : formalParameters) fp->accept(v);
+        //block->accept(b); //Uncomment this once block is implemented
     }
-    v->visit(shared_from_this());
-}
-
-MemberDecl::MemberDecl(MemberType m) : memberType(m) {
-    std::cout << "MemberDecl constructor" << std::endl;
-}
-
-MethodOrFieldDecl::MethodOrFieldDecl(std::shared_ptr<Type> rt, std::shared_ptr<Identifier> v, 
-std::shared_ptr<MethodOrFieldRest> mofr) : MemberDecl(mofr->memberType), resultType(rt), variable(v), methodOrFieldRest(mofr) {
-    std::cout << "MethodOrFieldDecl constructor" << std::endl;
-}
-
-void MethodOrFieldDecl::accept(Visitor* v) {
-    resultType->accept(v);
-    methodOrFieldRest->accept(v);
-    v->visit(shared_from_this());
-}
-
-ConstructorDeclaratorRest::ConstructorDeclaratorRest(std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>> fp, std::shared_ptr<Block> b) 
-: formalParameters(fp), block(b) {
-    std::cout << "ConstructorDeclaratorRest constructor" << std::endl;
-}
-
-void ConstructorDeclaratorRest::accept(Visitor* v) {
-    for (auto fp : formalParameters) (fp.first)->accept(v);
-    //block->accept(v); //To be uncommented once Block is implemented
-}
-
-ConstructorDecl::ConstructorDecl(std::shared_ptr<Identifier> v, std::shared_ptr<ConstructorDeclaratorRest> c, MemberType m) : MemberDecl(m), 
-        variable(v), constructorDeclaratorRest(c) { 
-    assert(m == MemberType::CONSTRUCTOR); 
-    std::cout << "ConstructorDecl constructor" << std::endl;
-}
-
-void ConstructorDecl::accept(Visitor* v)  {
-    constructorDeclaratorRest->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -335,35 +309,15 @@ void ClassBody::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-TypeParameter::TypeParameter(std::shared_ptr<Identifier> tpn, std::vector<std::shared_ptr<Type>> e) 
-: typeParameterName(tpn), extended(e) {
-    std::cout << "TypeParameter constructor" << std::endl;
-}
-
-void TypeParameter::accept(Visitor* v) {
-    for (auto e : extended) e->accept(v);
-    v->visit(shared_from_this());
-}
-
-NormalClassDecl::NormalClassDecl(std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<TypeParameter>> tp, 
-std::vector<std::shared_ptr<IdentifierType>> e, std::vector<std::shared_ptr<IdentifierType>> i, 
-std::shared_ptr<ClassBody> cb) : className(cn), typeParams(tp), extended(e), implemented(i), classBody(cb) {
-    std::cout << "NormalClassDecl constructor" << std::endl;
-}
-
-void NormalClassDecl::accept(Visitor* v) {
-    for (auto i : typeParams) i->accept(v);
-    for (auto i : extended) i->accept(v);
-    for (auto i : implemented) i->accept(v);
-    classBody->accept(v);
-    v->visit(shared_from_this());
-}
-
-ClassDecl::ClassDecl(std::string m, std::shared_ptr<NormalClassDecl> n) : modifier(m), ncdecl(n) {
+ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e,
+std::vector<std::shared_ptr<IdentifierType>> i, std::shared_ptr<ClassBody> cb) : modifier(m), className(cn), extended(e), 
+implemented(i), classBody(cb) {
     std::cout << "ClassDecl constructor" << std::endl;
 }
 
 void ClassDecl::accept(Visitor* v) {
-    ncdecl->accept(v);
+    for (auto e : extended) e->accept(v);
+    for (auto i : implemented) i->accept(v);
+    classBody->accept(v);
     v->visit(shared_from_this());
 }
