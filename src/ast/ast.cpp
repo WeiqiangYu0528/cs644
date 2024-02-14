@@ -505,8 +505,8 @@ void WhileStatement::accept(Visitor *v)
 }
 
 // Constructor for ExpressionStatement initialization
-ForStatement::ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2)
-        : stmt1(s1), exp(e), expStmt2(es2), stmt2(s2) 
+ForStatement::ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<Exp> es2)
+        : stmt1(s1), exp(e), expStmt2(es2) 
         {
             std::cout << "For Statement constructor" << std::endl;
         }
@@ -563,8 +563,8 @@ void ExpressionStatement::accept(Visitor *v)
     v->visit(shared_from_this());
 }
 
-LocalVariableDeclarationStatement::LocalVariableDeclarationStatement(std::shared_ptr<Type> t, std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e)
-            : type(t), id(i), exp(e)
+LocalVariableDeclarationStatement::LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e)
+            :id(i), exp(e)
 {
     std::cout << "LocalVariableDeclaration Statement constructor" << std::endl;
 }

@@ -420,8 +420,13 @@ public:
     std::shared_ptr<Type> type;
     std::shared_ptr<Identifier> id;
     std::shared_ptr<Exp> exp;
-    LocalVariableDeclarationStatement(std::shared_ptr<Type> t, std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
+    LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+
+    void setType(std::shared_ptr<Type> t)
+    {
+        type = t;
+    }
 };
 
 class ExpressionStatement : public Statement, 
@@ -437,13 +442,17 @@ class ForStatement : public Statement, std::enable_shared_from_this<ForStatement
 public:
     std::shared_ptr<Statement> stmt1; // ForInit
     std::shared_ptr<Exp> exp; // ForExpression
-    std::shared_ptr<ExpressionStatement> expStmt2; // ForUpdate
+    std::shared_ptr<Exp> expStmt2; // ForUpdate
     std::shared_ptr<Statement> stmt2;
 
     // Constructor for ExpressionStatement initialization
-    ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2);
+    ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<Exp> es2);
 
     void accept(Visitor *v) override;
+
+    void setStmt2(std::shared_ptr<Statement> s) {
+        stmt2 = s;
+    }
 };
 
 class ReturnStatement : public Statement, 

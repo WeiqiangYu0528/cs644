@@ -80,7 +80,7 @@
 %nonassoc ELSE
 
 %type <bool> ClassBodyDeclaration ClassBodyOpt1
-%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier
+%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
@@ -94,11 +94,13 @@
 %type <std::shared_ptr<Exp>> Expression AssignmentExpression LeftHandSide ConditionalAndExpression ConditionalOrExpression
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
 %type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment MethodInvocation ClassInstanceCreationExpression
+%type <std::shared_ptr<Exp>> ForUpdate ForExpression VariableInitializer
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
 %type <std::shared_ptr<ImportStatement>> ImportStatements
-%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement Block SEMICOLON
-
+%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement Block SEMICOLON ForInit  
+%type <std::shared_ptr<LocalVariableDeclarationStatement>> LocalVariableDeclaration VariableDeclarators VariableDeclarator
+%type <std::shared_ptr<ForStatement>> ForControl
 %%
 
 Program
@@ -296,7 +298,12 @@ Statement:
     | IF ParExpression Statement %prec THEN {$$ = std::make_shared<IfStatement>($2, $3, nullptr);}
     | IF ParExpression Statement ELSE Statement {$$ = std::make_shared<IfStatement>($2, $3, $5);}
     | WHILE ParExpression Statement {$$ = std::make_shared<WhileStatement>($2, $3);}
-    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement {/* $$ = $3; $$.setStatement($5);*/}
+    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement {     
+    auto forControlStmt = std::dynamic_pointer_cast<ForStatement>($3);
+    if (forControlStmt) {
+        forControlStmt->setStmt2($5);
+    }
+    $$ = $3;}
     | ReturnStatements {$$ = $1; ast.setAst($1);}
     | ExpressionStatement {$$ = $1;}
     ;
@@ -318,41 +325,41 @@ VariableInitializers:
 
 
 ForControl:
-    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate {/* $$ = $1; $$.setForExpression($3); $$.setForUpdate($5); */}
+    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate {$$ = std::make_shared<ForStatement>($1, $3, $5);}
     ;
 
 ForExpression:
-    | Expression
+    | Expression {$$ = $1;}
     ;
 
 ForUpdate:
-    | StatementExpression
+    | StatementExpression {$$ = $1;}
     ;
 
 ForInit: 
-    | StatementExpression
-    | LocalVariableDeclaration
+    | StatementExpression {$$ = std::make_shared<ExpressionStatement>($1);}
+    | LocalVariableDeclaration {$$ = $1;}
     ;
 
 LocalVariableDeclaration:
-    Type VariableDeclarators
+    Type VariableDeclarators {$$ = $2; $$->setType($1);}
     ;
 
 VariableDeclarators:
-    VariableDeclarator
+    VariableDeclarator {$$ = $1;}
     ;
 
 VariableDeclarator :
-    VariableDeclaratorId
-    | VariableDeclaratorId ASSIGN VariableInitializer
+    VariableDeclaratorId {$$ = std::make_shared<LocalVariableDeclarationStatement>($1, nullptr);}
+    | VariableDeclaratorId ASSIGN VariableInitializer {$$ = std::make_shared<LocalVariableDeclarationStatement>($1, $3);}
     ;
 
 VariableDeclaratorId
-    : Variable
+    : Variable {$$ = $1;}
     ;
 
 VariableInitializer:
-    Expression
+    Expression {$$ = $1;}
     ;
 
 Expression:
