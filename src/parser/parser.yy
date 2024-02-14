@@ -293,8 +293,8 @@ Bound
 Statement:
     Block {$$ = $1;}
     | SEMICOLON {$$ = $1;}
-    | IF ParExpression Statement %prec THEN {std::make_shared<IfStatement>($2, $3, nullptr);}
-    | IF ParExpression Statement ELSE Statement {std::make_shared<IfStatement>($2, $3, $5);}
+    | IF ParExpression Statement %prec THEN {$$ = std::make_shared<IfStatement>($2, $3, nullptr);}
+    | IF ParExpression Statement ELSE Statement {$$ = std::make_shared<IfStatement>($2, $3, $5);}
     | WHILE ParExpression Statement {std::make_shared<WhileStatement>($2, $3);}
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement {/* $$ = $3; $$.setStatement($5);*/}
     | ReturnStatements {$$ = $1; ast.setAst($1);}
