@@ -50,4 +50,9 @@ class Visitor {
         virtual void visit(std::shared_ptr<Package> n) = 0;
         virtual void visit(std::shared_ptr<ImportStatement> n) = 0;
         virtual void visit(std::shared_ptr<Identifier> n) = 0;
+        virtual void visit(std::shared_ptr<FormalParameter> n) = 0;
+        virtual void visit(std::shared_ptr<Constructor> n) = 0;
+        virtual void visit(std::shared_ptr<Method> n) = 0;
+        virtual void visit(std::shared_ptr<Field> n) = 0;
+        virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
 };

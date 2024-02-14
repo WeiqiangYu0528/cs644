@@ -49,4 +49,9 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<Package> n) override;
         void visit(std::shared_ptr<ImportStatement> n) override;
         void visit(std::shared_ptr<Identifier> n) override;
+        void visit(std::shared_ptr<FormalParameter> n) override;
+        void visit(std::shared_ptr<Constructor> n) override;
+        void visit(std::shared_ptr<Method> n) override;
+        void visit(std::shared_ptr<Field> n) override;
+        void visit(std::shared_ptr<ClassDecl> n) override;
 };

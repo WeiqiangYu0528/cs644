@@ -2,6 +2,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 #include "weeder.hpp"
 
 class Visitor;
@@ -200,14 +202,12 @@ class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
         void accept(Visitor* v) override;
 };
 
-
 class LessExp: public Exp, public std::enable_shared_from_this<LessExp> {
 public:
     std::shared_ptr<Exp> exp1, exp2;
     LessExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
     void accept(Visitor* v) override;
 };
-
 
 class GreaterExp: public Exp, public std::enable_shared_from_this<GreaterExp> {
 public:
@@ -357,10 +357,84 @@ public:
     void accept(Visitor* v) override;
 };
 
+class Block {
+    //Needs to be implemented
+};
+
+class FormalParameter : public std::enable_shared_from_this<FormalParameter> {
+    public:
+        std::shared_ptr<Type> type;
+        std::shared_ptr<Identifier> variableName;
+
+        FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn);
+        void accept(Visitor* v);
+};
+
+class MemberDecl {
+    public:
+        MemberType memberType;
+        std::vector<Modifiers> modifiers;
+
+        MemberDecl(MemberType mt, std::vector<Modifiers> m);
+        virtual void accept(Visitor* v) = 0;
+};
+
+class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
+    public:
+        std::shared_ptr<Type> returnType;
+        std::shared_ptr<Identifier> fieldName;
+        std::shared_ptr<Exp> initializer;
+
+        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, 
+        std::shared_ptr<Exp> i);
+        void accept(Visitor* v) override;
+};
+
+class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
+    public:
+        std::shared_ptr<Type> returnType;
+        std::shared_ptr<Identifier> methodName;
+        std::vector<std::shared_ptr<FormalParameter>> formalParameters;
+        std::shared_ptr<Block> block;
+
+        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        void accept(Visitor* v) override;
+};
+
+class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
+    public:
+        std::shared_ptr<Identifier> constructorName;
+        std::vector<std::shared_ptr<FormalParameter>> formalParameters;
+        std::shared_ptr<Block> block;
+
+        Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        void accept(Visitor* v) override;
+};
+
+class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
+    public:
+        std::string modifier;
+        std::shared_ptr<Identifier> className;
+        std::vector<std::shared_ptr<IdentifierType>> extended;
+        std::vector<std::shared_ptr<IdentifierType>> implemented;
+        //0 = Field, 1 = Method, 2 = Constructor
+        std::vector<std::vector<std::shared_ptr<MemberDecl>>> declarations; 
+
+        ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
+        std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
+        ~ClassDecl() = default;
+        void accept(Visitor* v);
+};
+
 class Ast {
     private:
-        std::shared_ptr<Package> exp;
+        //std::shared_ptr<Exp> exp;
+        std::shared_ptr<ClassDecl> cdecl;
     public:
-        void setAst(std::shared_ptr<Package> exp);
-        std::shared_ptr<Package> getAst() const;
+        //void setAst(std::shared_ptr<Exp> exp);
+        void setAst(std::shared_ptr<ClassDecl> cdecl);
+        //std::shared_ptr<Exp> getAst() const;
+        std::shared_ptr<ClassDecl> getAst() const;
 };

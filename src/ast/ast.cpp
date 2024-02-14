@@ -1,13 +1,14 @@
 #include "ast.hpp"
 #include "visitor.hpp"
 
-void Ast::setAst(std::shared_ptr<Package> e) {
-    exp = e;
+void Ast::setAst(std::shared_ptr<ClassDecl> cd) {
+    cdecl = cd;
 }
 
-std::shared_ptr<Package> Ast::getAst() const {
-    return exp;
+std::shared_ptr<ClassDecl> Ast::getAst() const {
+    return cdecl;
 }
+
 
 void Exp::accept(Visitor* v) {
     // may need to make this pure virtual later
@@ -457,6 +458,70 @@ void ImportStatement::addImport(std::shared_ptr<Identifier> i) {
 void ImportStatement::accept(Visitor* v) {
     for (auto stmt: stmts) {
         stmt->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+
+FormalParameter::FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn) : type(t), variableName(vn) {
+    std::cout << "FormalParameter constructor" << std::endl;
+}
+
+void FormalParameter::accept(Visitor* v) {
+    type->accept(v);
+    v->visit(shared_from_this());
+}
+
+MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt), modifiers(m) {
+    std::cout << "MemberDecl constructor" << std::endl;
+}
+
+Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
+: MemberDecl(mt, m), returnType(rt), fieldName(fn), initializer(i) {
+    std::cout << "Field constructor" << std::endl;
+}
+
+void Field::accept(Visitor* v) {
+    returnType->accept(v);
+    if (initializer) initializer->accept(v);
+    v->visit(shared_from_this());
+}
+
+Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b)
+: MemberDecl(mt, m), returnType(rt), methodName(mn), formalParameters(fp), block(b) {
+    std::cout << "Method constructor" << std::endl;
+}
+
+void Method::accept(Visitor* v) {
+    returnType->accept(v);
+    for (auto fp : formalParameters) fp->accept(v);
+    if (block); //block->accept(v); //Uncomment this once Block is implemented
+    v->visit(shared_from_this());
+}
+
+Constructor::Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
+std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b)
+: MemberDecl(mt, m), constructorName(cn), formalParameters(fp), block(b) {
+    std::cout << "Constructor constructor" << std::endl;
+}
+
+void Constructor::accept(Visitor* v) {
+    for (auto fp : formalParameters) fp->accept(v);
+    //block->accept(v); //Uncomment this once Block is implemented
+    v->visit(shared_from_this());
+}
+
+ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
+std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d) :
+modifier(m), className(cn), extended(e), implemented(i), declarations(d) {
+    std::cout << "ClassDecl constructor" << std::endl;
+}
+
+void ClassDecl::accept(Visitor* v) {
+    for (auto e : extended) e->accept(v);
+    for (auto i : implemented) i->accept(v);
+    for (int i = 0; i < 3; i++) {
+        for (auto d : declarations[i]) d->accept(v);
     }
     v->visit(shared_from_this());
 }
