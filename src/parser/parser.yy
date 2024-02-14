@@ -97,6 +97,7 @@
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
 %type <std::shared_ptr<ImportStatement>> ImportStatements
+%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement
 
 %%
 
