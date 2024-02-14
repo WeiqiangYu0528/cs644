@@ -50,4 +50,14 @@ class Visitor {
         virtual void visit(std::shared_ptr<Package> n) = 0;
         virtual void visit(std::shared_ptr<ImportStatement> n) = 0;
         virtual void visit(std::shared_ptr<Identifier> n) = 0;
+        // Statement part begin
+        virtual void visit(std::shared_ptr<BlockStatement> n) = 0;
+        virtual void visit(std::shared_ptr<SemicolonStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<IfStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<WhileStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<ForStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<ReturnStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<ExpressionStatement> n)  = 0;
+        virtual void visit(std::shared_ptr<LocalVariableDeclarationStatement> n)  = 0;
+        // Statement part end
 };
