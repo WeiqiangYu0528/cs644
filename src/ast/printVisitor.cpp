@@ -181,3 +181,43 @@ void PrintVisitor::visit(std::shared_ptr<ImportStatement> n) {
 void PrintVisitor::visit(std::shared_ptr<Identifier> n) { 
     std::cout << n->name << std::endl;
 }
+
+void PrintVisitor::visit(std::shared_ptr<BlockStatement> n)
+{
+    std::cout << "Visiting Block Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<IfStatement> n)
+{
+    std::cout << "Visiting If Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ForStatement> n)
+{
+    std::cout << "Visiting For Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ReturnStatement> n)
+{
+    std::cout << "Visiting Return Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ExpressionStatement> n)
+{
+    std::cout << "Visiting Expression Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n)
+{
+    std::cout << "Visiting Local Variable Declaration Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<WhileStatement> n)
+{
+    std::cout << "Visiting While Statement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<SemicolonStatement> n)
+{
+    std::cout << "Visiting Semicolon Statement" << std::endl;
+}
