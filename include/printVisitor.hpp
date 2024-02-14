@@ -52,6 +52,7 @@ class PrintVisitor: public Visitor {
 
         // Statement part begin
         void visit(std::shared_ptr<BlockStatement> n) override;
+        void visit(std::shared_ptr<BlockStatements> n) override;
         void visit(std::shared_ptr<SemicolonStatement> n) override;
         void visit(std::shared_ptr<IfStatement> n) override;
         void visit(std::shared_ptr<WhileStatement> n) override;

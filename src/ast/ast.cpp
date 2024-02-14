@@ -469,10 +469,7 @@ BlockStatement::BlockStatement(std::shared_ptr<BlockStatements> sl) : blockState
 
 void BlockStatement::accept(Visitor *v)
 {
-    for (auto stmt : blockStatements->statements)
-    {
-        stmt->accept(v);
-    }
+    blockStatements->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -574,5 +571,24 @@ void LocalVariableDeclarationStatement::accept(Visitor *v)
     type->accept(v);
     id->accept(v);
     exp->accept(v);
+    v->visit(shared_from_this());
+}
+
+void SemicolonStatement::accept(Visitor *v)
+{
+    v->visit(shared_from_this());
+}
+
+void BlockStatements::addStatement(std::shared_ptr<Statement> s)
+{
+    statements.push_back(s);
+}
+
+void BlockStatements::accept(Visitor *v)
+{
+    for (auto stmt : statements)
+    {
+        stmt->accept(v);
+    }
     v->visit(shared_from_this());
 }

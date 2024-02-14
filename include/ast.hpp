@@ -364,37 +364,34 @@ public:
     virtual void accept(Visitor *v) = 0;
 };
 
-class SemicolonStatement : public Statement
+class SemicolonStatement : public Statement, 
+                           public std::enable_shared_from_this<SemicolonStatement>
 {
 public:
-    SemicolonStatement()
-    {
-        std::cout << "SemicolonStatement constructor" << std::endl;
-    }
+    void accept(Visitor *v) override;
 };
 
-class BlockStatements
+class BlockStatements : public Statement, 
+                        public std::enable_shared_from_this<BlockStatements>
 {
-public:
     std::vector<std::shared_ptr<Statement>> statements;
-    void addStatement(std::shared_ptr<Statement> stmt)
-    {
-        statements.push_back(stmt);
-    }
+public:
+    void addStatement(std::shared_ptr<Statement> stmt);
+    void accept(Visitor *v) override;
 };
 
 class BlockStatement : public Statement,
-                       std::enable_shared_from_this<BlockStatement>
+                       public std::enable_shared_from_this<BlockStatement>
 {
-public:
     std::shared_ptr<BlockStatements> blockStatements;
+public:
     BlockStatement(std::shared_ptr<BlockStatements> sl);
     void accept(Visitor *v) override;
 };
 
 // This is for if/then and if/else
 class IfStatement : public Statement,
-                    std::enable_shared_from_this<IfStatement>
+                    public std::enable_shared_from_this<IfStatement>
 {
 public:
     std::shared_ptr<Exp> exp;
@@ -404,7 +401,7 @@ public:
 };
 
 class WhileStatement : public Statement,
-                       std::enable_shared_from_this<WhileStatement>
+                       public std::enable_shared_from_this<WhileStatement>
 {
 public:
     std::shared_ptr<Exp> exp;
@@ -414,7 +411,7 @@ public:
 };
 
 class LocalVariableDeclarationStatement : public Statement, 
-                                          std::enable_shared_from_this<LocalVariableDeclarationStatement>
+                                          public std::enable_shared_from_this<LocalVariableDeclarationStatement>
 {
 public:
     std::shared_ptr<Type> type;
@@ -430,7 +427,7 @@ public:
 };
 
 class ExpressionStatement : public Statement, 
-                            std::enable_shared_from_this<ExpressionStatement>
+                            public std::enable_shared_from_this<ExpressionStatement>
 {
 public:
     std::shared_ptr<Exp> exp;
@@ -438,7 +435,7 @@ public:
     void accept(Visitor *v) override;
 };
 
-class ForStatement : public Statement, std::enable_shared_from_this<ForStatement> {
+class ForStatement : public Statement, public std::enable_shared_from_this<ForStatement> {
 public:
     std::shared_ptr<Statement> stmt1; // ForInit
     std::shared_ptr<Exp> exp; // ForExpression
@@ -456,7 +453,7 @@ public:
 };
 
 class ReturnStatement : public Statement, 
-                        std::enable_shared_from_this<ReturnStatement>
+                        public std::enable_shared_from_this<ReturnStatement>
 {
 public:
     std::shared_ptr<Exp> exp;
