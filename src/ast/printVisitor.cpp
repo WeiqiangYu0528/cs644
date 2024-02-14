@@ -1,4 +1,4 @@
-#include "visitor.hpp"
+#include "printVisitor.hpp"
 
 void PrintVisitor::visit(std::shared_ptr<PlusExp> n) {
     std::cout << "Visiting PlusExp" << std::endl;
@@ -84,6 +84,102 @@ void PrintVisitor::visit(std::shared_ptr<NegExp> n) {
 
 void PrintVisitor::visit(std::shared_ptr<ParExp> n) {
     std::cout << "Visiting ParExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<LessExp> n) {
+    std::cout << "Visiting LessExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<GreaterExp> n) {
+    std::cout << "Visiting GreaterExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<LessEqualExp> n) {
+    std::cout << "Visiting LessEqualExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
+    std::cout << "Visiting GreaterEqualExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
+    std::cout << "Visiting InstanceOfExp" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<EqualExp> n) {
+    std::cout << "Visiting Equal Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<NotEqualExp> n) {
+    std::cout << "Visiting Not Equal Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<AndExp> n) {
+    std::cout << "Visiting And Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<XorExp> n) {
+    std::cout << "Visiting Xor Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<OrExp> n) {
+    std::cout << "Visiting Or Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
+    std::cout << "Visiting Conditional And Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
+    std::cout << "Visiting Conditional Or Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<Assignment> n) {
+    std::cout << "Visiting Assignment Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<MethodInvocation> n) {
+    std::cout << "Visiting MethodInvocation Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
+    std::cout << "Visiting ClassInstanceCreation Expression" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<IntType> n) { 
+    std::cout << "Visiting IntType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ShortType> n) { 
+    std::cout << "Visiting ShortType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<CharType> n) { 
+    std::cout << "Visiting CharType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<BooleanType> n) { 
+    std::cout << "Visiting BooleanType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<VoidType> n) { 
+    std::cout << "Visiting VoidType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ByteType> n) { 
+    std::cout << "Visiting ByteType" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<Package> n) { 
+    std::cout << "Visiting Package" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<ImportStatement> n) { 
+    std::cout << "Visiting ImportStatement" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<Identifier> n) { 
+    std::cout << n->name << std::endl;
 }
 
 void PrintVisitor::visit(std::shared_ptr<FormalParameter> n) {

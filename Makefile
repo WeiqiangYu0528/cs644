@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-Iinclude -Wall -std=c++11
+CXXFLAGS=-Iinclude -Wall -std=c++20
 LIBS=
 
 BISON=bison
@@ -17,7 +17,7 @@ FLEX_OPTS=
 AST_OUT=src/ast/ast.cpp
 VISITOR_OUT=src/ast/visitor.cpp
 
-SRC_FILES=$(wildcard src/*.cpp) $(BISON_OUT) $(FLEX_OUT) $(AST_OUT) $(VISITOR_OUT)
+SRC_FILES=$(wildcard src/*.cpp) $(wildcard src/ast/*.cpp) $(BISON_OUT) $(FLEX_OUT)
 
 BUILD_DIR=.
 

@@ -26,44 +26,33 @@ class Visitor {
         // virtual void visit(std::shared_ptr<CompoundType> n) = 0;
         virtual void visit(std::shared_ptr<NegExp> n) = 0;
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
-
+        virtual void visit(std::shared_ptr<LessExp> n) = 0;
+        virtual void visit(std::shared_ptr<GreaterExp> n) = 0;
+        virtual void visit(std::shared_ptr<LessEqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<GreaterEqualExp> n) = 0;       
+        virtual void visit(std::shared_ptr<InstanceOfExp> n) = 0;  
+        virtual void visit(std::shared_ptr<EqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<NotEqualExp> n) = 0;
+        virtual void visit(std::shared_ptr<AndExp> n) = 0;
+        virtual void visit(std::shared_ptr<XorExp> n) = 0;
+        virtual void visit(std::shared_ptr<OrExp> n) = 0;
+        virtual void visit(std::shared_ptr<ConditionalAndExp> n) = 0;
+        virtual void visit(std::shared_ptr<ConditionalOrExp> n) = 0;        
+        virtual void visit(std::shared_ptr<Assignment> n) = 0;
+        virtual void visit(std::shared_ptr<MethodInvocation> n) = 0;
+        virtual void visit(std::shared_ptr<ClassInstanceCreationExp> n) = 0;
+        virtual void visit(std::shared_ptr<ByteType> t) = 0;
+        virtual void visit(std::shared_ptr<ShortType> t) = 0;
+        virtual void visit(std::shared_ptr<CharType> t) = 0;
+        virtual void visit(std::shared_ptr<IntType> t) = 0;
+        virtual void visit(std::shared_ptr<BooleanType> t) = 0;
+        virtual void visit(std::shared_ptr<VoidType> t) = 0;
+        virtual void visit(std::shared_ptr<Package> n) = 0;
+        virtual void visit(std::shared_ptr<ImportStatement> n) = 0;
+        virtual void visit(std::shared_ptr<Identifier> n) = 0;
         virtual void visit(std::shared_ptr<FormalParameter> n) = 0;
         virtual void visit(std::shared_ptr<Constructor> n) = 0;
         virtual void visit(std::shared_ptr<Method> n) = 0;
         virtual void visit(std::shared_ptr<Field> n) = 0;
         virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
-        
-};
-
-class PrintVisitor: public Visitor {
-    public:
-        void visit(std::shared_ptr<PlusExp> n) override;
-        void visit(std::shared_ptr<MinusExp> n) override;
-        void visit(std::shared_ptr<TimesExp> n) override;
-        void visit(std::shared_ptr<DivideExp> n) override;
-        void visit(std::shared_ptr<ModuloExp> n) override;
-        void visit(std::shared_ptr<NotExp> n) override;
-        void visit(std::shared_ptr<IdentifierExp> n) override;
-        void visit(std::shared_ptr<IntegerLiteralExp> n) override;
-        void visit(std::shared_ptr<BoolLiteralExp> n) override;
-        void visit(std::shared_ptr<CharLiteralExp> n) override;
-        void visit(std::shared_ptr<StringLiteralExp> n) override;
-        void visit(std::shared_ptr<NulLiteralExp> n) override;
-        void visit(std::shared_ptr<ArrayAccessExp> n) override;
-        void visit(std::shared_ptr<ThisExp> n) override;
-        void visit(std::shared_ptr<CastExp> n) override;
-        void visit(std::shared_ptr<ArrayType> n) override;
-        void visit(std::shared_ptr<IdentifierType> n) override;
-        void visit(std::shared_ptr<FieldAccessExp> n) override;
-        void visit(std::shared_ptr<NewArrayExp> n) override;
-        // void visit(std::shared_ptr<CompoundType> n) override;
-        void visit(std::shared_ptr<NegExp> n) override;
-        void visit(std::shared_ptr<ParExp> n) override;
-
-        void visit(std::shared_ptr<FormalParameter> n) override;
-        void visit(std::shared_ptr<Constructor> n) override;
-        void visit(std::shared_ptr<Method> n) override;
-        void visit(std::shared_ptr<Field> n) override;
-        void visit(std::shared_ptr<ClassDecl> n) override;
-        
 };

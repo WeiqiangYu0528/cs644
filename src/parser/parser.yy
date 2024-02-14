@@ -3,6 +3,7 @@
 %define lr.type lalr
 
 %code requires {
+    #include <cassert>
     #include <memory>
     #include <string>
     #include <tuple>
@@ -80,19 +81,20 @@
 %nonassoc THEN
 %nonassoc ELSE
 
-%type <std::shared_ptr<Identifier>> Variable VariableDeclaratorId
+%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
-
-
 %type <std::shared_ptr<Exp>> AdditiveExpression MultiplicativeExpression UnaryExpression UnaryExpressionNotPlusMinus
 %type <std::shared_ptr<Exp>> ShiftExpression CastExpression PostfixExpression Primary PrimaryNoNewArray
 %type <std::shared_ptr<Exp>> IntegerLiteral BooleanLiteral CharLiteral StringLiteral NullLiteral Literal
 %type <std::shared_ptr<Exp>> FieldAccess DimExpr DimExprs ArrayAccess ArrayCreationExpression ParExpression 
 %type <std::shared_ptr<Exp>> Expression AssignmentExpression LeftHandSide ConditionalAndExpression ConditionalOrExpression
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
-%type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment
+%type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment MethodInvocation ClassInstanceCreationExpression
+%type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
+%type <std::shared_ptr<Package>> PackageDeclaration
+%type <std::shared_ptr<ImportStatement>> ImportStatements
 
 %type <std::shared_ptr<Exp>> VariableInitializer
 
@@ -120,7 +122,8 @@
 %%
 
 Program
-    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration {
+    }
     ;
 
 ClassOrInterfaceDeclaration
@@ -130,22 +133,28 @@ ClassOrInterfaceDeclaration
     ;  
 
 PackageDeclaration
-    :
-    | PACKAGE Name SEMICOLON
+    : {$$ = nullptr;}
+    | PACKAGE Name SEMICOLON {$$ = std::make_shared<Package>($2->id);}
     ;
 
 ImportStatements
-    :
-    | ImportStatement ImportStatements
+    : {$$ = std::make_shared<ImportStatement>();}
+    | ImportStatement ImportStatements {
+        $$ = $2;
+        $$->addImport($1);
+    }
     ;
 
 ImportStatement
-    : IMPORT Name SEMICOLON
-    | IMPORT PackageImportIdentifier SEMICOLON
+    : IMPORT Name SEMICOLON {$$ = std::make_shared<Identifier>($2->id->name);}
+    | IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
     ;
 
 PackageImportIdentifier    
-    : Name DOT STAR
+    : Name DOT STAR {
+        std::string temp = $1->id->name + ".*";
+        $$ = std::make_shared<Identifier>(temp);
+        }
     ;
 
 InterfaceDeclaration 
@@ -161,7 +170,13 @@ InterfaceOpt1
 
 InterfaceOpt2
     :
-    | EXTENDS Variable
+    | EXTENDS InterfaceTypeList
+    ;
+
+InterfaceTypeList
+    :
+    Variable
+    | InterfaceTypeList COMMA Variable
     ;
 
 InterfaceBody
@@ -224,11 +239,11 @@ Type
     ;   
 
 BasicType
-    : BYTE {$$ = std::make_shared<Type>(); $$->type = DataType::BYTE;}
-    | SHORT {$$ = std::make_shared<Type>(); $$->type = DataType::SHORT;}
-    | CHAR {$$ = std::make_shared<Type>(); $$->type = DataType::CHAR;}
-    | INT {$$ = std::make_shared<Type>(); $$->type = DataType::INT;}
-    | BOOLEAN {$$ = std::make_shared<Type>(); $$->type = DataType::BOOLEAN;}
+    : BYTE {$$ = std::make_shared<ByteType>();}
+    | SHORT {$$ = std::make_shared<ShortType>();}
+    | CHAR {$$ = std::make_shared<CharType>();}
+    | INT {$$ = std::make_shared<IntType>();}
+    | BOOLEAN {$$ = std::make_shared<BooleanType>();}
     ;
 
 ReferenceType
@@ -268,12 +283,8 @@ ArrayType
     ;
 
 ResultType
-    : Type {
-        $$ = $1;
-    }
-    | VOID {
-        $$ = std::make_shared<Type>(); $$->type = DataType::VOID;
-    }
+    : Type {$$ = $1;}
+    | VOID {$$ = std::make_shared<VoidType>();}
     ;
 
 // Do not use ReferenceType as arraytype is not supported here
@@ -380,7 +391,7 @@ AssignmentExpression:
     ;
 
 Assignment:
-    LeftHandSide ASSIGN AssignmentExpression {$$ = $3;}
+    LeftHandSide ASSIGN AssignmentExpression { $$ = std::make_shared<Assignment>($1, $3);}
     ;
 
 LeftHandSide:
@@ -396,42 +407,42 @@ ConditionalExpression:
 
 ConditionalOrExpression:
     ConditionalAndExpression { $$ = $1; }
-    | ConditionalOrExpression OR_OR ConditionalAndExpression {$$ = std::make_shared<Exp>();}
+    | ConditionalOrExpression OR_OR ConditionalAndExpression {$$ = std::make_shared<ConditionalOrExp>($1, $3);}
     ;
 
 ConditionalAndExpression:
     InclusiveOrExpression   { $$ = $1; }
-    | ConditionalAndExpression AND_AND InclusiveOrExpression {$$ = std::make_shared<Exp>();}
+    | ConditionalAndExpression AND_AND InclusiveOrExpression {$$ = std::make_shared<ConditionalAndExp>($1, $3);}
     ;
 
 InclusiveOrExpression:
     ExclusiveOrExpression   { $$ = $1; }
-    | InclusiveOrExpression OR ExclusiveOrExpression {$$ = std::make_shared<Exp>();}
+    | InclusiveOrExpression OR ExclusiveOrExpression {$$ = std::make_shared<OrExp>($1, $3);}
     ;
 
 ExclusiveOrExpression:
     AndExpression           { $$ = $1; }
-    | ExclusiveOrExpression XOR AndExpression {$$ = std::make_shared<Exp>();}
+    | ExclusiveOrExpression XOR AndExpression {$$ = std::make_shared<XorExp>($1, $3);}
     ;
 
 AndExpression:
     EqualityExpression      { $$ = $1; }
-    | AndExpression AND EqualityExpression {$$ = std::make_shared<Exp>();}
+    | AndExpression AND EqualityExpression {$$ = std::make_shared<AndExp>($1, $3);}
     ;
 
 EqualityExpression:
     RelationalExpression   { $$ = $1; }
-    | EqualityExpression EQUAL RelationalExpression     { $$ = std::make_shared<Exp>();}
-    | EqualityExpression NOT_EQUAL RelationalExpression { $$ = std::make_shared<Exp>();}
+    | EqualityExpression EQUAL RelationalExpression     { $$ = std::make_shared<EqualExp>($1, $3);}
+    | EqualityExpression NOT_EQUAL RelationalExpression { $$ = std::make_shared<NotEqualExp>($1, $3);}
     ;
 
 RelationalExpression:
     ShiftExpression { $$ = $1; }
-    | RelationalExpression LESS ShiftExpression { $$ = std::make_shared<Exp>();}
-    | RelationalExpression GREATER ShiftExpression  { $$ = std::make_shared<Exp>();}
-    | RelationalExpression LESS_EQUAL ShiftExpression   { $$ = std::make_shared<Exp>();}
-    | RelationalExpression GREATER_EQUAL ShiftExpression    { $$ = std::make_shared<Exp>();}
-    | RelationalExpression INSTANCEOF ReferenceType { $$ = std::make_shared<Exp>();}
+    | RelationalExpression LESS ShiftExpression { $$ = std::make_shared<LessExp>($1, $3); }
+    | RelationalExpression GREATER ShiftExpression  { $$ = std::make_shared<GreaterExp>($1, $3);}
+    | RelationalExpression LESS_EQUAL ShiftExpression   { $$ = std::make_shared<LessEqualExp>($1, $3);}
+    | RelationalExpression GREATER_EQUAL ShiftExpression    { $$ = std::make_shared<GreaterEqualExp>($1, $3);}
+    | RelationalExpression INSTANCEOF ReferenceType { $$ = std::make_shared<InstanceOfExp>($1, $3);}
     ;
 
 ShiftExpression:
@@ -548,9 +559,9 @@ PrimaryNoNewArray:
     Literal {$$ = $1;}    
     | THIS {$$ = std::make_shared<ThisExp>();}
     | LEFT_PAREN Expression RIGHT_PAREN {$$ = std::make_shared<ParExp>($2);}
-    | ClassInstanceCreationExpression {$$ = std::make_shared<Exp>();}
+    | ClassInstanceCreationExpression {$$ = $1; }
     | FieldAccess {$$ = $1;}
-    | MethodInvocation {$$ = std::make_shared<Exp>();}
+    | MethodInvocation {$$ = $1;}
     | ArrayAccess {$$ = $1;}
     ;
 
@@ -576,9 +587,9 @@ ParExpression:
     ;
 
 StatementExpression:
-    Assignment {$$ = std::make_shared<Exp>();}
-    | MethodInvocation {$$ = std::make_shared<Exp>();}
-    | ClassInstanceCreationExpression  {$$ = std::make_shared<Exp>();}
+    Assignment {$$ = $1;}
+    | MethodInvocation {$$ = $1;}
+    | ClassInstanceCreationExpression  {$$ = $1;}
     ;
 
 ReturnStatements:
@@ -587,22 +598,33 @@ ReturnStatements:
     ;
 
 MethodInvocation:
-    Name LEFT_PAREN ArgumentList RIGHT_PAREN
-    | Name LEFT_PAREN RIGHT_PAREN
-    | Primary DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN
-    | Primary DOT Variable LEFT_PAREN RIGHT_PAREN
+    Name LEFT_PAREN ArgumentList RIGHT_PAREN {
+        $$ = std::make_shared<MethodInvocation>(nullptr, nullptr, $1, $3);
+    }
+    | Name LEFT_PAREN RIGHT_PAREN {
+        $$ = std::make_shared<MethodInvocation>(nullptr, nullptr, $1, std::vector<std::shared_ptr<Exp>>());
+    }
+    | Primary DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN {
+        $$ = std::make_shared<MethodInvocation>($1, $3, nullptr, $5); 
+    }
+    | Primary DOT Variable LEFT_PAREN RIGHT_PAREN {
+        $$ = std::make_shared<MethodInvocation>($1, $3, nullptr, std::vector<std::shared_ptr<Exp>>());
+    }
     | SUPER DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     | SUPER DOT Variable LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     ;
 
 ClassInstanceCreationExpression:
-    NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN
-    | NEW ClassType LEFT_PAREN RIGHT_PAREN;
+    NEW ClassType LEFT_PAREN ArgumentList RIGHT_PAREN {$$ = std::make_shared<ClassInstanceCreationExp>($2, $4); }
+    | NEW ClassType LEFT_PAREN RIGHT_PAREN {$$ = std::make_shared<ClassInstanceCreationExp>($2, std::vector<std::shared_ptr<Exp>>()); }
     ;
 
 ArgumentList: 
-    Expression 
-    | ArgumentList COMMA Expression
+    Expression { 
+        $$ = std::vector<std::shared_ptr<Exp>>();
+        $$.push_back($1); 
+    }
+    | ArgumentList COMMA Expression { $1.push_back($3); $$ = $1;}
     ;
 
 /* Modifier

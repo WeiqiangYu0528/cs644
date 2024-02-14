@@ -24,10 +24,11 @@ class Type {
         virtual void accept(Visitor* v);
 };
 
-class Identifier {
+class Identifier : public std::enable_shared_from_this<Identifier> {
     public:
         std::string name;
         Identifier(std::string& s);
+        void accept(Visitor* v);
 };
 
 class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
@@ -42,6 +43,21 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         std::shared_ptr<Type> dataType;
         ArrayType(std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
+};
+
+class Package : public std::enable_shared_from_this<Package>  {
+    std::shared_ptr<Identifier> id;
+    public:
+        Package(std::shared_ptr<Identifier> i);
+        void accept(Visitor* v);
+};
+
+class ImportStatement : public std::enable_shared_from_this<ImportStatement> {
+    std::vector<std::shared_ptr<Identifier>> stmts;
+    public:
+        ImportStatement();
+        void addImport(std::shared_ptr<Identifier> i);
+        void accept(Visitor* v);
 };
 
 // class CompoundType : public Type, public std::enable_shared_from_this<CompoundType> {
@@ -186,7 +202,160 @@ class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
         void accept(Visitor* v) override;
 };
 
+class LessExp: public Exp, public std::enable_shared_from_this<LessExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    LessExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
 
+class GreaterExp: public Exp, public std::enable_shared_from_this<GreaterExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    GreaterExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class LessEqualExp: public Exp, public std::enable_shared_from_this<LessEqualExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    LessEqualExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+
+class GreaterEqualExp: public Exp, public std::enable_shared_from_this<GreaterEqualExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    GreaterEqualExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+
+class InstanceOfExp: public Exp, public std::enable_shared_from_this<InstanceOfExp> {
+public:
+    std::shared_ptr<Exp> exp;
+    std::shared_ptr<Type> type;
+    InstanceOfExp(std::shared_ptr<Exp> exp, std::shared_ptr<Type> type);
+    void accept(Visitor* v) override;
+};
+
+class EqualExp : public Exp, public std::enable_shared_from_this<EqualExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    EqualExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class NotEqualExp : public Exp, public std::enable_shared_from_this<NotEqualExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    NotEqualExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class AndExp : public Exp, public std::enable_shared_from_this<AndExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    AndExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class XorExp : public Exp, public std::enable_shared_from_this<XorExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    XorExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class OrExp : public Exp, public std::enable_shared_from_this<OrExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    OrExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class ConditionalAndExp : public Exp, public std::enable_shared_from_this<ConditionalAndExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    ConditionalAndExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+class ConditionalOrExp : public Exp, public std::enable_shared_from_this<ConditionalOrExp> {
+public:
+    std::shared_ptr<Exp> exp1, exp2;
+    ConditionalOrExp(std::shared_ptr<Exp> exp1, std::shared_ptr<Exp> exp2);
+    void accept(Visitor* v) override;
+};
+
+
+class Assignment : public Exp, public std::enable_shared_from_this<Assignment> {
+public:
+    std::shared_ptr<Exp> left, right;
+    Assignment(std::shared_ptr<Exp> left, std::shared_ptr<Exp> right);
+    void accept(Visitor* v) override;
+};
+
+class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
+public:
+    std::shared_ptr<Exp> primary;
+    std::shared_ptr<Identifier> primaryMethodName;
+    std::shared_ptr<IdentifierType> methodName;
+    std::vector<std::shared_ptr<Exp>> arguments;
+
+
+    MethodInvocation(std::shared_ptr<Exp> primary, 
+        std::shared_ptr<Identifier> primaryMethodName,
+        std::shared_ptr<IdentifierType> methodName, 
+        std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
+};
+
+class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
+public:
+    std::shared_ptr<IdentifierType> classType;
+    std::vector<std::shared_ptr<Exp>> arguments;
+    ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
+};
+
+class ByteType : public Type, public std::enable_shared_from_this<ByteType> {
+public:
+    ByteType();
+    void accept(Visitor* v) override;
+};
+
+class ShortType : public Type, public std::enable_shared_from_this<ShortType> {
+public:
+    ShortType();
+    void accept(Visitor* v) override;
+};
+
+class CharType : public Type, public std::enable_shared_from_this<CharType> {
+public:
+    CharType();
+    void accept(Visitor* v) override;
+};
+
+class IntType : public Type, public std::enable_shared_from_this<IntType> {
+public:
+    IntType();
+    void accept(Visitor* v) override;
+};
+
+class BooleanType : public Type, public std::enable_shared_from_this<BooleanType> {
+public:
+    BooleanType();
+    void accept(Visitor* v) override;
+};
+
+
+class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
+public:
+    VoidType();
+    void accept(Visitor* v) override;
+};
 
 class Block {
     //Needs to be implemented
@@ -259,7 +428,6 @@ class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
         void accept(Visitor* v);
 };
 
-
 class Ast {
     private:
         //std::shared_ptr<Exp> exp;
@@ -270,8 +438,3 @@ class Ast {
         //std::shared_ptr<Exp> getAst() const;
         std::shared_ptr<ClassDecl> getAst() const;
 };
-
-
-
-
-
