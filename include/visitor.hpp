@@ -29,11 +29,14 @@ public:
     virtual void visit(std::shared_ptr<ParExp> n) = 0;
 
     // Statement part begin
-    virtual void visit(std::shared_ptr<IfStatement> n) = 0;
-    virtual void visit(std::shared_ptr<WhileStatement> n) = 0;
-    // virtual void visit(std::shared_ptr<PrintStatement> n) = 0;
-    virtual void visit(std::shared_ptr<AssignStatement> n) = 0;
-    virtual void visit(std::shared_ptr<ArrayAssignStatement> n) = 0;
+    virtual void visit(std::shared_ptr<BlockStatement> n) = 0;
+    virtual void visit(std::shared_ptr<SemicolonStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<IfStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<WhileStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<ForStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<ReturnStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<ExpressionStatement> n)  = 0;
+    virtual void visit(std::shared_ptr<LocalVariableDeclarationStatement> n)  = 0;
     // Statement part end
 };
 
@@ -64,10 +67,13 @@ public:
     void visit(std::shared_ptr<ParExp> n) override;
 
     // Statement part begin
+    void visit(std::shared_ptr<BlockStatement> n) override;
+    void visit(std::shared_ptr<SemicolonStatement> n) override;
     void visit(std::shared_ptr<IfStatement> n) override;
     void visit(std::shared_ptr<WhileStatement> n) override;
-    // void visit(std::shared_ptr<PrintStatement> n) override;
-    void visit(std::shared_ptr<AssignStatement> n) override;
-    void visit(std::shared_ptr<ArrayAssignStatement> n) override;
+    void visit(std::shared_ptr<ForStatement> n) override;
+    void visit(std::shared_ptr<ReturnStatement> n) override;
+    void visit(std::shared_ptr<ExpressionStatement> n) override;
+    void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
     // Statement part end
 };

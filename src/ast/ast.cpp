@@ -40,16 +40,19 @@ void BlockStatement::accept(Visitor *v)
     v->visit(shared_from_this());
 }
 
-IfStatement::IfStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2) : exp(e), statement1(s1), statement2(s2)
+IfStatement::IfStatement(std::shared_ptr<ParExp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2) : parExp(e), statement1(s1), statement2(s2)
 {
     std::cout << "If Statement constructor" << std::endl;
 }
 
 void IfStatement::accept(Visitor *v)
 {
-    exp->accept(v);
+    parExp->accept(v);
     statement1->accept(v);
-    statement2->accept(v);
+    if (statement2) 
+    {
+        statement2->accept(v);
+    }
     v->visit(shared_from_this());
 }
 
@@ -65,37 +68,87 @@ void WhileStatement::accept(Visitor *v)
     v->visit(shared_from_this());
 }
 
-// PrintStatement::PrintStatement(std::shared_ptr<Exp> e) : exp(e)
-// {
-//     std::cout << "Print Statement constructor" << std::endl;
-// }
+// Constructor for ExpressionStatement initialization
+ForStatement::ForStatement(std::shared_ptr<ExpressionStatement> es1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s)
+        : forInit(es1), exp(e), expStmt2(es2), stmt(s) 
+        {
+            std::cout << "For Statement constructor" << std::endl;
+        }
 
-// void PrintStatement::accept(Visitor *v)
-// {
-// }
+// Constructor for LocalVariableDeclarationStatement initialization
+ForStatement::ForStatement(std::shared_ptr<LocalVariableDeclarationStatement> lvds, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s)
+        : forInit(lvds), exp(e), expStmt2(es2), stmt(s) 
+        {
+           std::cout << "For Statement constructor" << std::endl;
+        }
 
-AssignStatement::AssignStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e) : id(i), exp(e)
+void ForStatement::accept(Visitor *v) 
 {
-    std::cout << "Assign Statement constructor" << std::endl;
-}
+    std::visit([&v](auto&& arg) 
+    {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::shared_ptr<ExpressionStatement>> || std::is_same_v<T, std::shared_ptr<LocalVariableDeclarationStatement>>) 
+        {
+            arg->accept(v);
+        }
+    }, forInit);
 
-void AssignStatement::accept(Visitor *v)
-{
-    id->accept(v);
-    exp->accept(v);
+    if (exp) 
+    {
+        exp->accept(v);
+    }
+
+    if (expStmt2) 
+    {
+        expStmt2->accept(v);
+    }
+
+    if (stmt) 
+    {
+        stmt->accept(v);
+    }
     v->visit(shared_from_this());
 }
 
-ArrayAssignStatement::ArrayAssignStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : id(i), exp1(e1), exp2(e2)
+ReturnStatement::ReturnStatement(std::shared_ptr<Exp> e) : exp(e)
 {
-    std::cout << "ArrayAssign Statement constructor" << std::endl;
+    std::cout << "Return Statement constructor" << std::endl;
 }
 
-void ArrayAssignStatement::accept(Visitor *v)
+void ReturnStatement::accept(Visitor *v) 
 {
+    if (exp) 
+    {
+        exp->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+
+ExpressionStatement::ExpressionStatement(std::shared_ptr<Exp> e) : exp(e)
+{
+    std::cout << "Expression Statement constructor" << std::endl;
+}
+
+void ExpressionStatement::accept(Visitor *v) 
+{
+    if (exp) 
+    {
+        exp->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+
+LocalVariableDeclarationStatement::LocalVariableDeclarationStatement(std::shared_ptr<Type> t, std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e)
+            : type(t), id(i), exp(e)
+{
+    std::cout << "LocalVariableDeclaration Statement constructor" << std::endl;
+}
+
+void LocalVariableDeclarationStatement::accept(Visitor *v)
+{
+    type->accept(v);
     id->accept(v);
-    exp1->accept(v);
-    exp2->accept(v);
+    exp->accept(v);
     v->visit(shared_from_this());
 }
 
