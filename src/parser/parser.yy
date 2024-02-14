@@ -97,16 +97,16 @@
 %type <std::shared_ptr<Exp>> VariableInitializer
 
 %type <std::string> ClassDeclarationOpt
-%type <std::shared_ptr<ClassDecl>> ClassDeclaration
-%type <std::tuple<std::shared_ptr<Identifier>, std::vector<std::shared_ptr<IdentifierType>>, std::vector<std::shared_ptr<IdentifierType>>, std::shared_ptr<ClassBody>>> NormalClassDeclaration
+%type <std::shared_ptr<ClassDecl>> ClassDeclaration NormalClassDeclaration
+
 
 %type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList
 
-%type <std::shared_ptr<ClassBody>> ClassBody
-%type <std::shared_ptr<ClassBodyDeclaration>> ClassBodyDeclaration
-%type <std::vector<std::shared_ptr<ClassBodyDeclaration>>> ClassBodyOpt1
+%type <std::vector<std::vector<std::shared_ptr<MemberDecl>>>> ClassBody
+
+%type <std::vector<std::shared_ptr<MemberDecl>>> ClassBodyOpt1
 %type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
-%type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl
+%type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl ClassBodyDeclaration
 
 %type <std::tuple<MemberType, std::shared_ptr<Exp>, std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> MethodOrFieldRest FieldDeclaratorsRest VariableDeclaratorRest MethodDeclaratorRest
 %type <std::tuple<std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> ConstructorDeclaratorRest
@@ -184,7 +184,8 @@ MethodDeclarationOpt
 
 ClassDeclaration
     : PUBLIC ClassDeclarationOpt NormalClassDeclaration {
-        $$ = std::make_shared<ClassDecl>($2, std::get<0>($3), std::get<1>($3), std::get<2>($3), std::get<3>($3));
+        $$ = $3;
+        $$->modifier = $2;
         ast.setAst($$);
     }
     ;
@@ -198,7 +199,7 @@ ClassDeclarationOpt
 NormalClassDeclaration
     : CLASS Variable NormalClassDeclarationOpt1 NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 ClassBody {
         if ($2->name != lexer.getFilename()) throw syntax_error(@1, std::string("A class must be declared with the same filename."));
-        $$ = std::make_tuple($2, $4, $5, $6);
+        $$ = std::make_shared<ClassDecl>("placeholder", $2, $4, $5, $6);
     }
     ;
 
@@ -626,14 +627,22 @@ Annotation
 
 ClassBody
     : LEFT_BRACE ClassBodyOpt1 RIGHT_BRACE {
-        //if (!$2) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
         bool hasConstructor = false;
-        for (auto cbd : $2) if (cbd->memberDecl->memberType == MemberType::CONSTRUCTOR) {
-            hasConstructor = true;
-            break;
+
+        $$ = std::vector<std::vector<std::shared_ptr<MemberDecl>>>{};
+        $$.resize(3);
+
+        for (std::shared_ptr<MemberDecl> m : $2) {
+            if (m->memberType == MemberType::FIELD) $$[0].push_back(m);
+            else if (m->memberType == MemberType::METHODWITHBODY || m->memberType == MemberType::METHODWITHOUTBODY) {
+                $$[1].push_back(m);
+            } else {
+                assert(m->memberType == MemberType::CONSTRUCTOR);
+                $$[2].push_back(m);
+                hasConstructor = true;
+            }
         }
         if (hasConstructor == false) throw syntax_error(@1, std::string("Every class must contain at least one explicit constructor.")); 
-        $$ = std::make_shared<ClassBody>($2);
 
     }
     ;
@@ -647,10 +656,11 @@ ClassBodyOpt1
 
 ClassBodyDeclaration
     : SEMICOLON {
-        $$ = std::make_shared<ClassBodyDeclaration>(); // This sets boolean field to true (see ClassBodyDeclaration in ast.hpp)
+        $$ = nullptr;
     }
     | ClassBodyDeclarationOpt1 MemberDecl {
-        $$ = std::make_shared<ClassBodyDeclaration>($1, $2);
+        $$ = $2; //with placeholder modifiers
+        $$->modifiers = $1;
 
         std::vector<int> modifiers = std::vector<int>(6, 0);
         for (Modifiers m : $1) {
@@ -695,23 +705,23 @@ ClassBodyDeclarationOpt1
 MemberDecl
     : MethodOrFieldDecl {$$ = $1;}
     | Variable ConstructorDeclaratorRest {
-        $$ = std::make_shared<MemberDecl>(MemberType::CONSTRUCTOR, $1, std::get<0>($2), std::get<1>($2));
+        std::vector<Modifiers> placeholder = {};
+        $$ = std::make_shared<Constructor>(MemberType::CONSTRUCTOR, placeholder, $1, std::get<0>($2), std::get<1>($2));
         if ($1->name != lexer.getFilename()) throw syntax_error(@1, std::string("A constructor must be declared with the same filename."));
     }
     ;
 
 MethodOrFieldDecl:
     ResultType Variable MethodOrFieldRest {
+        std::vector<Modifiers> placeholder = {};
         //$3 is a 4-tuple of MemberType, Exp, FPs, and Block
         MemberType memberType = std::get<0>($3);
         if (memberType == MemberType::FIELD) {
-            if (std::get<1>($3) == nullptr) $$ = std::make_shared<MemberDecl>(memberType, $1, $2);
-            else $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<1>($3));
-        } else if (memberType == MemberType::METHODWITHOUTBODY) {
-            $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<2>($3));
+            $$ = std::make_shared<Field>(memberType, placeholder, $1, $2, std::get<1>($3));
         } else {
-            assert(memberType == MemberType::METHODWITHBODY);
-            $$ = std::make_shared<MemberDecl>(memberType, $1, $2, std::get<2>($3), std::get<3>($3));
+            assert(memberType == MemberType::METHODWITHOUTBODY || memberType == MemberType::METHODWITHBODY);
+            $$ = std::make_shared<Method>(memberType, placeholder, $1, $2, std::get<2>($3), std::get<3>($3));
+            if (memberType == MemberType::METHODWITHOUTBODY) assert(std::get<3>($3) == nullptr);
         }
         if ($1->type == DataType::VOID && memberType == MemberType::FIELD) throw syntax_error(@1, std::string("The type void may only be used as the return type of a method."));
     } 
@@ -722,7 +732,7 @@ MethodOrFieldRest
         $$ = $1;
     }
     | MethodDeclaratorRest {
-        $$ = $1; //$1 should be a constructed MDR
+        $$ = $1;
     }
     ;
 

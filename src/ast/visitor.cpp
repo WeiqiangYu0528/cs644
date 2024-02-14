@@ -90,16 +90,16 @@ void PrintVisitor::visit(std::shared_ptr<FormalParameter> n) {
     std::cout << "Visiting FormalParameter" << std::endl;
 }
 
-void PrintVisitor::visit(std::shared_ptr<MemberDecl> n) {
-    std::cout << "Visiting MemberDecl" << std::endl;
+void PrintVisitor::visit(std::shared_ptr<Constructor> n) {
+    std::cout << "Visiting Constructor" << std::endl;
 }
 
-void PrintVisitor::visit(std::shared_ptr<ClassBodyDeclaration> n) {
-    std::cout << "Visiting ClassBodyDeclaration" << std::endl;
+void PrintVisitor::visit(std::shared_ptr<Method> n) {
+    std::cout << "Visiting Method" << std::endl;
 }
 
-void PrintVisitor::visit(std::shared_ptr<ClassBody> n) {
-    std::cout << "Visiting ClassBody" << std::endl;
+void PrintVisitor::visit(std::shared_ptr<Field> n) {
+    std::cout << "Visiting Field" << std::endl;
 }
 
 void PrintVisitor::visit(std::shared_ptr<ClassDecl> n) {

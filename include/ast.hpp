@@ -201,54 +201,47 @@ class FormalParameter : public std::enable_shared_from_this<FormalParameter> {
         void accept(Visitor* v);
 };
 
-class MemberDecl : public std::enable_shared_from_this<MemberDecl> {
+class MemberDecl {
     public:
-        MemberType memberType; //method or field or constructor or something
-
-        std::shared_ptr<Type> returnType; //field / method
-        std::shared_ptr<Identifier> name; //all
-        bool initializer; //field
-        std::shared_ptr<Exp> exp; //field
-        std::vector<std::shared_ptr<FormalParameter>> formalParameters; //method / constructor
-        std::shared_ptr<Block> block; //method with body / constructor
-
-        //uninitialized field
-        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n); 
-        //initialized field
-        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::shared_ptr<Exp> e); 
-        //method without body
-        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp);
-        //method with body
-        MemberDecl(MemberType mt, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
-        std::shared_ptr<Block> b);
-        //constructor
-        MemberDecl(MemberType mt, std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<FormalParameter>> fp,
-        std::shared_ptr<Block> b);
-
-        ~MemberDecl() = default;
-        void accept(Visitor* v);
-};
-
-class ClassBodyDeclaration : public std::enable_shared_from_this<ClassBodyDeclaration> {
-    public:
-        bool emptyClassBodyDeclaration;
+        MemberType memberType;
         std::vector<Modifiers> modifiers;
-        std::shared_ptr<MemberDecl> memberDecl;
 
-        ClassBodyDeclaration();
-        ClassBodyDeclaration(std::vector<Modifiers> m, std::shared_ptr<MemberDecl> md);
-        void accept(Visitor* v);
-
+        MemberDecl(MemberType mt, std::vector<Modifiers> m);
+        virtual void accept(Visitor* v) = 0;
 };
 
-
-class ClassBody : public std::enable_shared_from_this<ClassBody> {
+class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
-        std::vector<std::shared_ptr<ClassBodyDeclaration>> classBodyDeclarations;
+        std::shared_ptr<Type> returnType;
+        std::shared_ptr<Identifier> fieldName;
+        std::shared_ptr<Exp> initializer;
 
-        ClassBody(std::vector<std::shared_ptr<ClassBodyDeclaration>> cbd);
-        ~ClassBody() = default;
-        void accept(Visitor* v);
+        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, 
+        std::shared_ptr<Exp> i);
+        void accept(Visitor* v) override;
+};
+
+class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
+    public:
+        std::shared_ptr<Type> returnType;
+        std::shared_ptr<Identifier> methodName;
+        std::vector<std::shared_ptr<FormalParameter>> formalParameters;
+        std::shared_ptr<Block> block;
+
+        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        void accept(Visitor* v) override;
+};
+
+class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
+    public:
+        std::shared_ptr<Identifier> constructorName;
+        std::vector<std::shared_ptr<FormalParameter>> formalParameters;
+        std::shared_ptr<Block> block;
+
+        Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        void accept(Visitor* v) override;
 };
 
 class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
@@ -257,10 +250,11 @@ class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
         std::shared_ptr<Identifier> className;
         std::vector<std::shared_ptr<IdentifierType>> extended;
         std::vector<std::shared_ptr<IdentifierType>> implemented;
-        std::shared_ptr<ClassBody> classBody;
+        //0 = Field, 1 = Method, 2 = Constructor
+        std::vector<std::vector<std::shared_ptr<MemberDecl>>> declarations; 
 
-        ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e,
-        std::vector<std::shared_ptr<IdentifierType>> i, std::shared_ptr<ClassBody> cb);
+        ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
+        std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
         ~ClassDecl() = default;
         void accept(Visitor* v);
 };

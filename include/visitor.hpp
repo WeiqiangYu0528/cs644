@@ -28,9 +28,9 @@ class Visitor {
         virtual void visit(std::shared_ptr<ParExp> n) = 0;
 
         virtual void visit(std::shared_ptr<FormalParameter> n) = 0;
-        virtual void visit(std::shared_ptr<MemberDecl> n) = 0;
-        virtual void visit(std::shared_ptr<ClassBodyDeclaration> n) = 0;
-        virtual void visit(std::shared_ptr<ClassBody> n) = 0;
+        virtual void visit(std::shared_ptr<Constructor> n) = 0;
+        virtual void visit(std::shared_ptr<Method> n) = 0;
+        virtual void visit(std::shared_ptr<Field> n) = 0;
         virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
         
 };
@@ -61,9 +61,9 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<ParExp> n) override;
 
         void visit(std::shared_ptr<FormalParameter> n) override;
-        void visit(std::shared_ptr<MemberDecl> n) override;
-        void visit(std::shared_ptr<ClassBodyDeclaration> n) override;
-        void visit(std::shared_ptr<ClassBody> n) override;
+        void visit(std::shared_ptr<Constructor> n) override;
+        void visit(std::shared_ptr<Method> n) override;
+        void visit(std::shared_ptr<Field> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
         
 };
