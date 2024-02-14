@@ -556,14 +556,14 @@ void Program::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-BlockStatement::BlockStatement(std::shared_ptr<StatementList> sl) : statementList(sl)
+BlockStatement::BlockStatement(std::shared_ptr<BlockStatements> sl) : blockStatements(sl)
 {
     std::cout << "Block Statement constructor" << std::endl;
 }
 
 void BlockStatement::accept(Visitor *v)
 {
-    for (auto stmt : statementList->statements)
+    for (auto stmt : blockStatements->statements)
     {
         stmt->accept(v);
     }
@@ -586,14 +586,14 @@ void IfStatement::accept(Visitor *v)
     v->visit(shared_from_this());
 }
 
-WhileStatement::WhileStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement>) : exp(e), statement(s)
+WhileStatement::WhileStatement(std::shared_ptr<ParExp> e, std::shared_ptr<Statement> s) : parExp(e), statement(s)
 {
     std::cout << "While Statement constructor" << std::endl;
 }
 
 void WhileStatement::accept(Visitor *v)
 {
-    exp->accept(v);
+    parExp->accept(v);
     statement->accept(v);
     v->visit(shared_from_this());
 }
