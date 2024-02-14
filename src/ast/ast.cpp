@@ -599,17 +599,18 @@ void WhileStatement::accept(Visitor *v)
 }
 
 // Constructor for ExpressionStatement initialization
-ForStatement::ForStatement(std::shared_ptr<Type> t, std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2)
-        : type(t), stmt1(s1), exp(e), expStmt2(es2), stmt2(s2) 
+ForStatement::ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2)
+        : stmt1(s1), exp(e), expStmt2(es2), stmt2(s2) 
         {
             std::cout << "For Statement constructor" << std::endl;
         }
 
 void ForStatement::accept(Visitor *v) 
 {
-    type->accept(v);
-
-    stmt1->accept(v);
+    if(stmt1) 
+    {
+        stmt1->accept(v);
+    }
 
     if (exp) 
     {
