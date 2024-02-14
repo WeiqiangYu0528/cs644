@@ -435,14 +435,13 @@ public:
 
 class ForStatement : public Statement, std::enable_shared_from_this<ForStatement> {
 public:
-    std::shared_ptr<Type> type; //ForInit
     std::shared_ptr<Statement> stmt1; // ForInit
     std::shared_ptr<Exp> exp; // ForExpression
     std::shared_ptr<ExpressionStatement> expStmt2; // ForUpdate
     std::shared_ptr<Statement> stmt2;
 
     // Constructor for ExpressionStatement initialization
-    ForStatement(std::shared_ptr<Type> t, std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2);
+    ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<ExpressionStatement> es2, std::shared_ptr<Statement> s2);
 
     void accept(Visitor *v) override;
 };

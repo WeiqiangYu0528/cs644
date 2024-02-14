@@ -97,7 +97,7 @@
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
 %type <std::shared_ptr<ImportStatement>> ImportStatements
-%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement
+%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement Block SEMICOLON
 
 %%
 
@@ -291,18 +291,18 @@ Bound
     ;
 
 Statement:
-    Block
-    | SEMICOLON
-    | IF ParExpression Statement %prec THEN
-    | IF ParExpression Statement ELSE Statement
-    | WHILE ParExpression Statement
-    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
-    | ReturnStatements
-    | ExpressionStatement {ast.setAst($1);}
+    Block {$$ = $1;}
+    | SEMICOLON {$$ = $1;}
+    | IF ParExpression Statement %prec THEN {std::make_shared<IfStatement>($2, $3, nullptr);}
+    | IF ParExpression Statement ELSE Statement {std::make_shared<IfStatement>($2, $3, $5);}
+    | WHILE ParExpression Statement {std::make_shared<WhileStatement>($2, $3);}
+    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement {/* $$ = $3; $$.setStatement($5);*/}
+    | ReturnStatements {$$ = $1; ast.setAst($1);}
+    | ExpressionStatement {$$ = $1;}
     ;
 
 ExpressionStatement:
-    StatementExpression SEMICOLON
+    StatementExpression SEMICOLON {std::make_shared<ExpressionStatement>($1);}
     ;
 
 VariableInitializers:
@@ -318,7 +318,7 @@ VariableInitializers:
 
 
 ForControl:
-    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate
+    ForInit SEMICOLON ForExpression SEMICOLON ForUpdate {/* $$ = $1; $$.setForExpression($3); $$.setForUpdate($5); */}
     ;
 
 ForExpression:
@@ -567,8 +567,8 @@ StatementExpression:
     ;
 
 ReturnStatements:
-    RETURN Expression SEMICOLON
-    | RETURN SEMICOLON
+    RETURN Expression SEMICOLON {$$ = std::make_shared<ReturnStatement>($2);}
+    | RETURN SEMICOLON {$$ = std::make_shared<ReturnStatement>(nullptr);}
     ;
 
 MethodInvocation:
