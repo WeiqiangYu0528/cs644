@@ -56,4 +56,14 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<ClassDecl> n) override;
         void visit(std::shared_ptr<InterfaceDecl> n) override;
         void visit(std::shared_ptr<Program> n) override;
+        // Statement part begin
+        void visit(std::shared_ptr<BlockStatement> n) override;
+        void visit(std::shared_ptr<SemicolonStatement> n) override;
+        void visit(std::shared_ptr<IfStatement> n) override;
+        void visit(std::shared_ptr<WhileStatement> n) override;
+        void visit(std::shared_ptr<ForStatement> n) override;
+        void visit(std::shared_ptr<ReturnStatement> n) override;
+        void visit(std::shared_ptr<ExpressionStatement> n) override;
+        void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
+        // Statement part end
 };
