@@ -54,4 +54,6 @@ class PrintVisitor: public Visitor {
         void visit(std::shared_ptr<Method> n) override;
         void visit(std::shared_ptr<Field> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
+        void visit(std::shared_ptr<InterfaceDecl> n) override;
+        void visit(std::shared_ptr<Program> n) override;
 };

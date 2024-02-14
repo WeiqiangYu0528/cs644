@@ -81,6 +81,7 @@
 %nonassoc THEN
 %nonassoc ELSE
 
+%type <std::shared_ptr<Program>> Program
 %type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
@@ -92,17 +93,16 @@
 %type <std::shared_ptr<Exp>> Expression AssignmentExpression LeftHandSide ConditionalAndExpression ConditionalOrExpression
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
 %type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment MethodInvocation ClassInstanceCreationExpression
-%type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
+%type <std::vector<std::shared_ptr<Exp>>> ArgumentList
 %type <std::shared_ptr<Package>> PackageDeclaration
 %type <std::shared_ptr<ImportStatement>> ImportStatements
 
 %type <std::shared_ptr<Exp>> VariableInitializer
 
 %type <std::string> ClassDeclarationOpt
+%type <std::shared_ptr<ClassOrInterfaceDecl>> InterfaceDeclaration ClassOrInterfaceDeclaration
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration NormalClassDeclaration
-
-
-%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList
+%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2 InterfaceTypeList
 
 %type <std::vector<std::vector<std::shared_ptr<MemberDecl>>>> ClassBody
 
@@ -113,7 +113,8 @@
 %type <std::tuple<MemberType, std::shared_ptr<Exp>, std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> MethodOrFieldRest FieldDeclaratorsRest VariableDeclaratorRest MethodDeclaratorRest
 %type <std::tuple<std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> ConstructorDeclaratorRest
 %type <std::shared_ptr<Block>> Block
-
+%type <std::vector<std::shared_ptr<Method>>> InterfaceBody MethodDeclarations
+%type <std::shared_ptr<Method>> MethodDeclaration
 %type <std::vector<std::shared_ptr<FormalParameter>>> FormalParameters
 %type <std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>> FormalParameterDecls
 %type <std::pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>> FormalParameterDeclsRest
@@ -123,14 +124,16 @@
 
 Program
     : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration {
+        $$ = std::make_shared<Program>($1, $2, $3);
+        ast.setAst($$);
     }
     ;
 
 ClassOrInterfaceDeclaration
-    :
-    | ClassDeclaration
-    | InterfaceDeclaration
-    ;  
+    : {$$ = nullptr;}
+    | ClassDeclaration {$$ = $1;}
+    | InterfaceDeclaration {$$ = $1;}
+    ;
 
 PackageDeclaration
     : {$$ = nullptr;}
@@ -160,6 +163,7 @@ PackageImportIdentifier
 InterfaceDeclaration 
     : PUBLIC InterfaceOpt1 INTERFACE Variable InterfaceOpt2 InterfaceBody {
         if ($4->name != lexer.getFilename()) throw syntax_error(@1, std::string("An interface must be declared with the same filename."));
+        $$ = std::make_shared<InterfaceDecl>($4, $5, $6);
      }
     ;
 
@@ -169,28 +173,38 @@ InterfaceOpt1
     ;
 
 InterfaceOpt2
-    :
-    | EXTENDS InterfaceTypeList
+    : {$$ = {};}
+    | EXTENDS InterfaceTypeList {$$ = $2;}
     ;
 
 InterfaceTypeList
     :
-    Variable
-    | InterfaceTypeList COMMA Variable
+    Variable {auto temp = std::make_shared<IdentifierType>($1); $$ = {temp};}
+    | InterfaceTypeList COMMA Variable {
+        $$ = $1;
+        auto temp = std::make_shared<IdentifierType>($3); 
+        $$.push_back(temp);
+    }
     ;
 
 InterfaceBody
-    : LEFT_BRACE MethodDeclarations RIGHT_BRACE
+    : LEFT_BRACE MethodDeclarations RIGHT_BRACE {$$ = $2;}
     ;
 
 MethodDeclarations 
-    : 
-    | MethodDeclaration MethodDeclarations
+    : {$$ = {};}
+    | MethodDeclaration MethodDeclarations {
+        $$ = $2;
+        $$.push_back($1);
+    }
     ;
 
 MethodDeclaration
-    : PUBLIC MethodDeclarationOpt Type Variable FormalParameters SEMICOLON
-    ;    
+    : PUBLIC MethodDeclarationOpt Type Variable FormalParameters SEMICOLON {
+        std::vector<Modifiers> m{};
+        $$ = std::make_shared<Method>(MemberType::METHODWITHOUTBODY, m, $3, $4, $5, nullptr);
+    }
+    ;
 
 MethodDeclarationOpt
     : 
@@ -201,7 +215,6 @@ ClassDeclaration
     : PUBLIC ClassDeclarationOpt NormalClassDeclaration {
         $$ = $3;
         $$->modifier = $2;
-        ast.setAst($$);
     }
     ;
 

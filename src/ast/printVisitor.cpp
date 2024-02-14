@@ -201,3 +201,11 @@ void PrintVisitor::visit(std::shared_ptr<Field> n) {
 void PrintVisitor::visit(std::shared_ptr<ClassDecl> n) {
     std::cout << "Visiting ClassDecl" << std::endl;
 }
+
+void PrintVisitor::visit(std::shared_ptr<InterfaceDecl> n) { 
+    std::cout << "Visiting InterfaceDecl" << std::endl;
+}
+
+void PrintVisitor::visit(std::shared_ptr<Program> n) { 
+    std::cout << "Visiting Program" << std::endl;
+}

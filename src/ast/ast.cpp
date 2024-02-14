@@ -1,14 +1,13 @@
 #include "ast.hpp"
 #include "visitor.hpp"
 
-void Ast::setAst(std::shared_ptr<ClassDecl> cd) {
-    cdecl = cd;
+void Ast::setAst(std::shared_ptr<Program> p) {
+    program = p;
 }
 
-std::shared_ptr<ClassDecl> Ast::getAst() const {
-    return cdecl;
+std::shared_ptr<Program> Ast::getAst() const {
+    return program;
 }
-
 
 void Exp::accept(Visitor* v) {
     // may need to make this pure virtual later
@@ -513,7 +512,7 @@ void Constructor::accept(Visitor* v) {
 
 ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
 std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d) :
-modifier(m), className(cn), extended(e), implemented(i), declarations(d) {
+ClassOrInterfaceDecl(cn, e), modifier(m), implemented(i), declarations(d) {
     std::cout << "ClassDecl constructor" << std::endl;
 }
 
@@ -523,5 +522,36 @@ void ClassDecl::accept(Visitor* v) {
     for (int i = 0; i < 3; i++) {
         for (auto d : declarations[i]) d->accept(v);
     }
+    v->visit(shared_from_this());
+}
+
+InterfaceDecl::InterfaceDecl(std::shared_ptr<Identifier> in, std::vector<std::shared_ptr<IdentifierType>> e,
+        std::vector<std::shared_ptr<Method>>& m) : ClassOrInterfaceDecl(in, e), methods(m) {
+    std::cout << "InterfaceDecl constructor" << std::endl;
+}
+
+void InterfaceDecl::accept(Visitor* v) {
+    name->accept(v);
+    for (auto& e : extended) {
+        e->accept(v);
+    }
+    for (auto& m : methods) {
+        m->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+
+ClassOrInterfaceDecl::ClassOrInterfaceDecl(std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<IdentifierType>> e) : name(n), extended(e) {
+    std::cout << "ClassOrInterfaceDecl constructor" << std::endl;
+}
+
+Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatement(i), classOrInterfaceDecl(c) {
+    std::cout << "Program constructor" << std::endl;
+}
+
+void Program::accept(Visitor* v) {
+    if(package) package->accept(v);
+    importStatement->accept(v);
+    if (classOrInterfaceDecl) classOrInterfaceDecl->accept(v);
     v->visit(shared_from_this());
 }

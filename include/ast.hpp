@@ -413,28 +413,48 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         void accept(Visitor* v) override;
 };
 
-class ClassDecl : public std::enable_shared_from_this<ClassDecl> {
+class ClassOrInterfaceDecl {
+    public:
+        std::shared_ptr<Identifier> name;
+        std::vector<std::shared_ptr<IdentifierType>> extended;
+        ClassOrInterfaceDecl(std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<IdentifierType>> e);
+        virtual ~ClassOrInterfaceDecl() = default;
+        virtual void accept(Visitor* v) = 0;
+};
+
+class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
     public:
         std::string modifier;
-        std::shared_ptr<Identifier> className;
-        std::vector<std::shared_ptr<IdentifierType>> extended;
         std::vector<std::shared_ptr<IdentifierType>> implemented;
         //0 = Field, 1 = Method, 2 = Constructor
         std::vector<std::vector<std::shared_ptr<MemberDecl>>> declarations; 
 
         ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
         std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
-        ~ClassDecl() = default;
+        void accept(Visitor* v) override;
+};
+
+class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from_this<InterfaceDecl> {
+    public:
+        std::vector<std::shared_ptr<Method>> methods;
+        InterfaceDecl(std::shared_ptr<Identifier> in, std::vector<std::shared_ptr<IdentifierType>> e,
+        std::vector<std::shared_ptr<Method>>& m);
+        void accept(Visitor* v) override;
+};
+
+class Program :  public std::enable_shared_from_this<Program> {
+    std::shared_ptr<Package> package;
+    std::shared_ptr<ImportStatement> importStatement;
+    std::shared_ptr<ClassOrInterfaceDecl> classOrInterfaceDecl;
+    public:
+        Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c);
         void accept(Visitor* v);
 };
 
 class Ast {
     private:
-        //std::shared_ptr<Exp> exp;
-        std::shared_ptr<ClassDecl> cdecl;
+        std::shared_ptr<Program> program;
     public:
-        //void setAst(std::shared_ptr<Exp> exp);
-        void setAst(std::shared_ptr<ClassDecl> cdecl);
-        //std::shared_ptr<Exp> getAst() const;
-        std::shared_ptr<ClassDecl> getAst() const;
+        void setAst(std::shared_ptr<Program> cdecl);
+        std::shared_ptr<Program> getAst() const;
 };

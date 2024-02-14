@@ -55,4 +55,6 @@ class Visitor {
         virtual void visit(std::shared_ptr<Method> n) = 0;
         virtual void visit(std::shared_ptr<Field> n) = 0;
         virtual void visit(std::shared_ptr<ClassDecl> n) = 0;
+        virtual void visit(std::shared_ptr<InterfaceDecl> n) = 0;
+        virtual void visit(std::shared_ptr<Program> n) = 0;
 };
