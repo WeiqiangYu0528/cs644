@@ -350,15 +350,114 @@ public:
     void accept(Visitor* v) override;
 };
 
-
 class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
 public:
     VoidType();
     void accept(Visitor* v) override;
 };
 
-class Block {
-    //Needs to be implemented
+class Statement
+{
+public:
+    virtual ~Statement() = default;
+    virtual void accept(Visitor *v) = 0;
+};
+
+class SemicolonStatement : public Statement, 
+                           public std::enable_shared_from_this<SemicolonStatement>
+{
+public:
+    void accept(Visitor *v) override;
+};
+
+class BlockStatements : public Statement, 
+                        public std::enable_shared_from_this<BlockStatements>
+{
+    std::vector<std::shared_ptr<Statement>> statements;
+public:
+    void addStatement(std::shared_ptr<Statement> stmt);
+    void accept(Visitor *v) override;
+};
+
+class BlockStatement : public Statement,
+                       public std::enable_shared_from_this<BlockStatement>
+{
+    std::shared_ptr<BlockStatements> blockStatements;
+public:
+    BlockStatement(std::shared_ptr<BlockStatements> sl);
+    void accept(Visitor *v) override;
+};
+
+// This is for if/then and if/else
+class IfStatement : public Statement,
+                    public std::enable_shared_from_this<IfStatement>
+{
+public:
+    std::shared_ptr<Exp> exp;
+    std::shared_ptr<Statement> statement1, statement2;
+    IfStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2);
+    void accept(Visitor *v) override;
+};
+
+class WhileStatement : public Statement,
+                       public std::enable_shared_from_this<WhileStatement>
+{
+public:
+    std::shared_ptr<Exp> exp;
+    std::shared_ptr<Statement> statement;
+    WhileStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement>);
+    void accept(Visitor *v) override;
+};
+
+class LocalVariableDeclarationStatement : public Statement, 
+                                          public std::enable_shared_from_this<LocalVariableDeclarationStatement>
+{
+public:
+    std::shared_ptr<Type> type;
+    std::shared_ptr<Identifier> id;
+    std::shared_ptr<Exp> exp;
+    LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
+    void accept(Visitor *v) override;
+
+    void setType(std::shared_ptr<Type> t)
+    {
+        type = t;
+    }
+};
+
+class ExpressionStatement : public Statement, 
+                            public std::enable_shared_from_this<ExpressionStatement>
+{
+public:
+    std::shared_ptr<Exp> exp;
+    ExpressionStatement(std::shared_ptr<Exp> e);
+    void accept(Visitor *v) override;
+};
+
+class ForStatement : public Statement, public std::enable_shared_from_this<ForStatement> {
+public:
+    std::shared_ptr<Statement> stmt1; // ForInit
+    std::shared_ptr<Exp> exp; // ForExpression
+    std::shared_ptr<Exp> expStmt2; // ForUpdate
+    std::shared_ptr<Statement> stmt2;
+
+    // Constructor for ExpressionStatement initialization
+    ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<Exp> es2);
+
+    void accept(Visitor *v) override;
+
+    void setStmt2(std::shared_ptr<Statement> s) {
+        stmt2 = s;
+    }
+};
+
+class ReturnStatement : public Statement, 
+                        public std::enable_shared_from_this<ReturnStatement>
+{
+public:
+    std::shared_ptr<Exp> exp;
+    ReturnStatement(std::shared_ptr<Exp> e);
+    void accept(Visitor *v) override;
 };
 
 class FormalParameter : public std::enable_shared_from_this<FormalParameter> {
@@ -395,10 +494,10 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         std::shared_ptr<Type> returnType;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
-        std::shared_ptr<Block> block;
+        std::shared_ptr<BlockStatement> block;
 
         Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
-        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
 };
 
@@ -406,10 +505,10 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
     public:
         std::shared_ptr<Identifier> constructorName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
-        std::shared_ptr<Block> block;
+        std::shared_ptr<BlockStatement> block;
 
         Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
-        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b);
+        std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
 };
 
@@ -455,121 +554,6 @@ class Ast {
     private:
         std::shared_ptr<Program> program;
     public:
-        void setAst(std::shared_ptr<Program> cdecl);
+        void setAst(std::shared_ptr<Program> p);
         std::shared_ptr<Program> getAst() const;
-};
-
-class Statement
-{
-public:
-    virtual ~Statement() = default;
-    virtual void accept(Visitor *v) = 0;
-};
-
-class SemicolonStatement : public Statement
-{
-public:
-    SemicolonStatement()
-    {
-        std::cout << "SemicolonStatement constructor" << std::endl;
-    }
-};
-
-class BlockStatements
-{
-public:
-    std::vector<std::shared_ptr<Statement>> statements;
-    void addStatement(std::shared_ptr<Statement> stmt)
-    {
-        statements.push_back(stmt);
-    }
-};
-
-class BlockStatement : public Statement,
-                       std::enable_shared_from_this<BlockStatement>
-{
-public:
-    std::shared_ptr<BlockStatements> blockStatements;
-    BlockStatement(std::shared_ptr<BlockStatements> sl);
-    void accept(Visitor *v) override;
-};
-
-// This is for if/then and if/else
-class IfStatement : public Statement,
-                    std::enable_shared_from_this<IfStatement>
-{
-public:
-    std::shared_ptr<Exp> exp;
-    std::shared_ptr<Statement> statement1, statement2;
-    IfStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2);
-    void accept(Visitor *v) override;
-};
-
-class WhileStatement : public Statement,
-                       std::enable_shared_from_this<WhileStatement>
-{
-public:
-    std::shared_ptr<Exp> exp;
-    std::shared_ptr<Statement> statement;
-    WhileStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement>);
-    void accept(Visitor *v) override;
-};
-
-class LocalVariableDeclarationStatement : public Statement, 
-                                          std::enable_shared_from_this<LocalVariableDeclarationStatement>
-{
-public:
-    std::shared_ptr<Type> type;
-    std::shared_ptr<Identifier> id;
-    std::shared_ptr<Exp> exp;
-    LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
-    void accept(Visitor *v) override;
-
-    void setType(std::shared_ptr<Type> t)
-    {
-        type = t;
-    }
-};
-
-class ExpressionStatement : public Statement, 
-                            std::enable_shared_from_this<ExpressionStatement>
-{
-public:
-    std::shared_ptr<Exp> exp;
-    ExpressionStatement(std::shared_ptr<Exp> e);
-    void accept(Visitor *v) override;
-};
-
-class ForStatement : public Statement, std::enable_shared_from_this<ForStatement> {
-public:
-    std::shared_ptr<Statement> stmt1; // ForInit
-    std::shared_ptr<Exp> exp; // ForExpression
-    std::shared_ptr<Exp> expStmt2; // ForUpdate
-    std::shared_ptr<Statement> stmt2;
-
-    // Constructor for ExpressionStatement initialization
-    ForStatement(std::shared_ptr<Statement> s1, std::shared_ptr<Exp> e, std::shared_ptr<Exp> es2);
-
-    void accept(Visitor *v) override;
-
-    void setStmt2(std::shared_ptr<Statement> s) {
-        stmt2 = s;
-    }
-};
-
-class ReturnStatement : public Statement, 
-                        std::enable_shared_from_this<ReturnStatement>
-{
-public:
-    std::shared_ptr<Exp> exp;
-    ReturnStatement(std::shared_ptr<Exp> e);
-    void accept(Visitor *v) override;
-};
-
-class Ast {
-    private:
-        std::shared_ptr<Statement> exp;
-    public:
-        void setAst(std::shared_ptr<Statement> exp);
-        std::shared_ptr<Statement> getAst() const;
 };

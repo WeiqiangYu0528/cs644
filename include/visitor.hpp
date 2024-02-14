@@ -59,6 +59,7 @@ class Visitor {
         virtual void visit(std::shared_ptr<Program> n) = 0;
         // Statement part begin
         virtual void visit(std::shared_ptr<BlockStatement> n) = 0;
+        virtual void visit(std::shared_ptr<BlockStatements> n) = 0;
         virtual void visit(std::shared_ptr<SemicolonStatement> n)  = 0;
         virtual void visit(std::shared_ptr<IfStatement> n)  = 0;
         virtual void visit(std::shared_ptr<WhileStatement> n)  = 0;

@@ -215,6 +215,11 @@ void PrintVisitor::visit(std::shared_ptr<BlockStatement> n)
     std::cout << "Visiting Block Statement" << std::endl;
 }
 
+void PrintVisitor::visit(std::shared_ptr<BlockStatements> n)
+{
+    std::cout << "Visiting Block Statements" << std::endl;
+}
+
 void PrintVisitor::visit(std::shared_ptr<IfStatement> n)
 {
     std::cout << "Visiting If Statement" << std::endl;

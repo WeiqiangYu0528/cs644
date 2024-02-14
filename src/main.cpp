@@ -28,10 +28,10 @@ int main(int argc, char* argv[])
     Ast ast;
     yy::parser parser(lexer, ast);
     int ret = parser.parse();
-    if (std::shared_ptr<Program> cdecl = ast.getAst()) {
+    if (std::shared_ptr<Program> program = ast.getAst()) {
         PrintVisitor visitor;
         std::cout << "Visiting AST" << std::endl;
-        cdecl->accept(&visitor);
+        program->accept(&visitor);
     }
     if (ret == 0)
         return 0;

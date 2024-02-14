@@ -93,39 +93,30 @@
 %type <std::shared_ptr<Exp>> Expression AssignmentExpression LeftHandSide ConditionalAndExpression ConditionalOrExpression
 %type <std::shared_ptr<Exp>> InclusiveOrExpression ExclusiveOrExpression AndExpression EqualityExpression RelationalExpression
 %type <std::shared_ptr<Exp>> ConditionalExpression StatementExpression Assignment MethodInvocation ClassInstanceCreationExpression
-%type <std::vector<std::shared_ptr<Exp>>> ArgumentList
-%type <std::shared_ptr<Package>> PackageDeclaration
-%type <std::shared_ptr<ImportStatement>> ImportStatements
-%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement Block SEMICOLON
-
-%type <std::shared_ptr<Exp>> VariableInitializer
-
 %type <std::string> ClassDeclarationOpt
 %type <std::shared_ptr<ClassOrInterfaceDecl>> InterfaceDeclaration ClassOrInterfaceDeclaration
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration NormalClassDeclaration
 %type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2 InterfaceTypeList
-
 %type <std::vector<std::vector<std::shared_ptr<MemberDecl>>>> ClassBody
-
 %type <std::vector<std::shared_ptr<MemberDecl>>> ClassBodyOpt1
 %type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
 %type <std::shared_ptr<MemberDecl>> MemberDecl MethodOrFieldDecl ClassBodyDeclaration
-
-%type <std::tuple<MemberType, std::shared_ptr<Exp>, std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> MethodOrFieldRest FieldDeclaratorsRest VariableDeclaratorRest MethodDeclaratorRest
-%type <std::tuple<std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<Block>>> ConstructorDeclaratorRest
+%type <std::tuple<MemberType, std::shared_ptr<Exp>, std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<BlockStatement>>> MethodOrFieldRest FieldDeclaratorsRest VariableDeclaratorRest MethodDeclaratorRest
+%type <std::tuple<std::vector<std::shared_ptr<FormalParameter>>, std::shared_ptr<BlockStatement>>> ConstructorDeclaratorRest
 %type <std::vector<std::shared_ptr<Method>>> InterfaceBody MethodDeclarations
 %type <std::shared_ptr<Method>> MethodDeclaration
 %type <std::vector<std::shared_ptr<FormalParameter>>> FormalParameters
 %type <std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>> FormalParameterDecls
 %type <std::pair<std::shared_ptr<Identifier>, std::vector<std::pair<std::shared_ptr<Type>, std::shared_ptr<Identifier>>>>> FormalParameterDeclsRest
-
 %type <std::shared_ptr<Exp>> ForUpdate ForExpression VariableInitializer
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
 %type <std::shared_ptr<ImportStatement>> ImportStatements
-%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement Block SEMICOLON ForInit  
-%type <std::shared_ptr<LocalVariableDeclarationStatement>> LocalVariableDeclaration VariableDeclarators VariableDeclarator
+%type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement SEMICOLON ForInit BlockStatement
+%type <std::shared_ptr<LocalVariableDeclarationStatement>> LocalVariableDeclaration VariableDeclarators VariableDeclarator LocalVariableDeclarationStatement
 %type <std::shared_ptr<ForStatement>> ForControl
+%type <std::shared_ptr<BlockStatement>> Block
+%type <std::shared_ptr<BlockStatements>> BlockStatements
 %%
 
 Program
@@ -337,17 +328,15 @@ Bound
 
 Statement:
     Block {$$ = $1;}
-    | SEMICOLON {$$ = $1;}
+    | SEMICOLON {$$ = std::make_shared<SemicolonStatement>();}
     | IF ParExpression Statement %prec THEN {$$ = std::make_shared<IfStatement>($2, $3, nullptr);}
     | IF ParExpression Statement ELSE Statement {$$ = std::make_shared<IfStatement>($2, $3, $5);}
     | WHILE ParExpression Statement {$$ = std::make_shared<WhileStatement>($2, $3);}
-    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement {     
-    auto forControlStmt = std::dynamic_pointer_cast<ForStatement>($3);
-    if (forControlStmt) {
-        forControlStmt->setStmt2($5);
+    | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement { 
+        $3->setStmt2($5);
+        $$ = $3;
     }
-    $$ = $3;}
-    | ReturnStatements {$$ = $1; ast.setAst($1);}
+    | ReturnStatements {$$ = $1;}
     | ExpressionStatement {$$ = $1;}
     ;
 
@@ -355,31 +344,22 @@ ExpressionStatement:
     StatementExpression SEMICOLON {$$ = std::make_shared<ExpressionStatement>($1);}
     ;
 
-VariableInitializers:
-    VariableInitializer
-    | VariableInitializers COMMA VariableInitializer
-    ;
-
-/* ArrayInitializer:
-    LEFT_BRACE VariableInitializers RIGHT_BRACE
-    | LEFT_BRACE COMMA RIGHT_BRACE
-    | LEFT_BRACE RIGHT_BRACE
-    ; */
-
-
 ForControl:
     ForInit SEMICOLON ForExpression SEMICOLON ForUpdate {$$ = std::make_shared<ForStatement>($1, $3, $5);}
     ;
 
 ForExpression:
+    {$$ = nullptr;}
     | Expression {$$ = $1;}
     ;
 
 ForUpdate:
+    {$$ = nullptr;}
     | StatementExpression {$$ = $1;}
     ;
 
 ForInit: 
+    {$$ = nullptr;}
     | StatementExpression {$$ = std::make_shared<ExpressionStatement>($1);}
     | LocalVariableDeclaration {$$ = $1;}
     ;
@@ -842,24 +822,25 @@ FormalParameterDeclsRest
     ;
 
 Block
-    : LEFT_BRACE BlockStatements RIGHT_BRACE {$$ = std::make_shared<Block>(); //To be expanded
-    }
-    | LEFT_BRACE RIGHT_BRACE {$$ = std::make_shared<Block>(); //To be expanded
-    }
+    : LEFT_BRACE BlockStatements RIGHT_BRACE {$$ = std::make_shared<BlockStatement>($2);}
+    | LEFT_BRACE RIGHT_BRACE {$$ = nullptr;}
     ;
 
 BlockStatements:
-    BlockStatement
-    | BlockStatements BlockStatement
+    BlockStatement {$$ = std::make_shared<BlockStatements>(); $$->addStatement($1);}
+    | BlockStatements BlockStatement {
+        $$ = $1;
+        $$->addStatement($2);
+    }
     ;
 
 BlockStatement:
-    LocalVariableDeclarationStatement
-    | Statement
+    LocalVariableDeclarationStatement {$$ = $1;}
+    | Statement {$$ = $1;}
     ;
 
 LocalVariableDeclarationStatement:
-    LocalVariableDeclaration SEMICOLON
+    LocalVariableDeclaration SEMICOLON {$$ = $1;}
     ;
 
 Variable

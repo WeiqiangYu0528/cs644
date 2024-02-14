@@ -486,7 +486,7 @@ void Field::accept(Visitor* v) {
 }
 
 Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
-std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b)
+std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
 : MemberDecl(mt, m), returnType(rt), methodName(mn), formalParameters(fp), block(b) {
     std::cout << "Method constructor" << std::endl;
 }
@@ -494,19 +494,19 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b)
 void Method::accept(Visitor* v) {
     returnType->accept(v);
     for (auto fp : formalParameters) fp->accept(v);
-    if (block); //block->accept(v); //Uncomment this once Block is implemented
+    if (block) block->accept(v);
     v->visit(shared_from_this());
 }
 
 Constructor::Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
-std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<Block> b)
+std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
 : MemberDecl(mt, m), constructorName(cn), formalParameters(fp), block(b) {
     std::cout << "Constructor constructor" << std::endl;
 }
 
 void Constructor::accept(Visitor* v) {
     for (auto fp : formalParameters) fp->accept(v);
-    //block->accept(v); //Uncomment this once Block is implemented
+    if (block) block->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -545,17 +545,6 @@ ClassOrInterfaceDecl::ClassOrInterfaceDecl(std::shared_ptr<Identifier> n, std::v
     std::cout << "ClassOrInterfaceDecl constructor" << std::endl;
 }
 
-Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatement(i), classOrInterfaceDecl(c) {
-    std::cout << "Program constructor" << std::endl;
-}
-
-void Program::accept(Visitor* v) {
-    if(package) package->accept(v);
-    importStatement->accept(v);
-    if (classOrInterfaceDecl) classOrInterfaceDecl->accept(v);
-    v->visit(shared_from_this());
-}
-
 BlockStatement::BlockStatement(std::shared_ptr<BlockStatements> sl) : blockStatements(sl)
 {
     std::cout << "Block Statement constructor" << std::endl;
@@ -563,10 +552,7 @@ BlockStatement::BlockStatement(std::shared_ptr<BlockStatements> sl) : blockState
 
 void BlockStatement::accept(Visitor *v)
 {
-    for (auto stmt : blockStatements->statements)
-    {
-        stmt->accept(v);
-    }
+    blockStatements->accept(v);
     v->visit(shared_from_this());
 }
 
@@ -667,6 +653,36 @@ void LocalVariableDeclarationStatement::accept(Visitor *v)
 {
     type->accept(v);
     id->accept(v);
-    exp->accept(v);
+    if (exp) exp->accept(v);
+    v->visit(shared_from_this());
+}
+
+void SemicolonStatement::accept(Visitor *v)
+{
+    v->visit(shared_from_this());
+}
+
+void BlockStatements::addStatement(std::shared_ptr<Statement> s)
+{
+    statements.push_back(s);
+}
+
+void BlockStatements::accept(Visitor *v)
+{
+    for (auto stmt : statements)
+    {
+        if (stmt) stmt->accept(v);
+    }
+    v->visit(shared_from_this());
+}
+
+Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatement(i), classOrInterfaceDecl(c) {
+    std::cout << "Program constructor" << std::endl;
+}
+
+void Program::accept(Visitor* v) {
+    if(package) package->accept(v);
+    importStatement->accept(v);
+    if (classOrInterfaceDecl) classOrInterfaceDecl->accept(v);
     v->visit(shared_from_this());
 }
