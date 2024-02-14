@@ -102,9 +102,7 @@
 %%
 
 Program
-    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration {
-        ast.setAst($1);
-    }
+    : PackageDeclaration ImportStatements ClassOrInterfaceDeclaration
     ;
 
 ClassOrInterfaceDeclaration
@@ -300,7 +298,7 @@ Statement:
     | WHILE ParExpression Statement
     | FOR LEFT_PAREN ForControl RIGHT_PAREN Statement
     | ReturnStatements
-    | ExpressionStatement
+    | ExpressionStatement {ast.setAst($1);}
     ;
 
 ExpressionStatement:
