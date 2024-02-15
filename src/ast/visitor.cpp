@@ -1,4 +1,4 @@
-#include "Visitor.hpp"
+#include "visitor.hpp"
 
 void Visitor::visit(std::shared_ptr<PlusExp> n) {
     n->exp1->accept(this);
