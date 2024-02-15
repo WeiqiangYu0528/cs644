@@ -14,8 +14,10 @@ FLEX_SRC=src/lexer/lexer.ll
 FLEX_OUT=src/lexer/lex.yy.cpp
 FLEX_OPTS=
 
+AST_OUT=src/ast/ast.cpp
+VISITOR_OUT=src/ast/visitor.cpp
 
-SRC_FILES=$(wildcard src/*.cpp) $(BISON_OUT) $(FLEX_OUT)
+SRC_FILES=$(wildcard src/*.cpp) $(wildcard src/ast/*.cpp) $(BISON_OUT) $(FLEX_OUT)
 
 BUILD_DIR=.
 

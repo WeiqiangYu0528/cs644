@@ -30,12 +30,6 @@ const std::vector<std::string> keywords {
     "volatile",
 };
 
-const std::vector<std::string> invalidStr {
-    "\\u",
-    "\\8",
-    "\\9",
-};
-
 enum class Modifiers {
     PUBLIC = 0,
     PROTECTED,
@@ -78,11 +72,3 @@ inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
     }
     return true;
 }
-
-inline long long integerVal{0};
-
-
-typedef struct {
-    bool notAName;
-
-} ExpressionInfo;
