@@ -52,6 +52,16 @@ int main(int argc, char* argv[])
             asts.push_back(program);
         }
     }
+
+    for (std::shared_ptr<Program> program : asts) {
+        auto [pkg, cdecl] = program->getQualifiedName();
+        auto x = tables[pkg][cdecl];
+        if (x) {
+            HierarchyVisitor hvisitor(tables[pkg][cdecl], tables);
+            program->accept(&hvisitor);
+        }
+    }
+
     if (!error) {
         for (auto ast : asts) {
             TypeLinkingVisitor tvisitor{tables};
