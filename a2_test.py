@@ -1,5 +1,13 @@
 import os
 import subprocess
+import argparse
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--single', metavar='dir', type=str)
+    parser.add_argument('-a', '--all', action='store_true')
+    return parser.parse_args()
+
 
 def collect_files(directory):
     file_paths = []
@@ -12,8 +20,8 @@ def collect_files(directory):
 
 def execute_joosc(files):
     command = ['./joosc'] + files
-    result = subprocess.run(command, capture_output=True)
-    return result.returncode
+    result = subprocess.run(command, capture_output=True, text=True)
+    return result
 
 def add_jsl_files(files, jsl_dir):
     jsl_files = collect_files(jsl_dir)
@@ -48,7 +56,7 @@ def main(start_dir):
     correct = 0
     for item, files in items_to_process:
         add_jsl_files(files, jsl_dir)
-        return_code = execute_joosc(files)
+        return_code = execute_joosc(files).returncode
         expected_return_code = 0 if item.startswith(('J1_', 'J2_')) else 42
         if return_code != expected_return_code:
             type_linking, hierarchy = check_error_type(files)
@@ -67,6 +75,27 @@ def main(start_dir):
     print("Correct:", correct)
     print("Total:", len(items_to_process))
 
-jsl_dir = './JSL_2.0'
-test_dir = './tests/a2-tests'
-main(test_dir)
+def single(dir_or_file):
+    if os.path.isdir(dir_or_file):
+        files = collect_files(dir_or_file)
+    elif os.path.isfile(dir_or_file):
+        files = [dir_or_file]
+        
+    add_jsl_files(files, jsl_dir)
+    result = execute_joosc(files)
+
+    if result.stdout:
+        print("STDOUT:\n", result.stdout)
+    if result.stderr:
+        print("STDERR:\n", result.stderr)
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    jsl_dir = './JSL_2.0'
+    test_dir = './tests/a2-tests'
+
+    if args.single:
+        single(args.single)
+    elif args.all:
+        main(test_dir)
