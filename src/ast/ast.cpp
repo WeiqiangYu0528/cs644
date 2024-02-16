@@ -337,14 +337,18 @@ void Package::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-ImportStatement::ImportStatement() {
-}
-
-void ImportStatement::addImport(std::shared_ptr<Identifier> i) {
-    stmts.push_back(i);
+ImportStatement::ImportStatement(std::shared_ptr<Identifier> p, std::shared_ptr<Identifier> i) : package(p), id(i) {
 }
 
 void ImportStatement::accept(Visitor* v) {
+    v->visit(shared_from_this());
+}
+
+void ImportStatements::addImport(std::shared_ptr<ImportStatement> i) {
+    stmts.push_back(i);
+}
+
+void ImportStatements::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
@@ -485,15 +489,15 @@ void BlockStatements::accept(Visitor *v)
     v->visit(shared_from_this());
 }
 
-Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatement(i), classOrInterfaceDecl(c) {
+Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatements> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatements(i), classOrInterfaceDecl(c) {
 }
 
 void Program::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-std::string Program::getQualifiedName() const {
+std::pair<std::string, std::string> Program::getQualifiedName() const {
     std::string packageName = package ? package->id->name : "";
     std::string className = classOrInterfaceDecl ? classOrInterfaceDecl->id->name : "";
-    return packageName == "" ? className : packageName + "." + className;
+    return {packageName, className};
 }

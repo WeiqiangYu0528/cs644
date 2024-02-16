@@ -82,7 +82,9 @@
 %nonassoc ELSE
 
 %type <std::shared_ptr<Program>> Program
-%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier VariableDeclaratorId
+%type <std::shared_ptr<ImportStatement>> PackageImportIdentifier ImportStatement
+%type <std::shared_ptr<ImportStatements>> ImportStatements
+%type <std::shared_ptr<Identifier>> Variable VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
@@ -111,7 +113,6 @@
 %type <std::shared_ptr<Exp>> ForUpdate ForExpression VariableInitializer
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
-%type <std::shared_ptr<ImportStatement>> ImportStatements
 %type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement SEMICOLON ForInit BlockStatement
 %type <std::shared_ptr<LocalVariableDeclarationStatement>> LocalVariableDeclaration VariableDeclarators VariableDeclarator LocalVariableDeclarationStatement
 %type <std::shared_ptr<ForStatement>> ForControl
@@ -138,7 +139,7 @@ PackageDeclaration
     ;
 
 ImportStatements
-    : {$$ = std::make_shared<ImportStatement>();}
+    : {$$ = std::make_shared<ImportStatements>();}
     | ImportStatement ImportStatements {
         $$ = $2;
         $$->addImport($1);
@@ -146,14 +147,17 @@ ImportStatements
     ;
 
 ImportStatement
-    : IMPORT Name SEMICOLON {$$ = std::make_shared<Identifier>($2->id->name);}
-    | IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
+    : IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
     ;
 
 PackageImportIdentifier    
-    : Name DOT STAR {
-        std::string temp = $1->id->name + ".*";
-        $$ = std::make_shared<Identifier>(temp);
+    : Name DOT Variable {
+        $$ = std::make_shared<ImportStatement>($1->id, $3);
+    }
+    | Name DOT STAR {
+        std::string star {"*"};
+        auto temp = std::make_shared<Identifier>(star);
+        $$ = std::make_shared<ImportStatement>($1->id, temp);
         }
     ;
 

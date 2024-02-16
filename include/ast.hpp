@@ -74,9 +74,16 @@ class Package : public AstNode, public std::enable_shared_from_this<Package>  {
 
 class ImportStatement : public AstNode, public std::enable_shared_from_this<ImportStatement> {
     public:
-        std::vector<std::shared_ptr<Identifier>> stmts;
-        ImportStatement();
-        void addImport(std::shared_ptr<Identifier> i);
+        std::shared_ptr<Identifier> package;
+        std::shared_ptr<Identifier> id;
+        ImportStatement(std::shared_ptr<Identifier> p, std::shared_ptr<Identifier> i);
+        void accept(Visitor* v) override;
+};
+
+class ImportStatements : public AstNode, public std::enable_shared_from_this<ImportStatements> {
+    public:
+        std::vector<std::shared_ptr<ImportStatement>> stmts;
+        void addImport(std::shared_ptr<ImportStatement> i);
         void accept(Visitor* v) override;
 };
 
@@ -546,11 +553,11 @@ class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from
 class Program : public AstNode, public std::enable_shared_from_this<Program> {
     public:
         std::shared_ptr<Package> package;
-        std::shared_ptr<ImportStatement> importStatement;
+        std::shared_ptr<ImportStatements> importStatements;
         std::shared_ptr<ClassOrInterfaceDecl> classOrInterfaceDecl;
-        Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c);
+        Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatements> i, std::shared_ptr<ClassOrInterfaceDecl> c);
         void accept(Visitor* v) override;
-        std::string getQualifiedName() const;
+        std::pair<std::string, std::string> getQualifiedName() const;
 };
 
 class Ast {

@@ -8,6 +8,22 @@ std::shared_ptr<AstNode> SymbolTable::getField(const std::string& key) const {
     return ftable.contains(key) ? ftable.at(key) : nullptr;
 }
 
+void SymbolTable::putMethod(const std::string& key, const std::shared_ptr<AstNode> value) {
+    mtable[key] = value;
+}
+
+std::shared_ptr<AstNode> SymbolTable::getMethod(const std::string& key) const {
+    return mtable.contains(key) ? mtable.at(key) : nullptr;
+}
+
+void SymbolTable::putConstuctor(const std::string& key, const std::shared_ptr<AstNode> value) {
+    ctable[key] = value;
+}
+
+std::shared_ptr<AstNode> SymbolTable::getConstructor(const std::string& key) const {
+    return ctable.contains(key) ? ctable.at(key) : nullptr;
+}
+
 void SymbolTable::putVar(const std::string& key, const std::shared_ptr<AstNode> value) {
     stack_t.push(key);
     ltable[key] = value;
@@ -27,4 +43,8 @@ void SymbolTable::endScope() {
         stack_t.pop();
     }
     stack_t.pop();
+}
+
+void SymbolTable::setAst(std::shared_ptr<Program> a) {
+    ast = a;
 }

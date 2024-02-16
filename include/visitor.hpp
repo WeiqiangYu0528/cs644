@@ -49,6 +49,7 @@ class Visitor {
         virtual void visit(std::shared_ptr<VoidType> t);
         virtual void visit(std::shared_ptr<Package> n);
         virtual void visit(std::shared_ptr<ImportStatement> n);
+        virtual void visit(std::shared_ptr<ImportStatements> n);
         virtual void visit(std::shared_ptr<Identifier> n);
         virtual void visit(std::shared_ptr<FormalParameter> n);
         virtual void visit(std::shared_ptr<Constructor> n);

@@ -18,12 +18,14 @@ void ContextVisitor::visit(std::shared_ptr<Constructor> n) {
     symbolTable->beginScope();
     Visitor::visit(n);
     symbolTable->endScope();
+    symbolTable->putConstuctor(n->constructorName->name, n);
 }
 
 void ContextVisitor::visit(std::shared_ptr<Method> n) {
     symbolTable->beginScope();
     Visitor::visit(n);
     symbolTable->endScope();
+    symbolTable->putMethod(n->methodName->name, n);
 }
 
 void ContextVisitor::visit(std::shared_ptr<Field> n) {
@@ -76,6 +78,11 @@ void ContextVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n)
     } else {
         symbolTable->putVar(key, n);
     }
+    Visitor::visit(n);
+}
+
+void ContextVisitor::visit(std::shared_ptr<Program> n) {
+    symbolTable->setAst(n);
     Visitor::visit(n);
 }
 

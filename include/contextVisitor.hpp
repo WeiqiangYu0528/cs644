@@ -18,6 +18,7 @@ class ContextVisitor: public Visitor {
         void visit(std::shared_ptr<WhileStatement> n) override;
         void visit(std::shared_ptr<ForStatement> n) override;
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
+        void visit(std::shared_ptr<Program> n) override;
         bool isError() const;
         std::shared_ptr<SymbolTable> getSymbolTable() const;
 };

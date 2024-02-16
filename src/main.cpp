@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "contextVisitor.hpp"
 #include "symbolTable.hpp"
+#include "typeLinkingVisitor.hpp"
 
 std::string extractFilename(const std::string& filePath) {
     size_t start = filePath.rfind('/') + 1; // Find the last '/' character
@@ -18,7 +19,9 @@ std::string extractFilename(const std::string& filePath) {
 
 int main(int argc, char* argv[])
 {
-    std::unordered_map<std::string, std::shared_ptr<SymbolTable>> tables;
+    std::unordered_map<std::string, 
+                       std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
+    std::vector<std::shared_ptr<Program>> asts;
     bool error {false};
     for (int i = 1; i < argc; ++i) {
         std::ifstream inputFile;
@@ -40,12 +43,24 @@ int main(int argc, char* argv[])
             // PrintVisitor visitor;
             ContextVisitor cvisitor{};
             program->accept(&cvisitor);
-            std::string key{program->getQualifiedName()};
-            if (cvisitor.isError() || tables.contains(key)) {
+            auto [pkg, cdecl] = program->getQualifiedName();
+            if (cvisitor.isError() || (tables.contains(pkg) && tables.at(pkg).contains(cdecl))) {
                 error = true;
                 break;
             }
-            tables[key] = cvisitor.getSymbolTable();
+            tables[pkg][cdecl] = cvisitor.getSymbolTable();
+            asts.push_back(program);
+        }
+    }
+    if (!error) {
+        TypeLinkingVisitor tvisitor{tables};
+        for (auto ast : asts) {
+            ast->accept(&tvisitor);
+            if (tvisitor.isError()) {
+                std::cerr << "Error: Type linking failed" << std::endl;
+                error = true;
+                break;
+            }
         }
     }
     if (error)

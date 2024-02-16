@@ -193,6 +193,11 @@ void Visitor::visit(std::shared_ptr<Package> n) {
 }
 
 void Visitor::visit(std::shared_ptr<ImportStatement> n) {
+    n->package->accept(this);
+    n->id->accept(this);
+}
+
+void Visitor::visit(std::shared_ptr<ImportStatements> n) {
     for (auto stmt: n->stmts) {
         stmt->accept(this);
     }
@@ -241,7 +246,7 @@ void Visitor::visit(std::shared_ptr<InterfaceDecl> n) {
 
 void Visitor::visit(std::shared_ptr<Program> n) { 
     if(n->package) n->package->accept(this);
-    n->importStatement->accept(this);
+    n->importStatements->accept(this);
     if(n->classOrInterfaceDecl) n->classOrInterfaceDecl->accept(this);
 }
 
