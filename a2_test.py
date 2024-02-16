@@ -19,6 +19,21 @@ def add_jsl_files(files, jsl_dir):
     jsl_files = collect_files(jsl_dir)
     files.extend(jsl_files)
 
+def check_error_type(files):
+    type_linking_found = False
+    hierarchy_found = False
+    for file_path in files:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read().upper() 
+            if "TYPE_LINKING" in content:
+                type_linking_found = True
+            if "HIERARCHY" in content:
+                hierarchy_found = True
+            if type_linking_found and hierarchy_found:
+                break
+    return type_linking_found, hierarchy_found
+
+
 def main(start_dir):
     items_to_process = [] 
     for item in os.listdir(start_dir):
@@ -36,7 +51,13 @@ def main(start_dir):
         return_code = execute_joosc(files)
         expected_return_code = 0 if item.startswith(('J1_', 'J2_')) else 42
         if return_code != expected_return_code:
-            incorrect_items.append(os.path.join(start_dir, item))
+            type_linking, hierarchy = check_error_type(files)
+            item_string = os.path.join(start_dir, item)
+            if type_linking:
+                error_type = "TYPE_LINKING"
+            if hierarchy:
+                error_type = "HIERARCHY"
+            incorrect_items.append(f"{item_string}\033[80G{error_type}")
         else:
             correct += 1
 
