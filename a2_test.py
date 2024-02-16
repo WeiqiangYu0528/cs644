@@ -5,14 +5,19 @@ def collect_files(directory):
     file_paths = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            file_path = os.path.join(root, file)
-            file_paths.append(file_path)
+            if file.endswith('.java'):
+                file_path = os.path.join(root, file)
+                file_paths.append(file_path)
     return file_paths
 
 def execute_joosc(files):
     command = ['./joosc'] + files
     result = subprocess.run(command, capture_output=True)
     return result.returncode
+
+def add_jsl_files(files, jsl_dir):
+    jsl_files = collect_files(jsl_dir)
+    files.extend(jsl_files)
 
 def main(start_dir):
     items_to_process = [] 
@@ -27,6 +32,7 @@ def main(start_dir):
     incorrect_items = []
     correct = 0
     for item, files in items_to_process:
+        add_jsl_files(files, jsl_dir)
         return_code = execute_joosc(files)
         expected_return_code = 0 if item.startswith(('J1_', 'J2_')) else 42
         if return_code != expected_return_code:
@@ -40,5 +46,6 @@ def main(start_dir):
     print("Correct:", correct)
     print("Total:", len(items_to_process))
 
+jsl_dir = './JSL_2.0'
 test_dir = './tests/a2-tests'
 main(test_dir)
