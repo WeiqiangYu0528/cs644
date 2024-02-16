@@ -2,6 +2,12 @@
 
 TypeLinkingVisitor::TypeLinkingVisitor(std::unordered_map<std::string, 
                                        std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>& t) : tables(t), error(false) {
+                                       for (auto& [k, v] : tables) {
+                                           for (auto& [k2, v2] : v) {
+                                                if (k != "")
+                                                    scopes[k + "." + k2] = v2;
+                                           }
+                                       }
 }
 
 bool TypeLinkingVisitor::isError() const {
@@ -105,9 +111,11 @@ void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
-    if (n->type->type == DataType::OBJECT && !scopes.contains(n->id->name)) {
-        error = true;
-        std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE" << std::endl;
+    if (auto ptr = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        if (!scopes.contains(ptr->id->name)) {
+            error = true;
+            std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + ptr->id->name << std::endl;
+        }
     }
     Visitor::visit(n);
 }
