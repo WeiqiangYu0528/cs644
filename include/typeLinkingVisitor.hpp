@@ -19,4 +19,7 @@ class TypeLinkingVisitor : public Visitor {
         void visit(std::shared_ptr<Program> n) override;
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
         bool isError() const;
+
+        std::string currentPackageName;
+        std::string currentClassName;   
 };

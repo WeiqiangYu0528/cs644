@@ -39,15 +39,19 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
                 }
 
                 if (scopes.contains(k)) {
-                    error = true;
-                    std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+                    if (pkg != currentPackageName) {
+                        error = true;
+                        std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+                    }
                 }
                 scopes[k] = v;
             }
         } else {
-            if (scopes.contains(cdecl)) {
-                error = true;
-                std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+            if (scopes.contains(cdecl)) {                
+                if (pkg != currentPackageName) {
+                    error = true;
+                    std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+                }
             }
             scopes[cdecl] = tables[pkg][cdecl];
         }
@@ -61,6 +65,8 @@ void TypeLinkingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<ClassDecl> n) {
+    currentClassName = n->id->name;
+
     for (auto e : n->extended) {
         if (!scopes.contains(e->id->name)) {
             error = true;
@@ -81,6 +87,7 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ClassDecl> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
+    currentClassName = n->id->name;
     n->id->accept(this);
     for (auto e : n->extended) {
         if (!scopes.contains(e->id->name)) {
@@ -95,6 +102,12 @@ void TypeLinkingVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
+    if (n->package) {
+        currentPackageName = n->package->id->name;
+    } else {
+        currentPackageName = "";
+    }
+
     //add all scopes to the symbol table
     std::string cdecl {n->classOrInterfaceDecl->id->name};
     if(n->package) {
