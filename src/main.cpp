@@ -53,8 +53,8 @@ int main(int argc, char* argv[])
         }
     }
     if (!error) {
-        TypeLinkingVisitor tvisitor{tables};
         for (auto ast : asts) {
+            TypeLinkingVisitor tvisitor{tables};
             ast->accept(&tvisitor);
             if (tvisitor.isError()) {
                 std::cerr << "Error: Type linking failed" << std::endl;

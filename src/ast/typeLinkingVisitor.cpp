@@ -12,16 +12,29 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
     for (auto stmt: n->stmts) {
         std::string pkg = stmt->package->name;
         std::string cdecl = stmt->id->name;
-        if (!tables.contains(pkg)) error = true;
-        else if (cdecl != "*" && !tables.at(pkg).contains(cdecl)) error = true;
-        if (error) std::cerr << "Error: TypeLinkingVisitor: ImportStatements: " << pkg << "." << cdecl << std::endl;
+        if (!tables.contains(pkg)) {
+            error = true;
+            std::cerr << "Error: TypeLinkingVisitor: ImportStatements: " << pkg << "." << cdecl << std::endl;
+        }
+        else if (cdecl != "*" && !tables.at(pkg).contains(cdecl)) {
+            error = true;
+            std::cerr << "Error: TypeLinkingVisitor: ImportStatements: " << pkg << "." << cdecl << std::endl;
+        }
 
         //add import to current scope
         if (cdecl == "*") {
             for (auto& [k, v] : tables[pkg]) {
+                if (scopes.contains(k)) {
+                    error = true;
+                    std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+                }
                 scopes[k] = v;
             }
         } else {
+            if (scopes.contains(cdecl)) {
+                error = true;
+                std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+            }
             scopes[cdecl] = tables[pkg][cdecl];
         }
 
@@ -69,14 +82,32 @@ void TypeLinkingVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 
 void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
     //add all scopes to the symbol table
+    std::string cdecl {n->classOrInterfaceDecl->id->name};
     if(n->package) {
         std::string pkg = n->package->id->name;
         for (auto& [k, v] : tables[pkg]) {
+            if (scopes.contains(k)) {
+                error = true;
+                std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
+            }
             scopes[k] = v;
         }
+        for (auto& [k, v] : tables) {
+            if (k.starts_with(pkg + "." + cdecl)) {
+                error = true;
+                std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment."  << std::endl;
+            }
+        }
     } else {
-        std::string cdecl = n->classOrInterfaceDecl->id->name;
-        scopes[""] = tables[""][cdecl];
+        scopes[cdecl] = tables[""][cdecl];
+    }
+    Visitor::visit(n);
+}
+
+void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
+    if (n->type->type == DataType::OBJECT && !scopes.contains(n->id->name)) {
+        error = true;
+        std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE" << std::endl;
     }
     Visitor::visit(n);
 }

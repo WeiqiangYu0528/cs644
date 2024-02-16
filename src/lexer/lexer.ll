@@ -97,7 +97,7 @@ ESCAPE [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7])
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 (0|[1-9]{DIGIT}*)       { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::INTEGER; }
-\"({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])*\" {update_yylloc; std::cout << yytext << std::endl; yylval->emplace<std::string>(std::string(yytext)); return Token::STRING; }
+\"({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])*\" {update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::STRING; }
 \'({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])\' {update_yylloc; return Token::CHARACTER; }
 {WHITESPACE}            { update_yylloc; }
 .                       { update_yylloc; return Token::INVALID; }
