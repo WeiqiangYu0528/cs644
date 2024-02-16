@@ -30,6 +30,14 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
         //add import to current scope
         if (cdecl == "*") {
             for (auto& [k, v] : tables[pkg]) {
+
+                // Check for conflict with java.lang.*
+                if (pkg != "java.lang" && tables.at("java.lang").contains(k)) {
+                    error = true;
+                    std::cerr << "Error: TypeLinkingVisitor: ImportStatements: Class name conflict with java.lang: " << k << std::endl;
+                    continue;
+                }
+
                 if (scopes.contains(k)) {
                     error = true;
                     std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;

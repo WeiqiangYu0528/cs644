@@ -83,11 +83,13 @@ def single(dir_or_file):
         
     add_jsl_files(files, jsl_dir)
     result = execute_joosc(files)
-
+    print("[", ", ".join(f'"{s}"' for s in files), "]", sep="")
+    expected_return_code = 0 if 'J1_' in dir_or_file or 'J2_' in dir_or_file else 42
+    print("return:", result.returncode, "expected_return:", expected_return_code)
     if result.stdout:
-        print("STDOUT:\n", result.stdout)
+        print(result.stdout)
     if result.stderr:
-        print("STDERR:\n", result.stderr)
+        print(result.stderr)
 
 
 if __name__ == "__main__":
