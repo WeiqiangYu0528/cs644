@@ -48,3 +48,7 @@ void SymbolTable::endScope() {
 void SymbolTable::setAst(std::shared_ptr<Program> a) {
     ast = a;
 }
+
+std::shared_ptr<Program> SymbolTable::getAst() const {
+    return ast;
+}

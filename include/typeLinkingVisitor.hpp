@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <unordered_set>
 #include "symbolTable.hpp"
 #include "visitor.hpp"
 
@@ -8,6 +9,7 @@ class TypeLinkingVisitor : public Visitor {
         std::unordered_map<std::string, 
                        std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>& tables;
         std::unordered_map<std::string, std::shared_ptr<SymbolTable>> scopes;
+        std::unordered_set<std::string> ambiguousNames;
         bool error;
     public:
         TypeLinkingVisitor(std::unordered_map<std::string, 
