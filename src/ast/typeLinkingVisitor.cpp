@@ -18,6 +18,7 @@ bool TypeLinkingVisitor::isError() const {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
+    
     for (auto stmt: n->stmts) {
         std::string pkg = stmt->package->name;
         std::string cdecl = stmt->id->name;
@@ -47,34 +48,34 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
             std::cerr << "Error: TypeLinkingVisitor: ImportStatements: " << pkg << "." << cdecl << std::endl;
         }
 
-        //add import to current scope
-        //on-demand import, reports an error when name is ambiguous and it is used
-        if (cdecl == "*") {
-            for (auto& [k, v] : tables[pkg]) {
-                if (scopes.contains(k)) {
-                    auto oldPkg = scopes.at(k)->getAst()->package;
-                    std::string oldPkgName = oldPkg ? oldPkg->id->name : ""; 
-                    // ambiguous class name 
-                    if (pkg != oldPkgName) {
-                        ambiguousNames.insert(k);
-                    }
-                } else {
-                    scopes[k] = v;
-                }
+        if (cdecl != "*") {
+            if (!tables[pkg].contains(cdecl)) {
+                error = true;
+                std::cerr << "Error: Class not found in package: " << pkg << "." << cdecl << std::endl;
             }
-        }
-        //single-type import
-        else {
-            if (scopes.contains(cdecl)) {   
-                auto oldPkg = scopes[cdecl]->getAst()->package;
-                std::string oldPkgName = oldPkg ? oldPkg->id->name : "";    
-                // current scope has two different classes with the same name    
-                if (pkg != oldPkgName) {
+            else
+            {
+                if(singleImported.contains(cdecl)) {
                     error = true;
                     std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
                 }
-            } else {
+                singleImported.insert(cdecl);
                 scopes[cdecl] = tables[pkg][cdecl];
+            }
+
+        }
+        //add import to current scope
+        //on-demand import, reports an error when name is ambiguous and it is used
+        else {
+            for (auto& [className, classInfo] : tables[pkg]) {
+                if (!scopes.contains(className)) {
+                    scopes[className] = classInfo;
+                }
+                for (auto& [k, v] : tables[pkg]) {            
+                    onDemandImported[k].insert(pkg);
+                    if(!scopes.contains(k))
+                        scopes[k] = v;
+                }                
             }
         }
 
@@ -160,7 +161,12 @@ void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
 
 void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
     if (auto ptr = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        
         std::string className{ptr->id->name};
+        if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
+            error = true;
+            std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + className << std::endl;
+        }
         if (!scopes.contains(className) || ambiguousNames.contains(className)) {
             error = true;
             std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
@@ -174,6 +180,7 @@ void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement
                 std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment." << std::endl;
             }
         }
+    
     }
     Visitor::visit(n);
 }
@@ -183,6 +190,10 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     if (!scopes.contains(className) || ambiguousNames.contains(className)) {
         error = true;
         std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
+    }
+    if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
+        error = true;
+        std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + className << std::endl;
     }
     Visitor::visit(n);
 }
