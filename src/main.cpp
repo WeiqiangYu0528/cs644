@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
             program->accept(&cvisitor);
             auto [pkg, cdecl] = program->getQualifiedName();
             if (cvisitor.isError() || (tables.contains(pkg) && tables.at(pkg).contains(cdecl))) {
+                std::cerr << "Error: Environment Building failed" << std::endl;
                 error = true;
                 break;
             }
