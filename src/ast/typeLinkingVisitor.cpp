@@ -67,16 +67,11 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
         //add import to current scope
         //on-demand import, reports an error when name is ambiguous and it is used
         else {
-            for (auto& [className, classInfo] : tables[pkg]) {
-                if (!scopes.contains(className)) {
-                    scopes[className] = classInfo;
-                }
-                for (auto& [k, v] : tables[pkg]) {            
-                    onDemandImported[k].insert(pkg);
-                    if(!scopes.contains(k))
-                        scopes[k] = v;
-                }                
-            }
+            for (auto& [k, v] : tables[pkg]) {            
+                onDemandImported[k].insert(pkg);
+                if(!scopes.contains(k))
+                    scopes[k] = v;
+            }               
         }
 
         stmt->accept(this);
