@@ -21,7 +21,7 @@ class SymbolTable {
         std::shared_ptr<AstNode> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getMethod(const std::string& key) const;
-        void putConstuctor(const std::string& key, const std::shared_ptr<AstNode> value);
+        void putConstructor(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getConstructor(const std::string& key) const;
         void putVar(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getVar(const std::string& key) const;
