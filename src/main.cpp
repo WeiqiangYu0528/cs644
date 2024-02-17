@@ -18,6 +18,34 @@ std::string extractFilename(const std::string& filePath) {
     return filePath.substr(start, end - start); // Extract the substring representing the filename
 }
 
+bool detectCycle(std::string current, std::unordered_set<std::string>& visited, std::unordered_set<std::string>& pathVisited, 
+std::unordered_map<std::string, std::vector<std::string>>& edges) {
+    visited.insert(current);
+    pathVisited.insert(current);
+    for (std::string neighbour : edges[current]) {
+        if (pathVisited.contains(neighbour)) return true;
+        else if (visited.contains(neighbour)) continue;
+        else if (detectCycle(neighbour, visited, pathVisited, edges)) return true;
+    }
+    pathVisited.erase(current);
+    return false;
+}
+
+bool detectCycleWrapper(std::vector<std::string>& vertices,
+std::unordered_map<std::string, std::vector<std::string>>& edges) {
+    std::unordered_set<std::string> visited;
+    std::unordered_set<std::string> pathVisited;
+    for (std::string vertex : vertices) {
+        if (!edges.contains(vertex)) continue;
+        if (visited.contains(vertex)) continue;
+        else {
+            bool result = detectCycle(vertex, visited, pathVisited, edges);
+            if (result) return result;
+        }
+    }
+    return false;
+}
+
 int main(int argc, char* argv[])
 {
     std::unordered_map<std::string, 
@@ -80,6 +108,49 @@ int main(int argc, char* argv[])
                 }
             }
         }
+    }
+
+    //Class/Interface Cycle Detection
+    //partition class and interface declarations into two vectors
+    std::vector<std::shared_ptr<ClassDecl>> classDecls;
+    std::vector<std::shared_ptr<InterfaceDecl>> interfaceDecls;
+    for (auto program : asts) {
+        if (!program) continue;
+        if (program->classOrInterfaceDecl) {
+            std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
+            if (classDecl != nullptr) classDecls.push_back(classDecl);
+            else {
+                std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(program->classOrInterfaceDecl);
+                assert(interfaceDecl != nullptr);
+                interfaceDecls.push_back(interfaceDecl);
+            }
+        }
+    }
+    //classes first
+    std::vector<std::string> classVertices;
+    std::unordered_map<std::string, std::vector<std::string>> classEdges;
+    for (auto cdecl : classDecls) {
+        classVertices.push_back(cdecl->id->name); //add all classes to vector of vertices
+        classEdges[cdecl->id->name] = std::vector<std::string>{}; //initialize edges vector for each class
+        for (auto ext : cdecl->extended) { //go through neighbours
+            classEdges[cdecl->id->name].push_back(ext->id->name); //add them to the list of edges
+        }
+    }
+    if (detectCycleWrapper(classVertices, classEdges)) {
+        std::cerr << "Detected a cycle among the classes" << std::endl;
+    }
+    //interfaces second
+    std::vector<std::string> interfaceVertices;
+    std::unordered_map<std::string, std::vector<std::string>> interfaceEdges;
+    for (auto idecl : interfaceDecls) {
+        interfaceVertices.push_back(idecl->id->name); //add all interfaces to vector of vertices
+        interfaceEdges[idecl->id->name] = std::vector<std::string>{}; //initialize edges vector for each interface
+        for (auto ext : idecl->extended) { //go through neighbours
+            interfaceEdges[idecl->id->name].push_back(ext->id->name); //add them to the list of edges
+        }
+    }
+    if (detectCycleWrapper(interfaceVertices, interfaceEdges)) {
+        std::cerr << "Detected a cycle among the interfaces" << std::endl;
     }
 
     if (error)
