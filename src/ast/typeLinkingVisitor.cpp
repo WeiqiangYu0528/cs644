@@ -153,7 +153,7 @@ void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement
         //     std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + ptr->id->name << std::endl;
         // }
         std::string className{ptr->id->name};
-        if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
+        if(!scopes.contains(className) || (!singleImported.contains(className) && onDemandImported[className].size() > 1)) {
             error = true;
             std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + ptr->id->name << std::endl;
         }
