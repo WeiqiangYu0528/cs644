@@ -54,16 +54,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    for (std::shared_ptr<Program> program : asts) {
-        auto [pkg, cdecl] = program->getQualifiedName();
-        auto x = tables[pkg][cdecl];
-        if (x) {
-            HierarchyVisitor hvisitor(tables[pkg][cdecl], tables);
-            program->accept(&hvisitor);
-            error |= hvisitor.isError();
-        }
-    }
-
     if (!error) {
         for (auto ast : asts) {
             TypeLinkingVisitor tvisitor{tables};
@@ -75,6 +65,23 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            auto [pkg, cdecl] = program->getQualifiedName();
+            auto x = tables[pkg][cdecl];
+            if (x) {
+                HierarchyVisitor hvisitor(tables[pkg][cdecl], tables);
+                program->accept(&hvisitor);
+                if (hvisitor.isError()) {
+                    std::cerr << "Error: Hierarchy Checking failed" << std::endl;
+                    error = true;
+                    break;
+                }
+            }
+        }
+    }
+
     if (error)
         return 42;
     else
