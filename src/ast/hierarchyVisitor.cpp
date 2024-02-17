@@ -4,6 +4,32 @@
 
 HierarchyVisitor::HierarchyVisitor(std::shared_ptr<SymbolTable> st, std::unordered_map<std::string, 
 std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> t) : symbolTable(st), tables(t), error(false) {
+
+    std::unordered_map<std::string, int> methodCount;
+    for (const auto& pair : symbolTable->mtable) {
+        std::string methodName = pair.first;
+        std::cout << methodName << std::endl;
+        methodCount[methodName]++;
+
+        if (methodCount[methodName] > 1) {
+            error = true;
+            std::cerr << "Error: Duplicate method name '" << methodName << "' found." << std::endl;
+            // break; 
+        }
+    }
+
+    std::unordered_map<std::string, int> constructorCount;
+    for (const auto& pair : symbolTable->ctable) {
+        std::string cName = pair.first;
+        std::cout << cName << std::endl;
+        constructorCount[cName]++;
+
+        if (constructorCount[cName] > 1) {
+            error = true;
+            std::cerr << "Error: Duplicate constructor name '" << cName << "' found." << std::endl;
+            // break; 
+        }
+    }
 }
 
 std::shared_ptr<SymbolTable> HierarchyVisitor::getSymbolTable() const {
@@ -139,10 +165,19 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             implementedInterfaces.insert(impl->id->name);
         }
     }
+    // std::unordered_map<std::string, int> methodCount;
 
     for (auto m : n->declarations[1]) {
-        m->accept(this);
-    }
+        // std::string methodName = m->getName();
+        // methodCount[methodName]++;
+        // if (methodCount[methodName] > 1) {
+        //     error = true;
+        //     std::cerr << "Error: Duplicate method name '" << methodName << "' found." << std::endl;
+        //     break;
+        // } else {
+            m->accept(this);
+        // }
+    }    
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
@@ -179,9 +214,7 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 void HierarchyVisitor::visit(std::shared_ptr<Method> n) 
 {
     const std::string key {n->methodName->name};
-    // std::cout << currentPackageName << std::endl;
     if (currentPackageName == "java.lang") {
-        // Visitor::visit(n);
         return;
     }
     // Rule 10
@@ -192,17 +225,15 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
             break;
         }
     }
-    // std::cout << key << std::endl;
     for (const auto& packageEntry : tables) {
         const std::string& packageName = packageEntry.first;
         const auto& classes = packageEntry.second;
         for (const auto& classEntry : classes) {
             const std::string& className = classEntry.first;
-            const std::shared_ptr<SymbolTable>& symbolTable = classEntry.second;
-            // std::cout << packageName << std::endl;
-            // std::cout << className << std::endl;
-            if (symbolTable->getMethod(key)) {
-                auto methodNode = std::dynamic_pointer_cast<Method>(symbolTable->mtable[key]);
+            const std::shared_ptr<SymbolTable>& symbolTablehere = classEntry.second;
+
+            if (symbolTablehere->getMethod(key) && packageName != currentPackageName) {
+                auto methodNode = std::dynamic_pointer_cast<Method>(symbolTablehere->mtable[key]);
                 for (auto modifier : methodNode->modifiers) {
                     // Rule 15
                     if (modifier == Modifiers::FINAL && areFormalParametersEqual(n->formalParameters, methodNode->formalParameters)) {
