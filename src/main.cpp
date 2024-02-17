@@ -7,6 +7,7 @@
 #include "contextVisitor.hpp"
 #include "symbolTable.hpp"
 #include "typeLinkingVisitor.hpp"
+#include "hierarchyVisitor.hpp"
 
 std::string extractFilename(const std::string& filePath) {
     size_t start = filePath.rfind('/') + 1; // Find the last '/' character
@@ -52,6 +53,17 @@ int main(int argc, char* argv[])
             asts.push_back(program);
         }
     }
+
+    for (std::shared_ptr<Program> program : asts) {
+        auto [pkg, cdecl] = program->getQualifiedName();
+        auto x = tables[pkg][cdecl];
+        if (x) {
+            HierarchyVisitor hvisitor(tables[pkg][cdecl], tables);
+            program->accept(&hvisitor);
+            error |= hvisitor.isError();
+        }
+    }
+
     if (!error) {
         for (auto ast : asts) {
             TypeLinkingVisitor tvisitor{tables};
