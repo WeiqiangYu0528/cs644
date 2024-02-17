@@ -2,7 +2,7 @@
 # Do clean fisrt
 make clean
 rm a2.log
-git log --pretty=format:"%h - %an, %ar : %s" > a1.log
+git log --pretty=format:"%h - %an, %ar : %s" > a2.log
 # Define the name of the output zip file
 OUTPUT_ZIP="a2_submission.zip"
 
