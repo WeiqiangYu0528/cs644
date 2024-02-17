@@ -25,6 +25,9 @@ class Type : public AstNode {
         DataType type;
         Type(DataType t);
         ~Type() = default;
+        bool operator==(const Type& other) const {
+            return type == other.type;
+        }
         virtual void accept(Visitor* v) = 0;
 };
 
@@ -48,6 +51,9 @@ class Identifier : public AstNode, public std::enable_shared_from_this<Identifie
     public:
         std::string name;
         Identifier(std::string& s);
+        bool operator==(const Identifier& other) const {
+            return name == other.name;
+        }
         void accept(Visitor* v) override;
 };
 
@@ -493,6 +499,11 @@ class FormalParameter : public AstNode, public std::enable_shared_from_this<Form
         std::shared_ptr<Identifier> variableName;
 
         FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn);
+        bool isEqual(const FormalParameter& other) const {
+            bool typeEqual = type && other.type && *type == *other.type;
+            bool nameEqual = variableName && other.variableName && *variableName == *other.variableName;
+            return typeEqual && nameEqual;
+        }
         void accept(Visitor* v) override;
 };
 
