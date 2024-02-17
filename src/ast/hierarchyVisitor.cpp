@@ -4,32 +4,6 @@
 
 HierarchyVisitor::HierarchyVisitor(std::shared_ptr<SymbolTable> st, std::unordered_map<std::string, 
 std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> t) : symbolTable(st), tables(t), error(false) {
-
-    std::unordered_map<std::string, int> methodCount;
-    for (const auto& pair : symbolTable->mtable) {
-        std::string methodName = pair.first;
-        std::cout << methodName << std::endl;
-        methodCount[methodName]++;
-
-        if (methodCount[methodName] > 1) {
-            error = true;
-            std::cerr << "Error: Duplicate method name '" << methodName << "' found." << std::endl;
-            // break; 
-        }
-    }
-
-    std::unordered_map<std::string, int> constructorCount;
-    for (const auto& pair : symbolTable->ctable) {
-        std::string cName = pair.first;
-        std::cout << cName << std::endl;
-        constructorCount[cName]++;
-
-        if (constructorCount[cName] > 1) {
-            error = true;
-            std::cerr << "Error: Duplicate constructor name '" << cName << "' found." << std::endl;
-            // break; 
-        }
-    }
 }
 
 std::shared_ptr<SymbolTable> HierarchyVisitor::getSymbolTable() const {
@@ -111,6 +85,30 @@ void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
     } else {
         this->currentPackageName = ""; // Or some default handling if the package is not specified
     }
+
+    // if (currentPackageName != "java.lang" && currentPackageName != "java.util" && currentPackageName != "java.io") {
+    //     for (const auto& pair : symbolTable->mtable) {
+    //         if (pair.second.size() > 1) {
+    //             std::set<std::string> uniqueStrings;
+    //             for (const auto& node : pair.second) {
+    //                 std::dynamic_pointer_cast<Method>(node)
+    //             }
+    //             if ()
+    //             error = true;
+    //             std::cerr << "Error: Duplicate method name found."<< pair.first << std::endl;
+    //             return;
+    //         }
+    //     }
+
+    //     for (const auto& pair : symbolTable->ctable) {
+    //         if (pair.second.size() > 1) {
+    //             error = true;
+    //             std::cerr << "Error: Duplicate constructor name found."<< pair.first << std::endl;
+    //             return;
+    //         }
+    //     }
+    // }
+
     n->classOrInterfaceDecl->accept(this);
     Visitor::visit(n);
 }
@@ -233,25 +231,28 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
             const std::shared_ptr<SymbolTable>& symbolTablehere = classEntry.second;
 
             if (symbolTablehere->getMethod(key) && packageName != currentPackageName) {
-                auto methodNode = std::dynamic_pointer_cast<Method>(symbolTablehere->mtable[key]);
-                for (auto modifier : methodNode->modifiers) {
-                    // Rule 15
-                    if (modifier == Modifiers::FINAL && areFormalParametersEqual(n->formalParameters, methodNode->formalParameters)) {
-                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
-                        error = true;
-                        break;
-                    }
-                    // Rule 14
-                    if (modifier == Modifiers::PUBLIC) {
-                        for (auto currentModifier : n->modifiers) {
-                            if ( currentModifier == Modifiers::PROTECTED) {
-                                std::cerr << "Error: PROTECTED Method " << key << "can not override PUBLIC method" << std::endl;
-                                error = true;
-                                break;
+                // auto methodNode = std::dynamic_pointer_cast<Method>(symbolTablehere->mtable[key]);
+                for (const auto& node : symbolTablehere->mtable[key]) {
+                     auto methodNode = std::dynamic_pointer_cast<Method>(node);
+                    for (auto modifier : methodNode->modifiers) {
+                        // Rule 15
+                        if (modifier == Modifiers::FINAL && areFormalParametersEqual(n->formalParameters, methodNode->formalParameters)) {
+                            std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                            error = true;
+                            break;
+                        }
+                        // Rule 14
+                        if (modifier == Modifiers::PUBLIC) {
+                            for (auto currentModifier : n->modifiers) {
+                                if ( currentModifier == Modifiers::PROTECTED) {
+                                    std::cerr << "Error: PROTECTED Method " << key << "can not override PUBLIC method" << std::endl;
+                                    error = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
+                }    
             } 
         }
     }
