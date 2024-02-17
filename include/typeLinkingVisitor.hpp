@@ -10,6 +10,8 @@ class TypeLinkingVisitor : public Visitor {
                        std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>& tables;
         std::unordered_map<std::string, std::shared_ptr<SymbolTable>> scopes;
         std::unordered_set<std::string> ambiguousNames;
+        std::unordered_map<std::string, std::unordered_set<std::string>> onDemandImported;
+        std::unordered_set<std::string> singleImported;        
         bool error;
     public:
         TypeLinkingVisitor(std::unordered_map<std::string, 
@@ -24,4 +26,5 @@ class TypeLinkingVisitor : public Visitor {
 
         std::string currentPackageName;
         std::string currentClassName;   
+
 };
