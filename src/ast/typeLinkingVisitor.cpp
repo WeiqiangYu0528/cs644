@@ -53,11 +53,11 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
                 error = true;
                 std::cerr << "Error: TypeLinkingVisitor: No single-type-import declaration clashes with the class or interface declared in the same file" << std::endl;
             }
-            if(singleImported.contains(cdecl)) {
+            if(singleImported.contains(cdecl) && singleImported[cdecl] != pkg) {
                 error = true;
                 std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
             }
-            singleImported.insert(cdecl);
+            singleImported[cdecl] = pkg;
             scopes[cdecl] = tables[pkg][cdecl];
         }
         //add import to current scope
