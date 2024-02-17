@@ -49,29 +49,26 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
         }
 
         if (cdecl != "*") {
-            if (!tables[pkg].contains(cdecl)) {
+            if (cdecl == currentClassName && pkg != currentPackageName) {
                 error = true;
-                std::cerr << "Error: Class not found in package: " << pkg << "." << cdecl << std::endl;
+                std::cerr << "Error: TypeLinkingVisitor: No single-type-import declaration clashes with the class or interface declared in the same file" << std::endl;
             }
-            else
-            {
-                if(singleImported.contains(cdecl)) {
-                    error = true;
-                    std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
-                }
-                singleImported.insert(cdecl);
-                scopes[cdecl] = tables[pkg][cdecl];
+            if(singleImported.contains(cdecl)) {
+                error = true;
+                std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name"  << std::endl;
             }
-
+            singleImported.insert(cdecl);
+            scopes[cdecl] = tables[pkg][cdecl];
         }
         //add import to current scope
         //on-demand import, reports an error when name is ambiguous and it is used
         else {
-            for (auto& [k, v] : tables[pkg]) {            
-                onDemandImported[k].insert(pkg);
-                if(!scopes.contains(k))
-                    scopes[k] = v;
-            }               
+            for (auto& [className, classInfo] : tables[pkg]) {
+                if (!scopes.contains(className)) {
+                    scopes[className] = classInfo;
+                }     
+                onDemandImported[className].insert(pkg);           
+            }
         }
 
         stmt->accept(this);
@@ -83,7 +80,6 @@ void TypeLinkingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<ClassDecl> n) {
-    currentClassName = n->id->name;
 
     for (auto e : n->extended) {
         if (!scopes.contains(e->id->name) || ambiguousNames.contains(e->id->name)) {
@@ -105,7 +101,6 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ClassDecl> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
-    currentClassName = n->id->name;
     n->id->accept(this);
     for (auto e : n->extended) {
         if (!scopes.contains(e->id->name) || ambiguousNames.contains(e->id->name)) {
@@ -120,21 +115,18 @@ void TypeLinkingVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
-    if (n->package) {
-        currentPackageName = n->package->id->name;
-    } else {
-        currentPackageName = "";
-    }
-
     //add all scopes to the symbol table
     std::string cdecl {n->classOrInterfaceDecl->id->name};
     std::string pkg = n->package ? n->package->id->name : "";
 
+    currentPackageName = pkg;
+    currentClassName = cdecl;
+
     //package name is not the same as the class/interface name
-    if (pkg == cdecl) {
-        error = true;
-        std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment."  << std::endl;
-    }
+    // if (pkg == cdecl) {
+    //     error = true;
+    //     std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment."  << std::endl;
+    // }
     //add all classes in the package to the current scope (including the default package)
     for (auto& [k, v] : tables[pkg]) {
         //if package contains duplicate class/interface, reports an error
@@ -156,15 +148,14 @@ void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
 
 void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
     if (auto ptr = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
-        
+        // if (!scopes.contains(ptr->id->name) || ambiguousNames.contains(ptr->id->name)) {
+        //     error = true;
+        //     std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + ptr->id->name << std::endl;
+        // }
         std::string className{ptr->id->name};
         if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
             error = true;
-            std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + className << std::endl;
-        }
-        if (!scopes.contains(className) || ambiguousNames.contains(className)) {
-            error = true;
-            std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
+            std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + ptr->id->name << std::endl;
         }
         size_t pos = className.find('.');
         if (pos != std::string::npos) {
@@ -182,9 +173,18 @@ void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement
 
 void TypeLinkingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     std::string className{n->classType->id->name};
-    if (!scopes.contains(className) || ambiguousNames.contains(className)) {
+    if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
         error = true;
-        std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
+        std::cerr << "Error: TypeLinkingVisitor: Ambiguous class name due to on-demand imports： " + className << std::endl;
+    }
+    size_t pos = className.find('.');
+    if (pos != std::string::npos) {
+        // Extract the substring from the beginning up to the position of the period
+        std::string s = className.substr(0, pos);
+        if (scopes.contains(s)) {
+            error = true;
+            std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment." << std::endl;
+        }
     }
     if(!singleImported.contains(className) && onDemandImported[className].size() > 1) {
         error = true;
