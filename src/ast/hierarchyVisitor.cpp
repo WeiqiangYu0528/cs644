@@ -86,28 +86,40 @@ void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
         this->currentPackageName = ""; // Or some default handling if the package is not specified
     }
 
-    // if (currentPackageName != "java.lang" && currentPackageName != "java.util" && currentPackageName != "java.io") {
-    //     for (const auto& pair : symbolTable->mtable) {
-    //         if (pair.second.size() > 1) {
-    //             std::set<std::string> uniqueStrings;
-    //             for (const auto& node : pair.second) {
-    //                 std::dynamic_pointer_cast<Method>(node)
-    //             }
-    //             if ()
-    //             error = true;
-    //             std::cerr << "Error: Duplicate method name found."<< pair.first << std::endl;
-    //             return;
-    //         }
-    //     }
+    if (currentPackageName != "java.lang" && currentPackageName != "java.util" && currentPackageName != "java.io") {
+        for (const auto& pair : symbolTable->mtable) {
+            if (pair.second.size() > 1) {
+                std::unordered_set<std::string> uniqueStrings;
+                for (const auto& node : pair.second) {
+                    auto m = std::dynamic_pointer_cast<Method>(node);
+                    if (uniqueStrings.contains(m->getSignature())) {
+                        error = true;
+                        std::cerr << "Error: Duplicate method found."<< pair.first << std::endl;
+                        return;
+                    } else {
+                        uniqueStrings.insert(m->getSignature());
+                    }
+                }
+            }
+        }
+    
 
-    //     for (const auto& pair : symbolTable->ctable) {
-    //         if (pair.second.size() > 1) {
-    //             error = true;
-    //             std::cerr << "Error: Duplicate constructor name found."<< pair.first << std::endl;
-    //             return;
-    //         }
-    //     }
-    // }
+        for (const auto& pair : symbolTable->ctable) {
+            if (pair.second.size() > 1) {
+                std::unordered_set<std::string> uniqueStrings;
+                for (const auto& node : pair.second) {
+                    auto c = std::dynamic_pointer_cast<Constructor>(node);
+                    if (uniqueStrings.contains(c->getSignature())) {
+                        error = true;
+                        std::cerr << "Error: Duplicate constructor found."<< pair.first << std::endl;
+                        return;
+                    } else {
+                        uniqueStrings.insert(c->getSignature());
+                    }
+                }
+            }
+        }
+    }
 
     n->classOrInterfaceDecl->accept(this);
     Visitor::visit(n);

@@ -124,11 +124,19 @@ void IdentifierType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
+std::string IdentifierType::getType() const {
+    return id->name;
+}
+
 ArrayType::ArrayType(std::shared_ptr<Type> t) : Type(DataType::ARRAY), dataType(t) {
 }
 
 void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string ArrayType::getType() const {
+    return dataType->getType() + "[]";
 }
 
 FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
@@ -295,8 +303,16 @@ void IntType::accept(Visitor* v) {
 IntType::IntType() : Type(DataType::INT) {
 }
 
+std::string IntType::getType() const {
+    return "int";
+}
+
 void CharType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string CharType::getType() const {
+    return "char";
 }
 
 CharType::CharType() : Type(DataType::CHAR) {
@@ -309,8 +325,16 @@ void ShortType::accept(Visitor* v) {
 ShortType::ShortType() : Type(DataType::SHORT) {
 }
 
+std::string ShortType::getType() const {
+    return "short";
+}
+
 void VoidType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string VoidType::getType() const {
+    return "void";
 }
 
 VoidType::VoidType() : Type(DataType::VOID) {
@@ -319,12 +343,19 @@ VoidType::VoidType() : Type(DataType::VOID) {
 void BooleanType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
+std::string BooleanType::getType() const {
+    return "boolean";
+}
 
 BooleanType::BooleanType() : Type(DataType::BOOLEAN) {
 }
 
 void ByteType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string ByteType::getType() const {
+    return "byte";
 }
 
 ByteType::ByteType() : Type(DataType::BYTE) {
@@ -379,6 +410,14 @@ void Method::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
+std::string Method::getSignature() const {
+    std::string signature {methodName->name + "::"};
+    for (auto fp : formalParameters) {
+        signature += fp->type->getType() + "::";
+    }
+    return signature;
+}
+
 Constructor::Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
 : MemberDecl(mt, m), constructorName(cn), formalParameters(fp), block(b) {
@@ -386,6 +425,14 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement
 
 void Constructor::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string Constructor::getSignature() const {
+    std::string signature {constructorName->name + "::"};
+    for (auto fp : formalParameters) {
+        signature += fp->type->getType() + "::";
+    }
+    return signature;
 }
 
 ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 

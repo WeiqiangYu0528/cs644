@@ -29,6 +29,7 @@ class Type : public AstNode {
             return type == other.type;
         }
         virtual void accept(Visitor* v) = 0;
+        virtual std::string getType() const = 0;
 };
 
 class Statement : public AstNode
@@ -62,6 +63,7 @@ class IdentifierType : public Type, public std::enable_shared_from_this<Identifi
         std::shared_ptr<Identifier> id;
         IdentifierType(std::shared_ptr<Identifier> i);
         void accept(Visitor* v) override;
+        std::string getType() const override;
 };
 
 class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
@@ -69,6 +71,7 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         std::shared_ptr<Type> dataType;
         ArrayType(std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
+        std::string getType() const override;
 };
 
 class Package : public AstNode, public std::enable_shared_from_this<Package>  {
@@ -364,36 +367,42 @@ class ByteType : public Type, public std::enable_shared_from_this<ByteType> {
 public:
     ByteType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class ShortType : public Type, public std::enable_shared_from_this<ShortType> {
 public:
     ShortType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class CharType : public Type, public std::enable_shared_from_this<CharType> {
 public:
     CharType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class IntType : public Type, public std::enable_shared_from_this<IntType> {
 public:
     IntType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class BooleanType : public Type, public std::enable_shared_from_this<BooleanType> {
 public:
     BooleanType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
 public:
     VoidType();
     void accept(Visitor* v) override;
+    std::string getType() const override;
 };
 
 class SemicolonStatement : public Statement, 
@@ -528,6 +537,7 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        std::string getSignature() const;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
@@ -539,6 +549,7 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        std::string getSignature() const;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {

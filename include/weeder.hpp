@@ -53,9 +53,6 @@ enum class DataType {
     CHAR,
     BYTE,
     SHORT,
-    LONG,
-    FLOAT,
-    DOUBLE,
     ARRAY,
     OBJECT
 };
