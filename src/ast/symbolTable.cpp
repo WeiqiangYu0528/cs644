@@ -1,36 +1,36 @@
 #include "symbolTable.hpp"
 
 void SymbolTable::putField(const std::string& key, const std::shared_ptr<AstNode> value) {
-    ftable[key] = value;
+    ftable[key].push_back(value);
 }
 
-std::shared_ptr<AstNode> SymbolTable::getField(const std::string& key) const {
-    return ftable.contains(key) ? ftable.at(key) : nullptr;
+std::shared_ptr<AstNode> SymbolTable::getField(const std::string& key, size_t idx) const {
+    return ftable.contains(key) ? ftable.at(key)[idx] : nullptr;
 }
 
 void SymbolTable::putMethod(const std::string& key, const std::shared_ptr<AstNode> value) {
-    mtable[key] = value;
+    mtable[key].push_back(value);
 }
 
-std::shared_ptr<AstNode> SymbolTable::getMethod(const std::string& key) const {
-    return mtable.contains(key) ? mtable.at(key) : nullptr;
+std::shared_ptr<AstNode> SymbolTable::getMethod(const std::string& key, size_t idx) const {
+    return mtable.contains(key) ? mtable.at(key)[idx] : nullptr;
 }
 
 void SymbolTable::putConstructor(const std::string& key, const std::shared_ptr<AstNode> value) {
-    ctable[key] = value;
+    ctable[key].push_back(value);
 }
 
-std::shared_ptr<AstNode> SymbolTable::getConstructor(const std::string& key) const {
-    return ctable.contains(key) ? ctable.at(key) : nullptr;
+std::shared_ptr<AstNode> SymbolTable::getConstructor(const std::string& key, size_t idx) const {
+    return ctable.contains(key) ? ctable.at(key)[idx] : nullptr;
 }
 
 void SymbolTable::putVar(const std::string& key, const std::shared_ptr<AstNode> value) {
     stack_t.push(key);
-    ltable[key] = value;
+    ltable[key].push_back(value);
 }
 
-std::shared_ptr<AstNode> SymbolTable::getVar(const std::string& key) const {
-    return ltable.contains(key) ? ltable.at(key) : nullptr;
+std::shared_ptr<AstNode> SymbolTable::getVar(const std::string& key, size_t idx) const {
+    return ltable.contains(key) ? ltable.at(key)[idx] : nullptr;
 }
 
 void SymbolTable::beginScope() {
