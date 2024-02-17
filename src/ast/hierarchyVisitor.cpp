@@ -18,12 +18,79 @@ bool HierarchyVisitor::isError() const {
     return error;
 }
 
+// helper function
+bool areFormalParametersEqual(const std::vector<std::shared_ptr<FormalParameter>>& params1,
+                              const std::vector<std::shared_ptr<FormalParameter>>& params2) {
+    if (params1.size() != params2.size()) return false;
+
+    std::vector<bool> matched(params2.size(), false); // Track matched parameters in params2
+
+    for (const auto& param1 : params1) {
+        bool foundMatch = false;
+        for (size_t j = 0; j < params2.size(); ++j) {
+            if (!matched[j] && param1 && params2[j] && param1->isEqual(*params2[j])) {
+                matched[j] = true; // Mark as matched
+                foundMatch = true;
+                break;
+            }
+        }
+        if (!foundMatch) {
+            return false; // No match found for param1 in params2
+        }
+    }
+    // All parameters in params1 have a match in params2
+    return true;
+}
+
+Modifiers stringToModifier(const std::string& str) {
+    if (str == "PUBLIC") return Modifiers::PUBLIC;
+    else if (str == "PROTECTED") return Modifiers::PROTECTED;
+    else if (str == "FINAL") return Modifiers::FINAL;
+    else if (str == "ABSTRACT") return Modifiers::ABSTRACT;
+    else if (str == "STATIC") return Modifiers::STATIC;
+    else if (str == "NATIVE") return Modifiers::NATIVE;
+    // else throw std::invalid_argument("Unknown modifier: " + str);
+}
+
+std::ostream& operator<<(std::ostream& os, const Modifiers modifier) {
+    switch (modifier) {
+        case Modifiers::PUBLIC:
+            os << "PUBLIC";
+            break;
+        case Modifiers::PROTECTED:
+            os << "PROTECTED";
+            break;
+        case Modifiers::FINAL:
+            os << "FINAL";
+            break;
+        case Modifiers::ABSTRACT:
+            os << "ABSTRACT";
+            break;
+        case Modifiers::STATIC:
+            os << "STATIC";
+            break;
+        case Modifiers::NATIVE:
+            os << "NATIVE";
+            break;
+        default:
+            os << "Unknown Modifier";
+            break;
+    }
+    return os;
+}
 
 void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
+    if (n->package) {
+        this->currentPackageName = n->package->id->name;
+    } else {
+        this->currentPackageName = ""; // Or some default handling if the package is not specified
+    }
     n->classOrInterfaceDecl->accept(this);
+    Visitor::visit(n);
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
+    this->classModifer = n-> modifier;
     //Rule #1: Class must not extend an interface
     //Rule #4: Class must not extend final class
     for (std::shared_ptr<IdentifierType> ext : n->extended) {
@@ -72,6 +139,10 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             implementedInterfaces.insert(impl->id->name);
         }
     }
+
+    for (auto m : n->declarations[1]) {
+        m->accept(this);
+    }
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
@@ -99,5 +170,60 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
             extendedInterfaces.insert(ext->id->name);
         }
     }
+    for (auto& m : n->methods) {
+        m->accept(this);
+    }
 }
 
+
+void HierarchyVisitor::visit(std::shared_ptr<Method> n) 
+{
+    const std::string key {n->methodName->name};
+    // std::cout << currentPackageName << std::endl;
+    if (currentPackageName == "java.lang") {
+        // Visitor::visit(n);
+        return;
+    }
+    // Rule 10
+    for (auto currentModifier : n->modifiers) {
+        if (currentModifier == Modifiers::ABSTRACT && stringToModifier(this->classModifer) != Modifiers::ABSTRACT) {
+            std::cerr << "Error: No abstract method in no abstract class" << std::endl;
+            error = true;
+            break;
+        }
+    }
+    // std::cout << key << std::endl;
+    for (const auto& packageEntry : tables) {
+        const std::string& packageName = packageEntry.first;
+        const auto& classes = packageEntry.second;
+        for (const auto& classEntry : classes) {
+            const std::string& className = classEntry.first;
+            const std::shared_ptr<SymbolTable>& symbolTable = classEntry.second;
+            // std::cout << packageName << std::endl;
+            // std::cout << className << std::endl;
+            if (symbolTable->getMethod(key)) {
+                auto methodNode = std::dynamic_pointer_cast<Method>(symbolTable->mtable[key]);
+                for (auto modifier : methodNode->modifiers) {
+                    // Rule 15
+                    if (modifier == Modifiers::FINAL && areFormalParametersEqual(n->formalParameters, methodNode->formalParameters)) {
+                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    // Rule 14
+                    if (modifier == Modifiers::PUBLIC) {
+                        for (auto currentModifier : n->modifiers) {
+                            if ( currentModifier == Modifiers::PROTECTED) {
+                                std::cerr << "Error: PROTECTED Method " << key << "can not override PUBLIC method" << std::endl;
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } 
+        }
+    }
+
+    Visitor::visit(n);
+}

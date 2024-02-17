@@ -15,7 +15,11 @@ class HierarchyVisitor: public Visitor {
         void visit(std::shared_ptr<Program> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
         void visit(std::shared_ptr<InterfaceDecl> n) override;
+        void visit(std::shared_ptr<Method> n) override;
         bool isError() const;
         std::shared_ptr<SymbolTable> getSymbolTable() const;
         std::unordered_map<std::string, std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> getTables() const;
+        std::string currentClassName;
+        std::string currentPackageName;
+        std::string classModifer;
 };

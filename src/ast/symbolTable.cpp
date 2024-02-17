@@ -16,8 +16,8 @@ std::shared_ptr<AstNode> SymbolTable::getMethod(const std::string& key, size_t i
     return mtable.contains(key) ? mtable.at(key)[idx] : nullptr;
 }
 
-void SymbolTable::putConstuctor(const std::string& key, const std::shared_ptr<AstNode> value) {
-    ctable[key].push_back(value);
+void SymbolTable::putConstructor(const std::string& key, const std::shared_ptr<AstNode> value) {
+    ctable[key] = value;
 }
 
 std::shared_ptr<AstNode> SymbolTable::getConstructor(const std::string& key, size_t idx) const {
