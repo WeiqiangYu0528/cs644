@@ -139,7 +139,14 @@ PackageDeclaration
     ;
 
 ImportStatements
-    : {$$ = std::make_shared<ImportStatements>();}
+    : {
+        $$ = std::make_shared<ImportStatements>();
+        std::string pkgName{"java.lang"}, star{"*"};
+        std::shared_ptr<Identifier> pkg = std::make_shared<Identifier>(pkgName);
+        std::shared_ptr<Identifier> name = std::make_shared<Identifier>(star);
+        std::shared_ptr<ImportStatement> stmt = std::make_shared<ImportStatement>(pkg, name);
+        $$->addImport(stmt);
+    }
     | ImportStatement ImportStatements {
         $$ = $2;
         $$->addImport($1);

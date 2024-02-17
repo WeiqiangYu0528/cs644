@@ -1,3 +1,5 @@
+#include <iostream>
+#include <sstream>
 #include "typeLinkingVisitor.hpp"
 
 TypeLinkingVisitor::TypeLinkingVisitor(std::unordered_map<std::string, 
@@ -20,7 +22,22 @@ void TypeLinkingVisitor::visit(std::shared_ptr<ImportStatements> n) {
         std::string pkg = stmt->package->name;
         std::string cdecl = stmt->id->name;
         // if the package name is not in the tables, reports an error
-        if (!tables.contains(pkg)) {
+        bool validPkg {false};
+        for (auto& [k, v] : tables) {
+            std::istringstream iss(k);
+            std::string token;
+            std::string cur;
+            while (std::getline(iss, token, '.')) {
+                cur += token;
+                if (cur == pkg) {
+                    validPkg = true;
+                    break;
+                }
+                cur += ".";
+            }
+            if (validPkg) break;
+        }
+        if (!validPkg) {
             error = true;
             std::cerr << "Error: TypeLinkingVisitor: ImportStatements: " << pkg << "." << cdecl << std::endl;
         }
@@ -143,10 +160,29 @@ void TypeLinkingVisitor::visit(std::shared_ptr<Program> n) {
 
 void TypeLinkingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
     if (auto ptr = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
-        if (!scopes.contains(ptr->id->name) || ambiguousNames.contains(ptr->id->name)) {
+        std::string className{ptr->id->name};
+        if (!scopes.contains(className) || ambiguousNames.contains(className)) {
             error = true;
-            std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + ptr->id->name << std::endl;
+            std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
         }
+        size_t pos = className.find('.');
+        if (pos != std::string::npos) {
+            // Extract the substring from the beginning up to the position of the period
+            std::string s = className.substr(0, pos);
+            if (scopes.contains(s)) {
+                error = true;
+                std::cerr << "Error: TypeLinkingVisitor: When a fully qualified name resolves to a type, no strict prefix of the fully qualified name can resolve to a type in the same environment." << std::endl;
+            }
+        }
+    }
+    Visitor::visit(n);
+}
+
+void TypeLinkingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
+    std::string className{n->classType->id->name};
+    if (!scopes.contains(className) || ambiguousNames.contains(className)) {
+        error = true;
+        std::cerr << "Error: TypeLinkingVisitor: TYPE_LINKING, UNRESOLVED_TYPE " + className << std::endl;
     }
     Visitor::visit(n);
 }
