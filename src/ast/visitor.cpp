@@ -245,7 +245,7 @@ void Visitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void Visitor::visit(std::shared_ptr<Program> n) { 
-    if(n->package) n->package->accept(this);
+    n->package->accept(this);
     n->importStatements->accept(this);
     if(n->classOrInterfaceDecl) n->classOrInterfaceDecl->accept(this);
 }

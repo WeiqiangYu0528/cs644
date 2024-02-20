@@ -7,6 +7,7 @@
 #include "weeder.hpp"
 
 class Visitor;
+class Scope;
 
 class AstNode {
     public:
@@ -54,7 +55,8 @@ class Identifier : public AstNode, public std::enable_shared_from_this<Identifie
 class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
     public:
         std::shared_ptr<Identifier> id;
-        IdentifierType(std::shared_ptr<Identifier> i);
+        bool simple;
+        IdentifierType(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
 };
 
@@ -68,7 +70,7 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
 class Package : public AstNode, public std::enable_shared_from_this<Package>  {
     public:
         std::shared_ptr<Identifier> id;
-        Package(std::shared_ptr<Identifier> i);
+        Package(std::shared_ptr<Identifier> i = nullptr);
         void accept(Visitor* v) override;
 };
 
@@ -149,7 +151,8 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
         std::shared_ptr<Identifier> id;
-        IdentifierExp(std::shared_ptr<Identifier> i);
+        bool simple;
+        IdentifierExp(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
 };
 
@@ -555,9 +558,11 @@ class Program : public AstNode, public std::enable_shared_from_this<Program> {
         std::shared_ptr<Package> package;
         std::shared_ptr<ImportStatements> importStatements;
         std::shared_ptr<ClassOrInterfaceDecl> classOrInterfaceDecl;
+        std::shared_ptr<Scope> scope;
         Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatements> i, std::shared_ptr<ClassOrInterfaceDecl> c);
         void accept(Visitor* v) override;
         std::pair<std::string, std::string> getQualifiedName() const;
+
 };
 
 class Ast {

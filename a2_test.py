@@ -63,8 +63,10 @@ def main(start_dir):
             item_string = os.path.join(start_dir, item)
             if type_linking:
                 error_type = "TYPE_LINKING"
-            if hierarchy:
+            elif hierarchy:
                 error_type = "HIERARCHY"
+            else:
+                error_type = "OTHER"
             incorrect_items.append(f"{item_string}\033[80G{error_type}")
         else:
             correct += 1

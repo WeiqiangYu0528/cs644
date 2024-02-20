@@ -98,7 +98,7 @@
 %type <std::string> ClassDeclarationOpt
 %type <std::shared_ptr<ClassOrInterfaceDecl>> InterfaceDeclaration ClassOrInterfaceDeclaration
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration NormalClassDeclaration
-%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2 InterfaceTypeList
+%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2
 %type <std::vector<std::vector<std::shared_ptr<MemberDecl>>>> ClassBody
 %type <std::vector<std::shared_ptr<MemberDecl>>> ClassBodyOpt1
 %type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
@@ -134,7 +134,7 @@ ClassOrInterfaceDeclaration
     ;
 
 PackageDeclaration
-    : {$$ = nullptr;}
+    : {$$ = std::make_shared<Package>();}
     | PACKAGE Name SEMICOLON {$$ = std::make_shared<Package>($2->id);}
     ;
 
@@ -182,17 +182,7 @@ InterfaceOpt1
 
 InterfaceOpt2
     : {$$ = {};}
-    | EXTENDS InterfaceTypeList {$$ = $2;}
-    ;
-
-InterfaceTypeList
-    :
-    Variable {auto temp = std::make_shared<IdentifierType>($1); $$ = {temp};}
-    | InterfaceTypeList COMMA Variable {
-        $$ = $1;
-        auto temp = std::make_shared<IdentifierType>($3); 
-        $$.push_back(temp);
-    }
+    | EXTENDS TypeList {$$ = $2;}
     ;
 
 InterfaceBody
@@ -278,12 +268,11 @@ Name:
     ;
 
 SimpleName:
-    Variable {$$ = std::make_shared<IdentifierType>($1);}
+    Variable {$$ = std::make_shared<IdentifierType>($1, true);}
     ;
 
 QualifiedName:
     Name DOT Variable {
-        //$$ = std::make_shared<CompoundType>($1, $3);
         std::string newStr = $1->id->name + '.' + $3->name;
         std::shared_ptr<Identifier> temp = std::make_shared<Identifier>(newStr);
         $$ = std::make_shared<IdentifierType>(temp);
@@ -410,7 +399,7 @@ Assignment:
     ;
 
 LeftHandSide:
-    Name {$$ = std::make_shared<IdentifierExp>($1->id);}
+    Name {$$ = std::make_shared<IdentifierExp>($1->id, $1->simple);}
     | FieldAccess {$$ = $1;}
     | ArrayAccess {$$ = $1;}
     ;
@@ -513,7 +502,7 @@ CastExpression:
         if (!temp) {
             throw syntax_error(@1, std::string("invalid casting."));
         }
-        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->id);
+        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->id, temp->simple);
         $$ = std::make_shared<CastExp>($4, type);
         }
     | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus {
@@ -542,7 +531,7 @@ UnaryExpressionNotPlusMinus:
 PostfixExpression:
     Primary { $$ = $1; }
     | Name {
-        $$ = std::make_shared<IdentifierExp>($1->id);
+        $$ = std::make_shared<IdentifierExp>($1->id, $1->simple);
     }
     ;
 
@@ -582,7 +571,7 @@ PrimaryNoNewArray:
 
 ArrayAccess:
     Name LEFT_BRACKET Expression RIGHT_BRACKET {
-        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->id);
+        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->id, $1->simple);
         $$ = std::make_shared<ArrayAccessExp>(identifier, $3);
         }
     | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET {

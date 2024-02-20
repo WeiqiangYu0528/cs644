@@ -83,6 +83,9 @@ void ContextVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n)
 
 void ContextVisitor::visit(std::shared_ptr<Program> n) {
     symbolTable->setAst(n);
+    std::string pkg = n->package->id ? n->package->id->name : "";
+    symbolTable->setPackage(pkg);
+    symbolTable->setClassOrInterfaceDecl(n->classOrInterfaceDecl);
     Visitor::visit(n);
 }
 

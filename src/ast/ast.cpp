@@ -1,4 +1,5 @@
 #include "ast.hpp"
+#include "scope.hpp"
 #include "visitor.hpp"
 
 void Ast::setAst(std::shared_ptr<Program> p) {
@@ -54,7 +55,7 @@ void NotExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-IdentifierExp::IdentifierExp(std::shared_ptr<Identifier> i) : id(i) {
+IdentifierExp::IdentifierExp(std::shared_ptr<Identifier> i, bool s) : id(i), simple(s) {
 }
 
 void IdentifierExp::accept(Visitor* v) {
@@ -117,7 +118,7 @@ void CastExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-IdentifierType::IdentifierType(std::shared_ptr<Identifier> i) : Type(DataType::OBJECT), id(i) {
+IdentifierType::IdentifierType(std::shared_ptr<Identifier> i, bool s) : Type(DataType::OBJECT), id(i), simple(s) {
 }
 
 void IdentifierType::accept(Visitor* v) {
@@ -497,7 +498,7 @@ void Program::accept(Visitor* v) {
 }
 
 std::pair<std::string, std::string> Program::getQualifiedName() const {
-    std::string packageName = package ? package->id->name : "";
+    std::string packageName = package->id ? package->id->name : "";
     std::string className = classOrInterfaceDecl ? classOrInterfaceDecl->id->name : "";
     return {packageName, className};
 }

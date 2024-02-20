@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "PackageTrie.hpp"
 #include "parser.h"
 #include "contextVisitor.hpp"
 #include "symbolTable.hpp"
@@ -20,8 +21,9 @@ std::string extractFilename(const std::string& filePath) {
 
 int main(int argc, char* argv[])
 {
-    std::unordered_map<std::string, 
-                       std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
+    // std::unordered_map<std::string, 
+    //                    std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
+    std::shared_ptr<PackageTrie> pkgTrie = std::make_shared<PackageTrie>();
     std::vector<std::shared_ptr<Program>> asts;
     bool error {false};
     for (int i = 1; i < argc; ++i) {
@@ -45,19 +47,21 @@ int main(int argc, char* argv[])
             ContextVisitor cvisitor{};
             program->accept(&cvisitor);
             auto [pkg, cdecl] = program->getQualifiedName();
-            if (cvisitor.isError() || (tables.contains(pkg) && tables.at(pkg).contains(cdecl))) {
+            std::string qualifiedName {pkg + "." + cdecl};
+            auto symbolTable = cvisitor.getSymbolTable();
+            if (cvisitor.isError() || !pkgTrie->insert(qualifiedName, symbolTable)) {
                 std::cerr << "Error: Environment Building failed" << std::endl;
                 error = true;
                 break;
             }
-            tables[pkg][cdecl] = cvisitor.getSymbolTable();
+            program->scope = std::make_shared<Scope>(symbolTable, pkgTrie);
             asts.push_back(program);
         }
     }
 
     if (!error) {
         for (auto ast : asts) {
-            TypeLinkingVisitor tvisitor{tables};
+            TypeLinkingVisitor tvisitor{ast->scope};
             ast->accept(&tvisitor);
             if (tvisitor.isError()) {
                 std::cerr << "Error: Type linking failed" << std::endl;
@@ -69,16 +73,12 @@ int main(int argc, char* argv[])
 
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
-            auto [pkg, cdecl] = program->getQualifiedName();
-            auto x = tables[pkg][cdecl];
-            if (x) {
-                HierarchyVisitor hvisitor(tables[pkg][cdecl], tables);
-                program->accept(&hvisitor);
-                if (hvisitor.isError()) {
-                    std::cerr << "Error: Hierarchy Checking failed" << std::endl;
-                    error = true;
-                    break;
-                }
+            HierarchyVisitor hvisitor(program->scope);
+            program->accept(&hvisitor);
+            if (hvisitor.isError()) {
+                std::cerr << "Error: Hierarchy Checking failed" << std::endl;
+                error = true;
+                break;
             }
         }
     }

@@ -1,31 +1,25 @@
 #pragma once
 #include <memory>
-#include <unordered_set>
-#include "symbolTable.hpp"
+#include "PackageTrie.hpp"
+#include "scope.hpp"
 #include "visitor.hpp"
 
 class TypeLinkingVisitor : public Visitor {
     private:
-        std::unordered_map<std::string, 
-                       std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>& tables;
-        std::unordered_map<std::string, std::shared_ptr<SymbolTable>> scopes;
-        std::unordered_set<std::string> ambiguousNames;
-        std::unordered_map<std::string, std::unordered_set<std::string>> onDemandImported;
-        std::unordered_map<std::string, std::string> singleImported;        
+        std::shared_ptr<Scope> scope;
         bool error;
     public:
-        TypeLinkingVisitor(std::unordered_map<std::string, 
-                       std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>& t);
+        TypeLinkingVisitor(std::shared_ptr<Scope> s);
         void visit(std::shared_ptr<ImportStatements> n) override;
         void visit(std::shared_ptr<FieldAccessExp> n) override;
+        // void visit(std::shared_ptr<IdentifierType> n) override;
+        void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
+        void visit(std::shared_ptr<ClassInstanceCreationExp> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
         void visit(std::shared_ptr<InterfaceDecl> n) override;
         void visit(std::shared_ptr<Program> n) override;
-        void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
-        void visit(std::shared_ptr<ClassInstanceCreationExp> n) override;
         bool isError() const;
 
         std::string currentPackageName;
-        std::string currentClassName;   
-
+        std::string currentClassName;
 };
