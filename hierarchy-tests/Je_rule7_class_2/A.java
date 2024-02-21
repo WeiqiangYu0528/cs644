@@ -6,4 +6,5 @@ public class A {
 	public char method(char b, byte c) {
 		return 'x';
 	}
+	
 }
