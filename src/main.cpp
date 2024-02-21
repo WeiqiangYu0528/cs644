@@ -19,6 +19,45 @@ std::string extractFilename(const std::string& filePath) {
     return filePath.substr(start, end - start); // Extract the substring representing the filename
 }
 
+bool DFS(std::string current, std::unordered_set<std::string>& visited, std::unordered_set<std::string>& pathVisited, 
+std::unordered_map<std::string, std::vector<std::string>>& edges) {
+    visited.insert(current);
+    pathVisited.insert(current);
+    for (std::string neighbour : edges[current]) {
+        if (pathVisited.contains(neighbour)) return true;
+        else if (visited.contains(neighbour)) continue;
+        else if (DFS(neighbour, visited, pathVisited, edges)) return true;
+    }
+    pathVisited.erase(current);
+    return false;
+}
+
+template <typename T> 
+bool detectCycle(std::vector<std::shared_ptr<T>> decls) {
+    //prepare the graph
+    std::vector<std::string> vertices;
+    std::unordered_map<std::string, std::vector<std::string>> edges;
+    for (auto decl : decls) {
+        vertices.push_back(decl->id->name); //add all classes/interfaces to vector of vertices
+        edges[decl->id->name] = std::vector<std::string>{}; //initialize edges vector for each class/interface
+        for (auto ext : decl->extended) { //go through neighbours
+            edges[decl->id->name].push_back(ext->id->name); //add them to the list of edges
+        }
+    }
+    //perform DFS
+    std::unordered_set<std::string> visited;
+    std::unordered_set<std::string> pathVisited;
+    for (std::string vertex : vertices) {
+        if (!edges.contains(vertex)) continue;
+        if (visited.contains(vertex)) continue;
+        else {
+            bool result = DFS(vertex, visited, pathVisited, edges);
+            if (result) return result;
+        }
+    }
+    return false;
+}
+
 int main(int argc, char* argv[])
 {
     // std::unordered_map<std::string, 
@@ -57,6 +96,34 @@ int main(int argc, char* argv[])
             program->scope = std::make_shared<Scope>(symbolTable, pkgTrie);
             asts.push_back(program);
         }
+    }
+
+    //partition class and interface declarations into two vectors
+    std::vector<std::shared_ptr<ClassDecl>> classDecls;
+    std::vector<std::shared_ptr<InterfaceDecl>> interfaceDecls;
+    for (auto program : asts) {
+        if (!program) continue;
+        if (program->classOrInterfaceDecl) {
+            std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
+            if (classDecl != nullptr) classDecls.push_back(classDecl);
+            else {
+                std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(program->classOrInterfaceDecl);
+                assert(interfaceDecl != nullptr);
+                interfaceDecls.push_back(interfaceDecl);
+            }
+        }
+    }
+
+    bool classCycle = detectCycle<ClassDecl>(classDecls);
+    bool interfaceCycle = detectCycle<InterfaceDecl>(interfaceDecls);
+    if (classCycle) {
+        std::cerr << "Error: Detected a cycle among the classes" << std::endl; 
+        std::cerr << "Error: Hierarchy Checking failed" << std::endl;
+        error = true;
+    } else if (interfaceCycle) {
+        std::cerr << "Error: Detected a cycle among the interfaces" << std::endl; 
+        std::cerr << "Error: Hierarchy Checking failed" << std::endl;
+        error = true;
     }
 
     if (!error) {
