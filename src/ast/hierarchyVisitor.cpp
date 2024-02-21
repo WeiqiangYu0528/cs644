@@ -1,5 +1,6 @@
 #include <unordered_set>
 #include <cassert>
+#include <type_traits>
 #include "hierarchyVisitor.hpp"
 
 HierarchyVisitor::HierarchyVisitor(std::shared_ptr<Scope> s) : scope(s), error(false) {
@@ -42,6 +43,53 @@ std::unordered_map<DataType, DataType> arrayDataTypes = {
     {DataType::OBJECT, DataType::OBJECTARRAY}
 };
 
+//Requires: T is one of Method, Constructor
+template <typename T>
+std::string hierarchyRuleSevenEight(std::vector<std::shared_ptr<T>>& methodsOrConstructors) {
+    const bool isMethod = std::is_same<T, Method>::value;
+    const bool isConstructor = std::is_same<T, Constructor>::value;
+    static_assert(isMethod == true || isConstructor == true, "T must be either Method or Constructor");
+
+    using hashableStringVectorSet = std::unordered_set<std::vector<std::string>, VectorStringHash>; 
+    using hashableDataTypeVectorMap =  std::unordered_map<std::vector<DataType>, hashableStringVectorSet, VectorDataTypeHash>;
+    std::unordered_map<std::string, hashableDataTypeVectorMap> alreadyDeclared; //maybe replace with Boost multiindex
+    for (auto methodOrConstructor : methodsOrConstructors) {
+        //create indexing key and value
+        std::string methodOrConstructorName;
+        std::vector<DataType> paramTypes{};
+        std::vector<std::string> objectNames{};
+        //create methodOrConstructorName
+        if constexpr (std::is_same<T, Method>::value) methodOrConstructorName = methodOrConstructor->methodName->name;
+        else if constexpr (std::is_same<T, Constructor>::value) methodOrConstructorName = methodOrConstructor->constructorName->name;
+        //populate paramTypes and objectNames. Special cases for ARRAY and/or OBJECT
+        for (auto fp : methodOrConstructor->formalParameters) {
+            DataType d = fp->type->type;
+            if (d == DataType::ARRAY) {
+                std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
+                assert(arrayType != nullptr);
+                d = arrayDataTypes[arrayType->dataType->type];
+                if (d == DataType::OBJECTARRAY) {
+                    std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
+                    assert(idType != nullptr);
+                    objectNames.push_back(idType->id->name);
+                }
+            } else if (d == DataType::OBJECT) {
+                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
+                assert(idType != nullptr);
+                objectNames.push_back(idType->id->name);
+            }
+            paramTypes.push_back(d);
+        }
+        //check for repeated methods/constructors
+        if (alreadyDeclared.contains(methodOrConstructorName) && alreadyDeclared[methodOrConstructorName].contains(paramTypes) 
+        && alreadyDeclared[methodOrConstructorName][paramTypes].contains(objectNames)) {
+            return methodOrConstructorName;
+        }
+        alreadyDeclared[methodOrConstructorName][paramTypes].insert(objectNames);
+    }
+    return "";
+}
+
 void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     //Rule #1: Class must not extend an interface
     //Rule #4: Class must not extend final class
@@ -70,7 +118,6 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     for (std::shared_ptr<IdentifierType> impl : n->implemented) {
         //Rule #2
         if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
-            //cast to ClassDecl
             if (std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl)) {
                 std::cerr << "Error: Class " << n->id->name << " implements Class " << impl->id->name << std::endl;
                 error = true;
@@ -87,47 +134,27 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
         }
     }
     //Rule #7: Class must not declare two methods with the same name and parameter types
-    using hashableStringVectorSet = std::unordered_set<std::vector<std::string>, VectorStringHash>; 
-    using hashableDataTypeVectorMap =  std::unordered_map<std::vector<DataType>, hashableStringVectorSet, VectorDataTypeHash>;
-    std::unordered_map<std::string, hashableDataTypeVectorMap> methods; //maybe replace with Boost multiindex
-    for (auto decl : n->declarations[1]) {
-        //cast to Method ptr
-        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(decl);
-        assert(method != nullptr);
-        //create indexing key and value
-        std::string methodName = method->methodName->name;
-        std::vector<DataType> paramTypes{};
-        std::vector<std::string> objectNames{};
-        for (auto fp : method->formalParameters) {
-            DataType d = fp->type->type;
-            if (d == DataType::ARRAY) {
-                std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
-                assert(arrayType != nullptr);
-                d = arrayDataTypes[arrayType->dataType->type];
-                if (d == DataType::OBJECTARRAY) {
-                    std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                    assert(idType != nullptr);
-                    objectNames.push_back(idType->id->name);
-                }
-            } else if (d == DataType::OBJECT) {
-                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
-                assert(idType != nullptr);
-                objectNames.push_back(idType->id->name);
-            }
-            paramTypes.push_back(d);
-        }
-        //check for repeated methods
-        if (methods.contains(methodName) && methods[methodName].contains(paramTypes) && methods[methodName][paramTypes].contains(objectNames)) {
-            std::cerr << "Error: Class " << n->id->name << " declares two versions of method \"" << methodName << "\" with the same parameter types" << std::endl;
-            error = true;
-            return;
-        }
-        methods[methodName][paramTypes].insert(objectNames);
+    std::vector<std::shared_ptr<Method>> methodVector = {};
+    for (auto decl : n->declarations[1]) methodVector.push_back(std::dynamic_pointer_cast<Method>(decl));
+    std::string repeatedMethodSignature = hierarchyRuleSevenEight<Method>(methodVector);
+    if (repeatedMethodSignature != "") {
+        std::cerr << "Error: Class " << n->id->name << " declares multiple versions of method \"" << repeatedMethodSignature << "\" with the same parameter types" << std::endl;
+        error = true;
+        return;
     }
+    //Rule #8: Class must not declare two constructors with the same parameter types
+    std::vector<std::shared_ptr<Constructor>> constructorVector = {};
+    for (auto decl : n->declarations[2]) constructorVector.push_back(std::dynamic_pointer_cast<Constructor>(decl));
+    std::string repeatedConstructorSignature = hierarchyRuleSevenEight<Constructor>(constructorVector);
+    if (repeatedConstructorSignature != "") {
+        std::cerr << "Error: Class " << n->id->name << " declares multiple versions of constructor \"" << repeatedConstructorSignature << "\" with the same parameter types" << std::endl;
+        error = true;
+        return;
+    }
+    
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
-
     //Rule #3: Interfaces must not be repeated in an interface's extends clause
     //Rule #5: Interface must not extend a class
     std::unordered_set<std::string> extendedInterfaces;
@@ -151,38 +178,10 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
         }
     }
     //Rule #7: Interface must not declare two methods with the same name and parameter types
-    using hashableStringVectorSet = std::unordered_set<std::vector<std::string>, VectorStringHash>; 
-    using hashableDataTypeVectorMap =  std::unordered_map<std::vector<DataType>, hashableStringVectorSet, VectorDataTypeHash>;
-    std::unordered_map<std::string, hashableDataTypeVectorMap> methods; //maybe replace with Boost multiindex
-    for (auto method : n->methods) {
-        //create indexing key and value
-        std::string methodName = method->methodName->name;
-        std::vector<DataType> paramTypes{};
-        std::vector<std::string> objectNames{};
-        for (auto fp : method->formalParameters) {
-            DataType d = fp->type->type;
-            if (d == DataType::ARRAY) {
-                std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
-                assert(arrayType != nullptr);
-                d = arrayDataTypes[arrayType->dataType->type];
-                if (d == DataType::OBJECTARRAY) {
-                    std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                    assert(idType != nullptr);
-                    objectNames.push_back(idType->id->name);
-                }
-            } else if (d == DataType::OBJECT) {
-                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
-                assert(idType != nullptr);
-                objectNames.push_back(idType->id->name);
-            }
-            paramTypes.push_back(d);
-        }
-        //check for repeated methods
-        if (methods.contains(methodName) && methods[methodName].contains(paramTypes) && methods[methodName][paramTypes].contains(objectNames)) {
-            std::cerr << "Error: Interface " << n->id->name << " declares two versions of method \"" << methodName << "\" with the same parameter types" << std::endl;
-            error = true;
-            return;
-        }
-        methods[methodName][paramTypes].insert(objectNames);
+    std::string repeatedMethodSignature = hierarchyRuleSevenEight<Method>(n->methods);
+    if (repeatedMethodSignature != "") {
+        std::cerr << "Error: Interface " << n->id->name << " declares multiple versions of method \"" << repeatedMethodSignature << "\" with the same parameter types" << std::endl;
+        error = true;
+        return;
     }
 }
