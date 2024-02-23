@@ -16,12 +16,12 @@ void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
 }
 
 Modifiers stringToModifier(const std::string& str) {
-    if (str == "PUBLIC") return Modifiers::PUBLIC;
-    else if (str == "PROTECTED") return Modifiers::PROTECTED;
-    else if (str == "FINAL") return Modifiers::FINAL;
-    else if (str == "ABSTRACT") return Modifiers::ABSTRACT;
-    else if (str == "STATIC") return Modifiers::STATIC;
-    else if (str == "NATIVE") return Modifiers::NATIVE;
+    if (str == "public") return Modifiers::PUBLIC;
+    else if (str == "protected") return Modifiers::PROTECTED;
+    else if (str == "final") return Modifiers::FINAL;
+    else if (str == "abstract") return Modifiers::ABSTRACT;
+    else if (str == "static") return Modifiers::STATIC;
+    else if (str == "native") return Modifiers::NATIVE;
     // else throw std::invalid_argument("Unknown modifier: " + str);
 }
 
@@ -205,24 +205,77 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
         return;
     }
 
-    for (const auto& entry : scope->onDemandImported) {
-        const auto& symbolTableHere = entry.second;
-        if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
-            for (const auto& node : symbolTableHere->mtable[key]) {
-                std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
-                auto methodNode = std::dynamic_pointer_cast<Method>(node);
-                for (auto modifier : methodNode->modifiers) {
-                    // Rule 15
-                    if (modifier == Modifiers::FINAL) {
-                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+    // Rule 10
+    auto classOrInterfaceDecl = scope->current->getClassOrInterfaceDecl();
+    ClassDecl* classDeclPtr = dynamic_cast<ClassDecl*>(classOrInterfaceDecl.get());
+    if (classDeclPtr) {
+        for (auto methodModifier : n->modifiers)
+        if (methodModifier == Modifiers::ABSTRACT && (stringToModifier(classDeclPtr->modifier) != Modifiers::ABSTRACT)) {
+            std::cerr << "Error: Method modifier is abstract and class Modifier is " << classDeclPtr->modifier << std::endl;
+            error = true;
+        }
+    }
+
+    // TODO A class that has inherits any abstract methods must abstract
+    // for (auto& entry : scope->singleImported) {
+    //     auto classOrInterfaceDecl = entry.second->getClassOrInterfaceDecl();
+    //     ClassDecl* classDeclPtr = dynamic_cast<ClassDecl*>(classOrInterfaceDecl.get());
+    //     InterfaceDecl* interfacePtr = dynamic_cast<InterfaceDecl *>(classOrInterfaceDecl.get());
+    //     if (interfacePtr)
+    // }
+
+    auto processContainer = [&](const auto& container) {
+        for (const auto& entry : container) {
+            const auto& symbolTableHere = entry.second;
+            if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
+                for (const auto& node : symbolTableHere->mtable[key]) {
+                    auto methodNode = std::dynamic_pointer_cast<Method>(node);
+                    if (!methodNode) continue; // Ensure methodNode is valid before accessing its members
+                    // Rule 13
+                    if (!Type::isSameType(methodNode->returnType, n->returnType)) {
+                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                         error = true;
                         break;
                     }
-                    // Rule 14
-                    if (modifier == Modifiers::PUBLIC) {
-                        for (auto currentModifier : n->modifiers) {
-                            if ( currentModifier == Modifiers::PROTECTED) {
-                                std::cerr << "Error: PROTECTED Method " << key << "can not override PUBLIC method" << std::endl;
+                    bool isStatic = false;
+                    for (auto modifier : methodNode->modifiers) {
+                        // Rule 11
+                        if (modifier == Modifiers::STATIC) {
+                            isStatic = true;
+                            bool flag = false;
+                            for (auto methodModifier : n->modifiers) {
+                                if (methodModifier == Modifiers::STATIC) {
+                                    flag = true;
+                                }
+                                if (!flag) {
+                                    std::cerr << "Error: Static method in super class is not static in sub class" << std::endl;
+                                    error = true;
+                                    break;
+                                }
+                            }
+                        }
+                        // Rule 15
+                        if (modifier == Modifiers::FINAL) {
+                            std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                            error = true;
+                            break;
+                        }
+                        // Rule 14
+                        if (modifier == Modifiers::PUBLIC) {
+                            for (auto currentModifier : n->modifiers) {
+                                if (currentModifier == Modifiers::PROTECTED) {
+                                    std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
+                                    error = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // Rule 12
+                    if (!isStatic) {
+                        for (auto methodModifier : n->modifiers) {
+                            if (methodModifier == Modifiers::STATIC) {
+                                std::cerr << "Error: Non-Static method in super class is static in sub class" << std::endl;
                                 error = true;
                                 break;
                             }
@@ -231,7 +284,11 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                 }
             }
         }
-    }
+
+    };
+
+    processContainer(scope->onDemandImported);
+    processContainer(scope->singleImported);
 
     Visitor::visit(n);
 }

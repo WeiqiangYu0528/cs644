@@ -26,6 +26,10 @@ class Type : public AstNode {
         DataType type;
         Type(DataType t);
         ~Type() = default;
+        static bool isSameType(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b) {
+            if (!a || !b) return false;
+            return a->type == b->type;
+        }
         virtual void accept(Visitor* v) = 0;
 };
 
