@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "ast.hpp"
 class SymbolTable {
+    public:
+
     // program AST
     std::shared_ptr<Program> ast;
     // package
@@ -20,7 +22,6 @@ class SymbolTable {
     std::unordered_map<std::string, std::shared_ptr<AstNode>> ltable;
     std::stack<std::string> stack_t;
 
-    public:
         void putField(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<AstNode> value);

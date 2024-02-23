@@ -12,9 +12,23 @@ bool HierarchyVisitor::isError() const {
 
 
 void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
+    if (n && n->package && n->package->id) {
+        this->currentPackageName = n->package->id->name;
+    } else {
+        this->currentPackageName = ""; // Or some default handling if the package is not specified
+    }
     n->classOrInterfaceDecl->accept(this);
 }
 
+Modifiers stringToModifier(const std::string& str) {
+    if (str == "PUBLIC") return Modifiers::PUBLIC;
+    else if (str == "PROTECTED") return Modifiers::PROTECTED;
+    else if (str == "FINAL") return Modifiers::FINAL;
+    else if (str == "ABSTRACT") return Modifiers::ABSTRACT;
+    else if (str == "STATIC") return Modifiers::STATIC;
+    else if (str == "NATIVE") return Modifiers::NATIVE;
+    // else throw std::invalid_argument("Unknown modifier: " + str);
+}
 
 struct VectorStringHash {
     size_t operator()(const std::vector<std::string>& v) const {
@@ -151,7 +165,9 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
         error = true;
         return;
     }
-    
+    for (std::shared_ptr<MemberDecl> m : n->declarations[1]) {
+        m->accept(this);
+    }
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
@@ -184,4 +200,43 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
         error = true;
         return;
     }
+}
+
+void HierarchyVisitor::visit(std::shared_ptr<Method> n) 
+{
+    const std::string key {n->methodName->name};
+
+    if (currentPackageName == "java.lang") {
+        return;
+    }
+
+    for (const auto& entry : scope->onDemandImported) {
+        const auto& symbolTableHere = entry.second;
+        if (symbolTableHere->getMethod(key) && entry.first != currentPackageName) {
+            for (const auto& node : symbolTableHere->mtable[key]) {
+                std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                auto methodNode = std::dynamic_pointer_cast<Method>(node);
+                for (auto modifier : methodNode->modifiers) {
+                    // Rule 15
+                    if (modifier == Modifiers::FINAL) {
+                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    // Rule 14
+                    if (modifier == Modifiers::PUBLIC) {
+                        for (auto currentModifier : n->modifiers) {
+                            if ( currentModifier == Modifiers::PROTECTED) {
+                                std::cerr << "Error: PROTECTED Method " << key << "can not override PUBLIC method" << std::endl;
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Visitor::visit(n);
 }
