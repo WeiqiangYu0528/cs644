@@ -7,34 +7,56 @@
 #include "weeder.hpp"
 
 class Visitor;
+class Scope;
 
-class Exp {
+class AstNode {
+    public:
+        virtual ~AstNode() = default;
+        virtual void accept(Visitor* v) = 0;
+};
+
+class Exp : public AstNode {
     public:
         ~Exp() = default;
-        virtual void accept(Visitor* v);
+        virtual void accept(Visitor* v) = 0;
 };
 
-class Type {
+class Type : public AstNode {
     public:
         DataType type;
-        // should delete this default constructor later, currently used as a placeholder for basic case types
-        Type() = default;
         Type(DataType t);
         ~Type() = default;
-        virtual void accept(Visitor* v);
+        virtual void accept(Visitor* v) = 0;
 };
 
-class Identifier : public std::enable_shared_from_this<Identifier> {
+class Statement : public AstNode
+{
+    public:
+        virtual ~Statement() = default;
+        virtual void accept(Visitor *v) = 0;
+};
+
+class MemberDecl : public AstNode {
+    public:
+        MemberType memberType;
+        std::vector<Modifiers> modifiers;
+        MemberDecl(MemberType mt, std::vector<Modifiers> m);
+        virtual ~MemberDecl() = default;
+        virtual void accept(Visitor* v) = 0;
+};
+
+class Identifier : public AstNode, public std::enable_shared_from_this<Identifier> {
     public:
         std::string name;
         Identifier(std::string& s);
-        void accept(Visitor* v);
+        void accept(Visitor* v) override;
 };
 
 class IdentifierType : public Type, public std::enable_shared_from_this<IdentifierType> {
     public:
         std::shared_ptr<Identifier> id;
-        IdentifierType(std::shared_ptr<Identifier> i);
+        bool simple;
+        IdentifierType(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
 };
 
@@ -45,19 +67,35 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
         void accept(Visitor* v) override;
 };
 
-class Package : public std::enable_shared_from_this<Package>  {
-    std::shared_ptr<Identifier> id;
+class Package : public AstNode, public std::enable_shared_from_this<Package>  {
     public:
-        Package(std::shared_ptr<Identifier> i);
-        void accept(Visitor* v);
+        std::shared_ptr<Identifier> id;
+        Package(std::shared_ptr<Identifier> i = nullptr);
+        void accept(Visitor* v) override;
 };
 
-class ImportStatement : public std::enable_shared_from_this<ImportStatement> {
-    std::vector<std::shared_ptr<Identifier>> stmts;
+class ImportStatement : public AstNode, public std::enable_shared_from_this<ImportStatement> {
     public:
-        ImportStatement();
-        void addImport(std::shared_ptr<Identifier> i);
-        void accept(Visitor* v);
+        std::shared_ptr<Identifier> package;
+        std::shared_ptr<Identifier> id;
+        ImportStatement(std::shared_ptr<Identifier> p, std::shared_ptr<Identifier> i);
+        void accept(Visitor* v) override;
+};
+
+class ImportStatements : public AstNode, public std::enable_shared_from_this<ImportStatements> {
+    public:
+        std::vector<std::shared_ptr<ImportStatement>> stmts;
+        void addImport(std::shared_ptr<ImportStatement> i);
+        void accept(Visitor* v) override;
+};
+
+class ClassOrInterfaceDecl : public AstNode {
+    public:
+        std::shared_ptr<Identifier> id;
+        std::vector<std::shared_ptr<IdentifierType>> extended;
+        ClassOrInterfaceDecl(std::shared_ptr<Identifier> i, std::vector<std::shared_ptr<IdentifierType>> e);
+        virtual ~ClassOrInterfaceDecl() = default;
+        virtual void accept(Visitor* v) = 0;
 };
 
 // class CompoundType : public Type, public std::enable_shared_from_this<CompoundType> {
@@ -113,7 +151,8 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
         std::shared_ptr<Identifier> id;
-        IdentifierExp(std::shared_ptr<Identifier> i);
+        bool simple;
+        IdentifierExp(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
 };
 
@@ -303,8 +342,6 @@ public:
     std::shared_ptr<Identifier> primaryMethodName;
     std::shared_ptr<IdentifierType> methodName;
     std::vector<std::shared_ptr<Exp>> arguments;
-
-
     MethodInvocation(std::shared_ptr<Exp> primary, 
         std::shared_ptr<Identifier> primaryMethodName,
         std::shared_ptr<IdentifierType> methodName, 
@@ -356,13 +393,6 @@ public:
     void accept(Visitor* v) override;
 };
 
-class Statement
-{
-public:
-    virtual ~Statement() = default;
-    virtual void accept(Visitor *v) = 0;
-};
-
 class SemicolonStatement : public Statement, 
                            public std::enable_shared_from_this<SemicolonStatement>
 {
@@ -373,8 +403,8 @@ public:
 class BlockStatements : public Statement, 
                         public std::enable_shared_from_this<BlockStatements>
 {
-    std::vector<std::shared_ptr<Statement>> statements;
 public:
+    std::vector<std::shared_ptr<Statement>> statements;
     void addStatement(std::shared_ptr<Statement> stmt);
     void accept(Visitor *v) override;
 };
@@ -382,8 +412,8 @@ public:
 class BlockStatement : public Statement,
                        public std::enable_shared_from_this<BlockStatement>
 {
-    std::shared_ptr<BlockStatements> blockStatements;
 public:
+    std::shared_ptr<BlockStatements> blockStatements;
     BlockStatement(std::shared_ptr<BlockStatements> sl);
     void accept(Visitor *v) override;
 };
@@ -460,22 +490,13 @@ public:
     void accept(Visitor *v) override;
 };
 
-class FormalParameter : public std::enable_shared_from_this<FormalParameter> {
+class FormalParameter : public AstNode, public std::enable_shared_from_this<FormalParameter> {
     public:
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> variableName;
 
         FormalParameter(std::shared_ptr<Type> t, std::shared_ptr<Identifier> vn);
-        void accept(Visitor* v);
-};
-
-class MemberDecl {
-    public:
-        MemberType memberType;
-        std::vector<Modifiers> modifiers;
-
-        MemberDecl(MemberType mt, std::vector<Modifiers> m);
-        virtual void accept(Visitor* v) = 0;
+        void accept(Visitor* v) override;
 };
 
 class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
@@ -512,15 +533,6 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         void accept(Visitor* v) override;
 };
 
-class ClassOrInterfaceDecl {
-    public:
-        std::shared_ptr<Identifier> name;
-        std::vector<std::shared_ptr<IdentifierType>> extended;
-        ClassOrInterfaceDecl(std::shared_ptr<Identifier> n, std::vector<std::shared_ptr<IdentifierType>> e);
-        virtual ~ClassOrInterfaceDecl() = default;
-        virtual void accept(Visitor* v) = 0;
-};
-
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
     public:
         std::string modifier;
@@ -541,13 +553,16 @@ class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from
         void accept(Visitor* v) override;
 };
 
-class Program :  public std::enable_shared_from_this<Program> {
-    std::shared_ptr<Package> package;
-    std::shared_ptr<ImportStatement> importStatement;
-    std::shared_ptr<ClassOrInterfaceDecl> classOrInterfaceDecl;
+class Program : public AstNode, public std::enable_shared_from_this<Program> {
     public:
-        Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatement> i, std::shared_ptr<ClassOrInterfaceDecl> c);
-        void accept(Visitor* v);
+        std::shared_ptr<Package> package;
+        std::shared_ptr<ImportStatements> importStatements;
+        std::shared_ptr<ClassOrInterfaceDecl> classOrInterfaceDecl;
+        std::shared_ptr<Scope> scope;
+        Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatements> i, std::shared_ptr<ClassOrInterfaceDecl> c);
+        void accept(Visitor* v) override;
+        std::pair<std::string, std::string> getQualifiedName() const;
+
 };
 
 class Ast {

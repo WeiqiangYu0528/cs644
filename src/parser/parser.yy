@@ -82,7 +82,9 @@
 %nonassoc ELSE
 
 %type <std::shared_ptr<Program>> Program
-%type <std::shared_ptr<Identifier>> Variable ImportStatement PackageImportIdentifier VariableDeclaratorId
+%type <std::shared_ptr<ImportStatement>> PackageImportIdentifier ImportStatement
+%type <std::shared_ptr<ImportStatements>> ImportStatements
+%type <std::shared_ptr<Identifier>> Variable VariableDeclaratorId
 %type <std::shared_ptr<IdentifierType>> SimpleName QualifiedName Name ClassOrInterfaceType ClassType
 %type <std::shared_ptr<Type>> Type BasicType ReferenceType ResultType ArrayType
 %type <Modifiers> Modifier
@@ -96,7 +98,7 @@
 %type <std::string> ClassDeclarationOpt
 %type <std::shared_ptr<ClassOrInterfaceDecl>> InterfaceDeclaration ClassOrInterfaceDeclaration
 %type <std::shared_ptr<ClassDecl>> ClassDeclaration NormalClassDeclaration
-%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2 InterfaceTypeList
+%type <std::vector<std::shared_ptr<IdentifierType>>> NormalClassDeclarationOpt2 NormalClassDeclarationOpt3 TypeList InterfaceOpt2
 %type <std::vector<std::vector<std::shared_ptr<MemberDecl>>>> ClassBody
 %type <std::vector<std::shared_ptr<MemberDecl>>> ClassBodyOpt1
 %type <std::vector<Modifiers>> ClassBodyDeclarationOpt1
@@ -111,7 +113,6 @@
 %type <std::shared_ptr<Exp>> ForUpdate ForExpression VariableInitializer
 %type <std::vector<std::shared_ptr<Exp>>> ArgumentList 
 %type <std::shared_ptr<Package>> PackageDeclaration
-%type <std::shared_ptr<ImportStatement>> ImportStatements
 %type <std::shared_ptr<Statement>> Statement ReturnStatements ExpressionStatement SEMICOLON ForInit BlockStatement
 %type <std::shared_ptr<LocalVariableDeclarationStatement>> LocalVariableDeclaration VariableDeclarators VariableDeclarator LocalVariableDeclarationStatement
 %type <std::shared_ptr<ForStatement>> ForControl
@@ -133,12 +134,19 @@ ClassOrInterfaceDeclaration
     ;
 
 PackageDeclaration
-    : {$$ = nullptr;}
+    : {$$ = std::make_shared<Package>();}
     | PACKAGE Name SEMICOLON {$$ = std::make_shared<Package>($2->id);}
     ;
 
 ImportStatements
-    : {$$ = std::make_shared<ImportStatement>();}
+    : {
+        $$ = std::make_shared<ImportStatements>();
+        std::string pkgName{"java.lang"}, star{"*"};
+        std::shared_ptr<Identifier> pkg = std::make_shared<Identifier>(pkgName);
+        std::shared_ptr<Identifier> name = std::make_shared<Identifier>(star);
+        std::shared_ptr<ImportStatement> stmt = std::make_shared<ImportStatement>(pkg, name);
+        $$->addImport(stmt);
+    }
     | ImportStatement ImportStatements {
         $$ = $2;
         $$->addImport($1);
@@ -146,14 +154,17 @@ ImportStatements
     ;
 
 ImportStatement
-    : IMPORT Name SEMICOLON {$$ = std::make_shared<Identifier>($2->id->name);}
-    | IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
+    : IMPORT PackageImportIdentifier SEMICOLON {$$ = $2;}
     ;
 
 PackageImportIdentifier    
-    : Name DOT STAR {
-        std::string temp = $1->id->name + ".*";
-        $$ = std::make_shared<Identifier>(temp);
+    : Name DOT Variable {
+        $$ = std::make_shared<ImportStatement>($1->id, $3);
+    }
+    | Name DOT STAR {
+        std::string star {"*"};
+        auto temp = std::make_shared<Identifier>(star);
+        $$ = std::make_shared<ImportStatement>($1->id, temp);
         }
     ;
 
@@ -171,17 +182,7 @@ InterfaceOpt1
 
 InterfaceOpt2
     : {$$ = {};}
-    | EXTENDS InterfaceTypeList {$$ = $2;}
-    ;
-
-InterfaceTypeList
-    :
-    Variable {auto temp = std::make_shared<IdentifierType>($1); $$ = {temp};}
-    | InterfaceTypeList COMMA Variable {
-        $$ = $1;
-        auto temp = std::make_shared<IdentifierType>($3); 
-        $$.push_back(temp);
-    }
+    | EXTENDS TypeList {$$ = $2;}
     ;
 
 InterfaceBody
@@ -197,7 +198,7 @@ MethodDeclarations
     ;
 
 MethodDeclaration
-    : PUBLIC MethodDeclarationOpt Type Variable FormalParameters SEMICOLON {
+    : PUBLIC MethodDeclarationOpt ResultType Variable FormalParameters SEMICOLON {
         std::vector<Modifiers> m{};
         $$ = std::make_shared<Method>(MemberType::METHODWITHOUTBODY, m, $3, $4, $5, nullptr);
     }
@@ -267,12 +268,11 @@ Name:
     ;
 
 SimpleName:
-    Variable {$$ = std::make_shared<IdentifierType>($1);}
+    Variable {$$ = std::make_shared<IdentifierType>($1, true);}
     ;
 
 QualifiedName:
     Name DOT Variable {
-        //$$ = std::make_shared<CompoundType>($1, $3);
         std::string newStr = $1->id->name + '.' + $3->name;
         std::shared_ptr<Identifier> temp = std::make_shared<Identifier>(newStr);
         $$ = std::make_shared<IdentifierType>(temp);
@@ -399,7 +399,7 @@ Assignment:
     ;
 
 LeftHandSide:
-    Name {$$ = std::make_shared<IdentifierExp>($1->id);}
+    Name {$$ = std::make_shared<IdentifierExp>($1->id, $1->simple);}
     | FieldAccess {$$ = $1;}
     | ArrayAccess {$$ = $1;}
     ;
@@ -502,7 +502,7 @@ CastExpression:
         if (!temp) {
             throw syntax_error(@1, std::string("invalid casting."));
         }
-        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->id);
+        std::shared_ptr<Type> type = std::make_shared<IdentifierType>(temp->id, temp->simple);
         $$ = std::make_shared<CastExp>($4, type);
         }
     | LEFT_PAREN Name Dims RIGHT_PAREN UnaryExpressionNotPlusMinus {
@@ -531,7 +531,7 @@ UnaryExpressionNotPlusMinus:
 PostfixExpression:
     Primary { $$ = $1; }
     | Name {
-        $$ = std::make_shared<IdentifierExp>($1->id);
+        $$ = std::make_shared<IdentifierExp>($1->id, $1->simple);
     }
     ;
 
@@ -571,7 +571,7 @@ PrimaryNoNewArray:
 
 ArrayAccess:
     Name LEFT_BRACKET Expression RIGHT_BRACKET {
-        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->id);
+        std::shared_ptr<IdentifierExp> identifier = std::make_shared<IdentifierExp>($1->id, $1->simple);
         $$ = std::make_shared<ArrayAccessExp>(identifier, $3);
         }
     | PrimaryNoNewArray LEFT_BRACKET Expression RIGHT_BRACKET {

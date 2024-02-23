@@ -14,29 +14,45 @@ FLEX_SRC=src/lexer/lexer.ll
 FLEX_OUT=src/lexer/lex.yy.cpp
 FLEX_OPTS=
 
-AST_OUT=src/ast/ast.cpp
-VISITOR_OUT=src/ast/visitor.cpp
+OBJ_DIR=build
+SRC_DIRS=src src/ast
+SRC_FILES=$(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
+OBJ_FILES=$(SRC_FILES:src/%.cpp=$(OBJ_DIR)/%.o) $(OBJ_DIR)/parser/parser.tab.o $(OBJ_DIR)/lexer/lex.yy.o
 
-SRC_FILES=$(wildcard src/*.cpp) $(wildcard src/ast/*.cpp) $(BISON_OUT) $(FLEX_OUT)
-
-BUILD_DIR=.
-
-TARGET=$(BUILD_DIR)/joosc
+TARGET_DIR=.
+TARGET=$(TARGET_DIR)/joosc
 
 all: $(TARGET)
 
-$(TARGET): $(SRC_FILES)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-$(BISON_OUT): $(BISON_SRC)
-	$(BISON) $(BISON_OPTS) -o $@ $<
+DIRS := $(OBJ_DIR) $(OBJ_DIR)/parser $(OBJ_DIR)/lexer $(OBJ_DIR)/ast
+
+$(DIRS):
+	mkdir -p $(DIRS)
+
+$(OBJ_FILES): | $(DIRS)
+
+$(OBJ_DIR)/%.o: src/%.cpp $(BISON_HEADER)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/parser/parser.tab.o: $(BISON_OUT)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/lexer/lex.yy.o: $(FLEX_OUT)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BISON_OUT) $(BISON_HEADER): $(BISON_SRC)
+	$(BISON) $(BISON_OPTS) -o $(BISON_OUT) $<
 
 $(FLEX_OUT): $(FLEX_SRC) $(BISON_HEADER)
 	$(FLEX) $(FLEX_OPTS) -o $@ $<
 
-clean:
-	rm $(BUILD_DIR)/joosc $(BISON_OUT) $(BISON_HEADER) $(BISON_LOCATION_HEADER) $(FLEX_OUT)
+$(TARGET): $(OBJ_FILES)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-parser: $(BISON_OUT)
+clean:
+	rm -rf $(TARGET_DIR)/joosc $(OBJ_DIR) $(BISON_OUT) $(BISON_HEADER) $(BISON_LOCATION_HEADER) $(FLEX_OUT)
+
+parser: $(BISON_OUT) $(FLEX_OUT)
 
 .PHONY: all clean parser

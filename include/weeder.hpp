@@ -57,7 +57,17 @@ enum class DataType {
     FLOAT,
     DOUBLE,
     ARRAY,
-    OBJECT
+    OBJECT,
+    VOIDARRAY,
+    INTARRAY,
+    BOOLEANARRAY,
+    CHARARRAY,
+    BYTEARRAY,
+    SHORTARRAY,
+    LONGARRAY,
+    FLOATARRAY,
+    DOUBLEARRAY,
+    OBJECTARRAY
 };
 
 inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
