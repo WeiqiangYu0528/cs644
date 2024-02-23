@@ -18,4 +18,5 @@ class Scope {
         std::shared_ptr<SymbolTable> getNameInScope(const std::string& name, bool simple) const;
         std::shared_ptr<SymbolTable> getQualifiedNameInScope(const std::string& name) const;
         std::shared_ptr<SymbolTable> getUnqualifiedNameInScope(const std::string& name) const;
+        bool isNameValidInScope(const std::string& name) const;
 };

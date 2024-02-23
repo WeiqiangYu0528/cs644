@@ -512,6 +512,7 @@ class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
 
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
+        bool isStatic;
         std::shared_ptr<Type> returnType;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;

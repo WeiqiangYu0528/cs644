@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "contextVisitor.hpp"
 #include "symbolTable.hpp"
+#include "typeCheckingVisitor.hpp"
 #include "typeLinkingVisitor.hpp"
 #include "hierarchyVisitor.hpp"
 
@@ -144,6 +145,18 @@ int main(int argc, char* argv[])
             program->accept(&hvisitor);
             if (hvisitor.isError()) {
                 std::cerr << "Error: Hierarchy Checking failed" << std::endl;
+                error = true;
+                break;
+            }
+        }
+    }
+
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            TypeCheckingVisitor tcvisitor(program->scope);
+            program->accept(&tcvisitor);
+            if (tcvisitor.isError()) {
+                std::cerr << "Error: Type Checking failed" << std::endl;
                 error = true;
                 break;
             }

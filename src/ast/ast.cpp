@@ -374,6 +374,12 @@ void Field::accept(Visitor* v) {
 Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
 : MemberDecl(mt, m), returnType(rt), methodName(mn), formalParameters(fp), block(b) {
+    for (Modifiers modifier : m) {
+        if (modifier == Modifiers::STATIC) {
+            isStatic = true;
+            break;
+        }
+    }
 }
 
 void Method::accept(Visitor* v) {

@@ -26,3 +26,8 @@ std::shared_ptr<SymbolTable> Scope::getUnqualifiedNameInScope(const std::string&
     if (onDemandImported.contains(name) && !ambiguousNames.contains(name)) return onDemandImported.at(name);
     return nullptr;
 }
+
+bool Scope::isNameValidInScope(const std::string& name) const {
+    if (current->getVar(name)|| current->getField(name)) return true;
+    return false;
+}

@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include "PackageTrie.hpp"
 #include "scope.hpp"
 #include "visitor.hpp"
 
