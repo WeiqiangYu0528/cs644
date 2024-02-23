@@ -13,6 +13,4 @@ class HierarchyVisitor: public Visitor {
         void visit(std::shared_ptr<InterfaceDecl> n) override;
         void visit(std::shared_ptr<Method> n) override;
         bool isError() const;
-        std::string currentPackageName;
-        std::string classModifer;
 };

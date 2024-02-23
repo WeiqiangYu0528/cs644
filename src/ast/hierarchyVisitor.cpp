@@ -12,11 +12,6 @@ bool HierarchyVisitor::isError() const {
 
 
 void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
-    if (n && n->package && n->package->id) {
-        this->currentPackageName = n->package->id->name;
-    } else {
-        this->currentPackageName = ""; // Or some default handling if the package is not specified
-    }
     n->classOrInterfaceDecl->accept(this);
 }
 
@@ -206,13 +201,13 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
 {
     const std::string key {n->methodName->name};
 
-    if (currentPackageName == "java.lang") {
+    if (scope->current->getPackage() == "java.lang") {
         return;
     }
 
     for (const auto& entry : scope->onDemandImported) {
         const auto& symbolTableHere = entry.second;
-        if (symbolTableHere->getMethod(key) && entry.first != currentPackageName) {
+        if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
             for (const auto& node : symbolTableHere->mtable[key]) {
                 std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
                 auto methodNode = std::dynamic_pointer_cast<Method>(node);
