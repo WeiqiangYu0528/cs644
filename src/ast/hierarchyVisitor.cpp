@@ -201,7 +201,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
 {
     const std::string key {n->methodName->name};
 
-    if (scope->current->getPackage() == "java.lang") {
+    if (scope->current->getPackage() == "java.lang" || scope->current->getPackage() == "java.util" || scope->current->getPackage() == "java.io") {
         return;
     }
 
