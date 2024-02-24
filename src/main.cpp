@@ -99,15 +99,24 @@ int main(int argc, char* argv[])
         }
     }
 
-    //partition class and interface declarations into two vectors
+    //partition class and interface declarations into two vectors, and populate each scope's supers as well
     std::vector<std::shared_ptr<ClassDecl>> classDecls;
     std::vector<std::shared_ptr<InterfaceDecl>> interfaceDecls;
     for (auto program : asts) {
         if (!program) continue;
         if (program->classOrInterfaceDecl) {
+            //Add extended list to supers
+            for (std::shared_ptr<IdentifierType> idType : program->classOrInterfaceDecl->extended)
+                program->scope->supers.push_back(program->scope->getNameInScope(idType->id->name, idType->simple));
+            //Check if this program holds a ClassDecl
             std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
-            if (classDecl != nullptr) classDecls.push_back(classDecl);
-            else {
+            if (classDecl != nullptr) {
+                //if yes, add to classDecls but also add implemented list to supers
+                classDecls.push_back(classDecl);
+                for (std::shared_ptr<IdentifierType> idType : classDecl->implemented)
+                    program->scope->supers.push_back(program->scope->getNameInScope(idType->id->name, idType->simple));
+            } else {
+                //otherwise, ensure that program holds an InterfaceDecl, and add to interfaceDecls
                 std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(program->classOrInterfaceDecl);
                 assert(interfaceDecl != nullptr);
                 interfaceDecls.push_back(interfaceDecl);
