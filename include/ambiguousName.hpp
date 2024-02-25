@@ -16,7 +16,9 @@ class AmbiguousName {
         AmbiguousNamesType type;
         std::shared_ptr<SymbolTable> symbolTable;
         std::shared_ptr<PackageTrieNode> trie;
+        std::shared_ptr<Type> typeNode;
         AmbiguousName();
         AmbiguousName(AmbiguousNamesType t, std::shared_ptr<SymbolTable> s);
         AmbiguousName(std::shared_ptr<PackageTrieNode> p);
+        DataType getDataType() const;
 };

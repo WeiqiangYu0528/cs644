@@ -8,3 +8,7 @@ AmbiguousName::AmbiguousName(AmbiguousNamesType t, std::shared_ptr<SymbolTable> 
 
 AmbiguousName::AmbiguousName(std::shared_ptr<PackageTrieNode> p) : type(AmbiguousNamesType::PACKAGE), symbolTable(nullptr), trie(p) {
 }
+
+DataType AmbiguousName::getDataType() const {
+    return typeNode->type;
+}
