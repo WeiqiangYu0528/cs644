@@ -15,6 +15,8 @@ class Scope : public std::enable_shared_from_this<Scope>{
         std::unordered_map<std::string, std::shared_ptr<SymbolTable>> onDemandImported;
         std::unordered_map<std::string, std::shared_ptr<SymbolTable>> singleImported; 
 
+        std::vector<std::shared_ptr<SymbolTable>> supers; //includes superclasses and interfaces
+
         Scope(std::shared_ptr<SymbolTable> c, std::shared_ptr<PackageTrie> p);
         std::shared_ptr<SymbolTable> getNameInScope(const std::string& name, bool simple) const;
         std::shared_ptr<SymbolTable> getQualifiedNameInScope(const std::string& name) const;
