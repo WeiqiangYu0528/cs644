@@ -215,7 +215,6 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
             error = true;
         }
     }
-
     // TODO A class that has inherits any abstract methods must abstract
     // for (auto& entry : scope->singleImported) {
     //     auto classOrInterfaceDecl = entry.second->getClassOrInterfaceDecl();
@@ -223,6 +222,43 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     //     InterfaceDecl* interfacePtr = dynamic_cast<InterfaceDecl *>(classOrInterfaceDecl.get());
     //     if (interfacePtr)
     // }
+
+    for (const auto& symbolTable : scope->supers) {
+        if (symbolTable != nullptr && symbolTable->getMethod(key)) {
+            for (const auto& node : symbolTable->mtable[key]) {
+                auto methodNode = std::dynamic_pointer_cast<Method>(node);
+                if (!methodNode) continue; // Ensure methodNode is valid before accessing its members
+                bool isStatic = false;
+                for (auto modifier : methodNode->modifiers) {
+                    // Rule 11
+                    if (modifier == Modifiers::STATIC) {
+                        isStatic = true;
+                        bool flag = false;
+                        for (auto methodModifier : n->modifiers) {
+                            if (methodModifier == Modifiers::STATIC) {
+                                flag = true;
+                            }
+                            if (!flag) {
+                                std::cerr << "Error: Static method in super class is not static in sub class" << std::endl;
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Rule 12
+                if (!isStatic) {
+                    for (auto methodModifier : n->modifiers) {
+                        if (methodModifier == Modifiers::STATIC) {
+                            std::cerr << "Error: Non-Static method in super class is static in sub class" << std::endl;
+                            error = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     auto processContainer = [&](const auto& container) {
         for (const auto& entry : container) {
@@ -237,23 +273,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                         error = true;
                         break;
                     }
-                    bool isStatic = false;
                     for (auto modifier : methodNode->modifiers) {
-                        // Rule 11
-                        if (modifier == Modifiers::STATIC) {
-                            isStatic = true;
-                            bool flag = false;
-                            for (auto methodModifier : n->modifiers) {
-                                if (methodModifier == Modifiers::STATIC) {
-                                    flag = true;
-                                }
-                                if (!flag) {
-                                    std::cerr << "Error: Static method in super class is not static in sub class" << std::endl;
-                                    error = true;
-                                    break;
-                                }
-                            }
-                        }
                         // Rule 15
                         if (modifier == Modifiers::FINAL) {
                             std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
@@ -268,16 +288,6 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                                     error = true;
                                     break;
                                 }
-                            }
-                        }
-                    }
-                    // Rule 12
-                    if (!isStatic) {
-                        for (auto methodModifier : n->modifiers) {
-                            if (methodModifier == Modifiers::STATIC) {
-                                std::cerr << "Error: Non-Static method in super class is static in sub class" << std::endl;
-                                error = true;
-                                break;
                             }
                         }
                     }
