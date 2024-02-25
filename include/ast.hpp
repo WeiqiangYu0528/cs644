@@ -43,6 +43,7 @@ class MemberDecl : public AstNode {
         MemberDecl(MemberType mt, std::vector<Modifiers> m);
         virtual ~MemberDecl() = default;
         virtual void accept(Visitor* v) = 0;
+        virtual void setModifiers(std::vector<Modifiers>& m) = 0;
 };
 
 class Identifier : public AstNode, public std::enable_shared_from_this<Identifier> {
@@ -501,26 +502,29 @@ class FormalParameter : public AstNode, public std::enable_shared_from_this<Form
 
 class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
-        std::shared_ptr<Type> returnType;
+        bool isStatic;
+        std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> fieldName;
         std::shared_ptr<Exp> initializer;
 
-        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, 
+        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, 
         std::shared_ptr<Exp> i);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
         bool isStatic;
-        std::shared_ptr<Type> returnType;
+        std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
         std::shared_ptr<BlockStatement> block;
 
-        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
@@ -532,6 +536,7 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {

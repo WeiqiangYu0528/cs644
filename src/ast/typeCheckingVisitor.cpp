@@ -1,6 +1,7 @@
 #include "typeCheckingVisitor.hpp"
 
 TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false) {
+    // for testing only
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
 }
 
@@ -11,8 +12,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FormalParameter> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
     const std::string key {n->id->name};
-    if (n->exp) n->exp->accept(this);
     scope->current->putVar(key, n);
+    if (n->exp) n->exp->accept(this);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
@@ -34,7 +35,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Field> n) {
         n->initializer->accept(this);
         initialized = false;
     }
-    fieldDecls.insert(n->fieldName->name);
+    scope->current->setFieldDecl(n->fieldName->name);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
@@ -70,11 +71,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
-    if (initialized && !fieldDecls.contains(key)) {
-        std::cerr << "Error: The initializer of a non-static field must not use (i.e., read) by simple name (i.e., without an explicit this) itself or a non-static field declared later in the same class" << std::endl;
-        error = true;
-    }
-    else if (!initialized & n->simple && !scope->isNameValidInScope(key)) {
+    if (scope->reclassifyAmbiguousName(key, n->simple, initialized).type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
         error = true;
     }
@@ -88,7 +85,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
       if (n->primary != nullptr) {
-        std::cout << "primary" << std::endl;
         n->primary->accept(this);
     }
     if (n->methodName != nullptr) {
@@ -100,30 +96,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             }
         } 
         else {
-            // Find the last index of '.'
-            size_t lastIndex = (identifier).find_last_of(".");
-            std::string qualifiedName {identifier.begin(), identifier.begin() + lastIndex};
-            if (initialized && scope->current->getField(qualifiedName) != nullptr && !fieldDecls.contains(qualifiedName)) {
-                std::cerr << "Error: The initializer of a non-static field must not use (i.e., read) by simple name (i.e., without an explicit this) itself or a non-static field declared later in the same class" << std::endl;
+            if (scope->reclassifyAmbiguousName(identifier, false, initialized).type == AmbiguousNamesType::ERROR) {
+                std::cerr << "Error: Invalid non-static method name " << identifier << std::endl;
                 error = true;
             }
-            else if (!initialized && !scope->isNameValidInScope(qualifiedName)) {
-                std::string methodName {identifier.begin() + lastIndex + 1, identifier.end()};
-                if (auto m = scope->getNameInScope(qualifiedName, false)) {
-                    auto methods = m->getMethod(methodName);
-                    if (std::find_if(methods.begin(), methods.end(), [](auto method) {
-                        return method->isStatic;
-                        }) == methods.end()) {
-                        std::cerr << "Error: Invalid static method name" << std::endl;
-                        error = true;
-                    }
-                } else {
-                    error = true;
-                    std::cerr << "Error: Invalid method name" << std::endl;
-                }
-           }
         }
     }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
+    // if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
+    //     const std::string key {left->id->name};
+    // }
+    // n->left->accept(this);
+    // n->right->accept(this);
+    Visitor::visit(n);
 }
 
 bool TypeCheckingVisitor::isError() const {

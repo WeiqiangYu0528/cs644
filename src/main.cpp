@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
                 break;
             }
             program->scope = std::make_shared<Scope>(symbolTable, pkgTrie);
+            symbolTable->setScope(program->scope);
             asts.push_back(program);
         }
     }

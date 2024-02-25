@@ -9,8 +9,6 @@ class TypeCheckingVisitor : public Visitor {
         bool error;
         // used to determine a scope for field initialization
         bool initialized;
-        // field table used to verify the forward reference of fields, Section 8.3.2.3 
-        std::unordered_set<std::string> fieldDecls;
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
         void visit(std::shared_ptr<FormalParameter> n) override;
@@ -25,6 +23,7 @@ class TypeCheckingVisitor : public Visitor {
         void visit(std::shared_ptr<IdentifierExp> n) override;
         void visit(std::shared_ptr<FieldAccessExp> n) override;
         void visit(std::shared_ptr<MethodInvocation> n) override;
+        void visit(std::shared_ptr<Assignment> n) override;
         bool isError() const;
 
         std::string currentPackageName;
