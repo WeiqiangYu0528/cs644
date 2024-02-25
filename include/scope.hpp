@@ -6,7 +6,7 @@
 #include "ambiguousName.hpp"
 #include "symbolTable.hpp"
 
-class Scope : public std::enable_shared_from_this<Scope>{
+class Scope {
     public:
         std::shared_ptr<SymbolTable> current;
         std::shared_ptr<PackageTrie> pkgTrie;

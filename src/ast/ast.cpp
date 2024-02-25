@@ -365,12 +365,6 @@ MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt)
 
 Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
 : MemberDecl(mt, m), isStatic(false), type(t), fieldName(fn), initializer(i) {
-    for (Modifiers modifier : m) {
-        if (modifier == Modifiers::STATIC) {
-            isStatic = true;
-            break;
-        }
-    }
 }
 
 void Field::accept(Visitor* v) {
