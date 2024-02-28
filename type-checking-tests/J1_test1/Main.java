@@ -30,11 +30,17 @@ public class Main {
 
         A[] aaa;
         A[] bbb;
-        int[] ccc;
+        char[] ccc;
         aaa = bbb;
         aaa = ccc;  // assignment between different array types
         aaa = a;    // assignment between array and basic type
         aaa = aa;   // assignment between array and object type
+        String aaaa;
+        String bbbb;
+        aaaa = bbbb;
+        aaaa = "123";
+        aaaa = 123;   // assignment between string and non-string type
+        aaaa.chars = ccc;
         return 0;
     }
 }

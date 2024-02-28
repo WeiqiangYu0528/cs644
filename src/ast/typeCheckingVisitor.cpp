@@ -136,8 +136,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     DataType left_array_type, right_array_type;
 
     auto left_type = GetExpType(n->left);
-    if (left_type == ExpType::Object)
+    if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
+        if (left_obj_name == "String")
+            left_type = ExpType::String;
+    }
     else if (left_type == ExpType::Array) {
         left_array_type = currentArrayDataType;
         if (left_array_type == DataType::OBJECT)
@@ -145,8 +148,12 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     }
         
     auto right_type = GetExpType(n->right);
-    if (right_type == ExpType::Object)
+    if (right_type == ExpType::Object) {
         right_obj_name = currentObjectTypeName;
+        if (right_obj_name == "String")
+            right_type = ExpType::String;        
+    }
+
     else if (right_type == ExpType::Array) {
         right_array_type = currentArrayDataType;
         if (right_array_type == DataType::OBJECT)
@@ -172,6 +179,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
         error = true;
         std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
+    }
+    else if((left_type == ExpType::String && right_type != ExpType::String) || (left_type != ExpType::String && right_type == ExpType::String)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between string and non-string type" << std::endl;        
     }
     else if (!assginmentRules.contains({left_type, right_type})) {
         error = true;
