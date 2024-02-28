@@ -7,6 +7,7 @@
 #include "symbolTable.hpp"
 
 class Scope {
+    AmbiguousName createAmbiguousName(std::shared_ptr<Type> typeNode, std::shared_ptr<SymbolTable> st);
     public:
         std::shared_ptr<SymbolTable> current;
         std::shared_ptr<PackageTrie> pkgTrie;

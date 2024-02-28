@@ -82,6 +82,7 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
                     else if (ambiguousName.getDataType() == DataType::ARRAY) {
                         if (segment == "length") {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
+                            ambiguousName.typeNode = std::make_shared<IntType>();
                         }
                         else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
@@ -133,62 +134,35 @@ AmbiguousName Scope::reclassifyAmbiguousName(const std::string& name, bool simpl
 }
 
 AmbiguousName Scope::reclassifyAmbiguousNameByLocal(const std::string& name) {
-    AmbiguousName ambiguousNames(AmbiguousNamesType::EXPRESSION, nullptr);
     auto var = current->getVar(name);
-    if (auto fp = std::dynamic_pointer_cast<FormalParameter>(var)) {
-        if (auto fpType = std::dynamic_pointer_cast<IdentifierType>(fp->type)) {
-            ambiguousNames.typeNode = fpType;
-            ambiguousNames.symbolTable = getUnqualifiedNameInScope(fpType->id->name);
-            if (ambiguousNames.symbolTable == nullptr) ambiguousNames.type = AmbiguousNamesType::ERROR;
-        }
-        else if (auto fpType = std::dynamic_pointer_cast<ArrayType>(fp->type)) {
-            ambiguousNames.typeNode = fpType;
-        }
-        // todo :: array logic here
-    }
-    else if (auto local = std::dynamic_pointer_cast<LocalVariableDeclarationStatement>(var)) {
-        if (auto localType = std::dynamic_pointer_cast<IdentifierType>(local->type)) {
-            ambiguousNames.typeNode = localType;
-            ambiguousNames.symbolTable = getUnqualifiedNameInScope(localType->id->name);
-            if (ambiguousNames.symbolTable == nullptr) ambiguousNames.type = AmbiguousNamesType::ERROR;
-        }
-        else if (auto localType = std::dynamic_pointer_cast<ArrayType>(local->type)) {
-            ambiguousNames.typeNode = localType;
-        }
-        // todo :: array logic here
-    }
-    return ambiguousNames;
+    AmbiguousName ambiguousName;
+    if (auto fp = std::dynamic_pointer_cast<FormalParameter>(var)) ambiguousName = createAmbiguousName(fp->type, current);
+    else if (auto local = std::dynamic_pointer_cast<LocalVariableDeclarationStatement>(var)) ambiguousName = createAmbiguousName(local->type, current);
+    return ambiguousName;
 }
 
 AmbiguousName Scope::reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> st, bool staticField) {
-    AmbiguousName ambiguousNames(AmbiguousNamesType::EXPRESSION, nullptr);
     auto field = st->getField(name);
-    if (auto fieldType = std::dynamic_pointer_cast<IdentifierType>(field->type)) {
-        ambiguousNames.typeNode = fieldType;
-        ambiguousNames.symbolTable = st->getScope()->getUnqualifiedNameInScope(fieldType->id->name);
-        if (ambiguousNames.symbolTable == nullptr) ambiguousNames.type = AmbiguousNamesType::ERROR;
-    }
-    else if (auto fieldType = std::dynamic_pointer_cast<ArrayType>(field->type)) {
-            ambiguousNames.typeNode = fieldType;
-    }
-    if (staticField && !field->isStatic) ambiguousNames.type = AmbiguousNamesType::ERROR;
-    // todo :: array logic here
-    return ambiguousNames;
+    AmbiguousName ambiguousName = createAmbiguousName(field->type, st);
+    if (staticField && !field->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
+    return ambiguousName;
 }
 
 AmbiguousName Scope::reclassifyAmbiguousNameByMethod(const std::string& name, std::shared_ptr<SymbolTable> st, bool staticMethod) {
-    AmbiguousName ambiguousNames(AmbiguousNamesType::EXPRESSION, nullptr);
     // todo: select the closest method, currently just selects the first one
     auto method = st->getMethod(name)[0];
-    if (auto methodType = std::dynamic_pointer_cast<IdentifierType>(method->type)) {
-        ambiguousNames.typeNode = methodType;
-        ambiguousNames.symbolTable = st->getScope()->getUnqualifiedNameInScope(methodType->id->name);
-        if (ambiguousNames.symbolTable == nullptr) ambiguousNames.type = AmbiguousNamesType::ERROR;
+    AmbiguousName ambiguousName = createAmbiguousName(method->type, st);
+    if (staticMethod && !method->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
+    return ambiguousName;
+}
+
+AmbiguousName Scope::createAmbiguousName(std::shared_ptr<Type> typeNode, std::shared_ptr<SymbolTable> st) {
+    AmbiguousName ambiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
+    ambiguousName.typeNode = typeNode;
+    if (auto type = std::dynamic_pointer_cast<ArrayType>(typeNode)) typeNode = type->dataType;
+    if (auto type = std::dynamic_pointer_cast<IdentifierType>(typeNode)) {
+        ambiguousName.symbolTable = st->getScope()->getUnqualifiedNameInScope(type->id->name);
+        if (ambiguousName.symbolTable == nullptr) ambiguousName.type = AmbiguousNamesType::ERROR;
     }
-    else if (auto methodType = std::dynamic_pointer_cast<ArrayType>(method->type)) {
-        ambiguousNames.typeNode = methodType;
-    }
-    if (staticMethod && !method->isStatic) ambiguousNames.type = AmbiguousNamesType::ERROR;
-    // todo :: array logic here
-    return ambiguousNames;
+    return ambiguousName;
 }
