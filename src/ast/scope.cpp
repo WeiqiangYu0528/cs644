@@ -161,7 +161,7 @@ AmbiguousName Scope::createAmbiguousName(std::shared_ptr<Type> typeNode, std::sh
     ambiguousName.typeNode = typeNode;
     if (auto type = std::dynamic_pointer_cast<ArrayType>(typeNode)) typeNode = type->dataType;
     if (auto type = std::dynamic_pointer_cast<IdentifierType>(typeNode)) {
-        ambiguousName.symbolTable = st->getScope()->getUnqualifiedNameInScope(type->id->name);
+        ambiguousName.symbolTable = st->getScope()->getNameInScope(type->id->name, type->simple);
         if (ambiguousName.symbolTable == nullptr) ambiguousName.type = AmbiguousNamesType::ERROR;
     }
     return ambiguousName;
