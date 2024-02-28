@@ -1,21 +1,23 @@
 #pragma once
 #include <memory>
+#include <set>
 #include <map>
 #include "scope.hpp"
 #include "visitor.hpp"
 
 enum class ExpType {
     Integer = 0,
-    Char,
     Short,
+    Char,
     Boolean,
     Object,
+    Array,
+    String,
     Undefined = -1,
-
 };
 
 enum class ExpRuleType {
-    Arithmetic,
+    ArithmeticOrBitwise,
     Comparison,
     Undefined = -1
 };
@@ -29,28 +31,44 @@ class TypeCheckingVisitor : public Visitor {
 
         ExpType currentExpType {ExpType::Undefined};
         std::string currentObjectTypeName;
+        DataType currentArrayDataType;
 
         std::map<std::tuple<ExpRuleType, ExpType, ExpType>, ExpType> typeOperationRules = 
         {   // int + int
-            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Integer}, ExpType::Integer},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Integer}, ExpType::Integer},
             // int + char
-            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Char}, ExpType::Integer},
-            {{ExpRuleType::Arithmetic, ExpType::Char, ExpType::Integer}, ExpType::Integer},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Char}, ExpType::Integer},
             // int + short
-            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Short}, ExpType::Integer},            
-            {{ExpRuleType::Arithmetic, ExpType::Short, ExpType::Integer}, ExpType::Integer},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Short}, ExpType::Integer},            
+            // short + short           
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Short}, ExpType::Short},
+            // short + char
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Short},
+            // char + char
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
+                        
             // int < int
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Integer}, ExpType::Boolean},
             // int < char
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Char}, ExpType::Boolean},
-            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Integer}, ExpType::Boolean},            
             // int < short
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},            
-            {{ExpRuleType::Comparison, ExpType::Short, ExpType::Integer}, ExpType::Boolean},
-            
-
+            // short < short           
+            {{ExpRuleType::Comparison, ExpType::Short, ExpType::Short}, ExpType::Boolean},
+            // short < char
+            {{ExpRuleType::Comparison, ExpType::Short, ExpType::Char}, ExpType::Boolean},
+            // char < char
+            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},            
         };
 
+        std::set<std::pair<ExpType, ExpType>> assginmentRules = {
+            {ExpType::Integer, ExpType::Integer},
+            {ExpType::Integer, ExpType::Short},
+            {ExpType::Integer, ExpType::Char},
+            {ExpType::Short, ExpType::Short},
+            {ExpType::Short, ExpType::Char},            
+            {ExpType::Boolean, ExpType::Boolean},        
+        };
 
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
@@ -84,22 +102,37 @@ class TypeCheckingVisitor : public Visitor {
             }
             if (typeOperationRules.contains({exp, lhs_type, rhs_type}))
                 return typeOperationRules[{exp, lhs_type, rhs_type}];
+            else if(typeOperationRules.contains({exp, rhs_type, lhs_type}))
+                return typeOperationRules[{exp, rhs_type, lhs_type}];                
             else
                 return ExpType::Undefined;
         }
-
-        void visit(std::shared_ptr<IdentifierType>) override;
         
         void visit(std::shared_ptr<IntegerLiteralExp> n) override;
         void visit(std::shared_ptr<CharLiteralExp> n) override;
+        void visit(std::shared_ptr<BoolLiteralExp> n) override;        
+        void visit(std::shared_ptr<StringLiteralExp> n) override;
 
         void visit(std::shared_ptr<PlusExp> n) override;
         void visit(std::shared_ptr<MinusExp> n) override;        
         void visit(std::shared_ptr<TimesExp> n) override;
         void visit(std::shared_ptr<DivideExp> n) override;
-        // void visit(std::shared_ptr<StringLiteralExp> n) override;
+        void visit(std::shared_ptr<ModuloExp> n) override;
 
+        void visit(std::shared_ptr<NotExp> n) override;
+        void visit(std::shared_ptr<NegExp> n) override;
         void visit(std::shared_ptr<LessExp> n) override;
         void visit(std::shared_ptr<GreaterExp> n) override; 
-        
+        void visit(std::shared_ptr<LessEqualExp> n) override; 
+        void visit(std::shared_ptr<GreaterEqualExp> n) override; 
+        void visit(std::shared_ptr<EqualExp> n) override; 
+        void visit(std::shared_ptr<NotEqualExp> n) override; 
+
+        void visit(std::shared_ptr<AndExp> n) override;
+        void visit(std::shared_ptr<XorExp> n) override;
+        void visit(std::shared_ptr<OrExp> n) override;      
+
+        void visit(std::shared_ptr<ConditionalAndExp> n) override;
+        void visit(std::shared_ptr<ConditionalOrExp> n) override;        
+    
 };

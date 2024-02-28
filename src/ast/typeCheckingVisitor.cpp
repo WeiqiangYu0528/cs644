@@ -78,28 +78,28 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     }
     Visitor::visit(n);
 
-    switch (ambiguousName.typeNode->type)
-    {
-    case DataType::INT:
+    if (ambiguousName.typeNode->type == DataType::INT)
         currentExpType = ExpType::Integer;
-        break;        
-    case DataType::CHAR:
+    else if (ambiguousName.typeNode->type == DataType::CHAR)        
         currentExpType = ExpType::Char;
-        break;  
-    case DataType::SHORT:
+    else if (ambiguousName.typeNode->type == DataType::SHORT)
         currentExpType = ExpType::Short;
-        break; 
-    case DataType::BOOLEAN:
+    else if (ambiguousName.typeNode->type == DataType::BOOLEAN)        
         currentExpType = ExpType::Boolean;
-        break;           
-    case DataType::OBJECT:
+    else if (ambiguousName.typeNode->type == DataType::OBJECT) {
         currentExpType = ExpType::Object;    
-        ambiguousName.typeNode->accept(this); 
-        break;        
-    default:
-        currentExpType = ExpType::Undefined;
-        break;
+        currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(ambiguousName.typeNode)->id->name;
     }
+    else if (ambiguousName.typeNode->type == DataType::ARRAY) {
+        currentExpType = ExpType::Array;                
+        auto dataTypeNode = std::dynamic_pointer_cast<ArrayType>(ambiguousName.typeNode)->dataType;
+        currentArrayDataType = dataTypeNode->type;
+        if (currentArrayDataType == DataType::OBJECT) {
+            currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(dataTypeNode)->id->name;
+        }                
+    }
+    else
+        currentExpType = ExpType::Undefined;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
@@ -132,34 +132,61 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     // if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
     //     const std::string key {left->id->name};
     // }
-    std::string left_obj_name {""}, right_obj_name {""};
-    
+    std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
+    DataType left_array_type, right_array_type;
+
     auto left_type = GetExpType(n->left);
     if (left_type == ExpType::Object)
         left_obj_name = currentObjectTypeName;
+    else if (left_type == ExpType::Array) {
+        left_array_type = currentArrayDataType;
+        if (left_array_type == DataType::OBJECT)
+            left_obj_name = currentObjectTypeName;
+    }
+        
     auto right_type = GetExpType(n->right);
     if (right_type == ExpType::Object)
         right_obj_name = currentObjectTypeName;
-    
+    else if (right_type == ExpType::Array) {
+        right_array_type = currentArrayDataType;
+        if (right_array_type == DataType::OBJECT)
+            right_obj_name = currentObjectTypeName;
+    }
+
     if(left_type == ExpType::Object && right_type == ExpType::Object) {
         if (left_obj_name != right_obj_name) {
             error = true;
-            std::cerr << "Error: Invalid Assignment Type" << std::endl;
+            std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
         }
     }
+    else if ((left_type != ExpType::Object && right_type == ExpType::Object) || (left_type == ExpType::Object && right_type != ExpType::Object)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between object and non-object type" << std::endl;
+    }
+    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
+        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
+            error = true;
+            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
+        }
+    } 
+    else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
+    }
+    else if (!assginmentRules.contains({left_type, right_type})) {
+        error = true;
+        if (left_type == ExpType::Boolean || right_type == ExpType::Boolean)
+            std::cerr << "Error: Invalid Assignment Type: assignment between int/char/short and boolean" << std::endl;
+        else
+            std::cerr << "Error: Invalid Assignment Type: narrowing conversion" << std::endl;
+    }
     
-
-    std::cout << "debug: Assignment: " << (int)left_type << " " << (int)right_type << std::endl;
-    std::cout << "debug: Assignment: " << left_obj_name << " = " << right_obj_name << std::endl;
 }
 
 bool TypeCheckingVisitor::isError() const {
     return error;
 }
 
-void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierType> n) {
-    currentObjectTypeName = n->id->name;
-}
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
     currentExpType = ExpType::Integer;
@@ -169,8 +196,16 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CharLiteralExp> n) {
     currentExpType = ExpType::Char;
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
+    currentExpType = ExpType::Boolean;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
+    currentExpType = ExpType::String;
+}
+
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Arithmetic, GetExpType(n->exp1), GetExpType(n->exp2));
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid PlusExp Type " << std::endl;
         error = true;
@@ -178,7 +213,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MinusExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Arithmetic, GetExpType(n->exp1), GetExpType(n->exp2));
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid MinusExp Type " << std::endl;
         error = true;
@@ -186,7 +221,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MinusExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<TimesExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Arithmetic, GetExpType(n->exp1), GetExpType(n->exp2));
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid TimesExp Type " << std::endl;
         error = true;
@@ -194,13 +229,37 @@ void TypeCheckingVisitor::visit(std::shared_ptr<TimesExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<DivideExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Arithmetic, GetExpType(n->exp1), GetExpType(n->exp2));
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid DivideExp Type " << std::endl;
         error = true;
     }
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<ModuloExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid ModuloExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<NotExp> n) {
+    auto exp_type = GetExpType(n->exp);
+    if (exp_type != ExpType::Boolean) {
+        std::cerr << "Error: NotExp Type " << std::endl;
+        error = true;
+    }
+}
+
+
+void TypeCheckingVisitor::visit(std::shared_ptr<NegExp> n) {
+    auto exp_type = GetExpType(n->exp);
+    if(exp_type != ExpType::Char && exp_type != ExpType::Integer && exp_type != ExpType::Short) {
+        std::cerr << "Error: Invalid NegExp Type " << std::endl;
+        error = true;
+    }
+}
 
 void TypeCheckingVisitor::visit(std::shared_ptr<LessExp> n) {
     currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
@@ -210,7 +269,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<LessExp> n) {
     }
 }
 
-
 void TypeCheckingVisitor::visit(std::shared_ptr<GreaterExp> n) {
     currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
@@ -219,6 +277,80 @@ void TypeCheckingVisitor::visit(std::shared_ptr<GreaterExp> n) {
     }
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<LessEqualExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid LessEqualExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid GreaterEqualExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<EqualExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid EqualExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid NotEqualExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<AndExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid AndExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<XorExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid XorExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<OrExp> n) {
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
+    if(currentExpType == ExpType::Undefined) {
+        std::cerr << "Error: Invalid OrExp Type " << std::endl;
+        error = true;
+    }
+}
+
+
+void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
+    auto left_type = GetExpType(n->exp1);
+    auto right_type = GetExpType(n->exp2);
+    if (left_type != ExpType::Boolean || right_type != ExpType::Boolean) {
+        std::cerr << "Error: Invalid ConditionalAndExp Type " << std::endl;
+        error = true;
+    }
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
+    auto left_type = GetExpType(n->exp1);
+    auto right_type = GetExpType(n->exp2);
+    if (left_type != ExpType::Boolean || right_type != ExpType::Boolean) {
+        std::cerr << "Error: Invalid ConditionalOrExp Type " << std::endl;
+        error = true;
+    }
+}
 
 
 

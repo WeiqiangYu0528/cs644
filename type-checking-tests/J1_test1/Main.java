@@ -1,10 +1,40 @@
 import foo.*;
+import foo.test.A;
 public class Main {
     public Main() {}
     public static int test() {
-        foo.test.A a = new foo.test.A();
-        foo.test.A b = new foo.test.A();
-        b = a;
+        int a;
+        int b;
+        a = b;
+        short c;
+        a = c;
+        c = a;  // narrowing conversion
+        char d;
+        c = c;
+        c = d;
+        d = a; // narrowing conversion      
+        
+        A aa;
+        A bb;
+        aa = bb;
+        aa.a = 1;
+        aa.bar = aa; // assignment between different object types
+        aa.bar = 1; // assignment between object and basic type
+        aa.bar = bb.bar;
+
+        boolean bool;
+        bool = true;
+        bool = 1;   // assignment between int/char/short and boolean
+        bool = a;   // assignment between int/char/short and boolean
+        a = bool;   // assignment between int/char/short and boolean
+
+        A[] aaa;
+        A[] bbb;
+        int[] ccc;
+        aaa = bbb;
+        aaa = ccc;  // assignment between different array types
+        aaa = a;    // assignment between array and basic type
+        aaa = aa;   // assignment between array and object type
         return 0;
     }
 }
