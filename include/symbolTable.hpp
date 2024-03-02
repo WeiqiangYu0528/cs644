@@ -2,7 +2,10 @@
 #include <memory>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include "ast.hpp"
+class Scope;
+
 class SymbolTable {
     // program AST
     std::shared_ptr<Program> ast;
@@ -12,6 +15,8 @@ class SymbolTable {
     std::shared_ptr<ClassOrInterfaceDecl> cdecl;
     // field table
     std::unordered_map<std::string, std::shared_ptr<Field>> ftable;
+    // field table used to verify the forward reference of fields, Section 8.3.2.3 
+    std::unordered_set<std::string> fieldDecls;
     // declared method table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> mtable;
     // constructor table
@@ -19,6 +24,7 @@ class SymbolTable {
     // local variable table
     std::unordered_map<std::string, std::shared_ptr<AstNode>> ltable;
     std::stack<std::string> stack_t;
+    std::shared_ptr<Scope> scope;
 
     public:
         void putField(const std::string& key, const std::shared_ptr<Field> value);
@@ -35,6 +41,10 @@ class SymbolTable {
         std::string getPackage() const;
         void setClassOrInterfaceDecl(std::shared_ptr<ClassOrInterfaceDecl> c);
         std::shared_ptr<ClassOrInterfaceDecl> getClassOrInterfaceDecl() const;
+        void setScope(std::shared_ptr<Scope> s);
+        std::shared_ptr<Scope> getScope() const;
+        void setFieldDecl(const std::string& key);
+        bool isFieldDeclared(const std::string& key) const;
         void beginScope();
         void endScope();
         

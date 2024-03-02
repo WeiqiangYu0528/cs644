@@ -1,4 +1,5 @@
 #include "symbolTable.hpp"
+#include "scope.hpp"
 
 void SymbolTable::putField(const std::string& key, const std::shared_ptr<Field> value) {
     ftable[key] = value;
@@ -6,6 +7,14 @@ void SymbolTable::putField(const std::string& key, const std::shared_ptr<Field> 
 
 std::shared_ptr<Field> SymbolTable::getField(const std::string& key) const {
     return ftable.contains(key) ? ftable.at(key) : nullptr;
+}
+
+void SymbolTable::setFieldDecl(const std::string& key) {
+    fieldDecls.insert(key);
+}
+
+bool SymbolTable::isFieldDeclared(const std::string& key) const {
+    return fieldDecls.contains(key);
 }
 
 void SymbolTable::putMethod(const std::string& key, const std::shared_ptr<Method> value) {
@@ -74,4 +83,12 @@ std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTab
 }
 std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getIMTable() {
     return imtable;
+}
+
+void SymbolTable::setScope(std::shared_ptr<Scope> s) {
+    scope = s;
+}
+
+std::shared_ptr<Scope> SymbolTable::getScope() const {
+    return scope;
 }
