@@ -228,7 +228,11 @@ int main(int argc, char* argv[])
             for (std::string s : methodNames) {
                 std::unordered_map<std::pair<std::vector<DataType>, std::vector<std::string>>, 
                 std::pair<DataType, std::string>, PairVectorHash> mp;
-                for (std::shared_ptr<Method> methodPtr : ast->scope->current->getMTable()[s]) {
+
+                std::vector<std::shared_ptr<Method>> methodPtrs;
+                for (auto methodPtr : ast->scope->current->getMTable()[s]) methodPtrs.push_back(methodPtr);
+                for (auto methodPtr : ast->scope->current->getIMTable()[s]) methodPtrs.push_back(methodPtr);
+                for (auto methodPtr : methodPtrs) {
                     std::pair<DataType, std::string> returnTypePair;
                     std::string returnObject = "";
                     DataType d = methodPtr->returnType->type;
@@ -272,78 +276,17 @@ int main(int argc, char* argv[])
                     std::pair<std::vector<DataType>, std::vector<std::string>> key = std::make_pair(paramTypes, objectNames);
                     if (mp.find(key) != mp.end()) { //mp has the paramTypes and objectNames
                         if (mp[key] != returnTypePair) {
+                            std::cerr << "Error: Inherited/Declared method signature repeated with different return type" << std::endl;
+                            std::cerr << "Error: Hierarchy Checking failed" << std::endl;
                             error = true;
                             break;
                         }
-                    } else {
-                        mp[key] = returnTypePair;
-                    }
+                    } else mp[key] = returnTypePair;
+                    
                 }
-
                 if (error == true) break;
-
-                for (std::shared_ptr<Method> methodPtr : ast->scope->current->getIMTable()[s]) {
-                    std::pair<DataType, std::string> returnTypePair;
-                    std::string returnObject = "";
-
-                    DataType d = methodPtr->returnType->type;
-                    if (d == DataType::ARRAY) {
-                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->returnType);
-                        assert(arrayType != nullptr);
-                        d = arrayDataTypes[arrayType->dataType->type];
-                        if (d == DataType::OBJECTARRAY) {
-                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                            assert(idType != nullptr);
-                            returnObject = idType->id->name;
-                        }
-                    } else if (d == DataType::OBJECT) {
-                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->returnType);
-                        assert(idType != nullptr);
-                        returnObject = idType->id->name;
-                    }
-                    //create the return pair
-                    returnTypePair = std::make_pair(d, returnObject);
-
-                    //next, create the vector of parameter types
-                    std::vector<DataType> paramTypes;
-                    std::vector<std::string> objectNames;
-                    for (auto fp : methodPtr->formalParameters) {
-                        d = fp->type->type;
-                        if (d == DataType::ARRAY) {
-                            std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
-                            assert(arrayType != nullptr);
-                            d = arrayDataTypes[arrayType->dataType->type];  
-                            if (d == DataType::OBJECTARRAY) {
-                                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                                assert(idType != nullptr);
-                                objectNames.push_back(idType->id->name);
-                            }
-                        } else if (d == DataType::OBJECT) {
-                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
-                            assert(idType != nullptr);
-                            objectNames.push_back(idType->id->name);
-                        }
-                        paramTypes.push_back(d);
-                    }
-
-                    std::pair<std::vector<DataType>, std::vector<std::string>> key = std::make_pair(paramTypes, objectNames);
-
-                    if (mp.find(key) != mp.end()) { //mp has the paramTypes and objectNames
-                        if (mp[key] != returnTypePair) {
-                            error = true;
-                            break;
-                        } else {
-                            //ignore
-                        }
-                    } else {
-                        mp[key] = returnTypePair;
-                    }
-                }
-
-                if (error == true) break;
-
             }
-
+            if (error == true) break;
         }
 
     }
