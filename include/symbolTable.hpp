@@ -22,10 +22,11 @@ class SymbolTable {
     std::unordered_map<std::string, std::shared_ptr<AstNode>> ltable;
     std::stack<std::string> stack_t;
 
-        void putField(const std::string& key, const std::shared_ptr<AstNode> value);
+        void putField(const std::string& key, const std::shared_ptr<Field> value);
         std::shared_ptr<AstNode> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getMethod(const std::string& key, size_t idx = 0) const;
+        void putMethod(const std::string& key, const std::shared_ptr<Method> value);
         void putConstuctor(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getConstructor(const std::string& key, size_t idx = 0) const;
         void putVar(const std::string& key, const std::shared_ptr<AstNode> value);
