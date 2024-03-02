@@ -460,24 +460,6 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     error = true;
                     break;
                 }
-                for (auto modifier : methodNode->modifiers) {
-                    // Rule 15
-                    if (modifier == Modifiers::FINAL) {
-                        std::cerr << "Error: Method " << key << " can not override final method from super class" << std::endl;
-                        error = true;
-                        break;
-                    }
-                    // Rule 14
-                    if (modifier == Modifiers::PUBLIC) {
-                        for (auto currentModifier : n->modifiers) {
-                            if (currentModifier == Modifiers::PROTECTED) {
-                                std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method from super class" << std::endl;
-                                error = true;
-                                break;
-                            }
-                        }
-                    }
-                }
             }
         }
     }
