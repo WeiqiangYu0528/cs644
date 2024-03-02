@@ -17,7 +17,7 @@ class SymbolTable {
     std::unordered_map<std::string, std::shared_ptr<Field>> ftable;
     // field table used to verify the forward reference of fields, Section 8.3.2.3 
     std::unordered_set<std::string> fieldDecls;
-    // method table
+    // declared method table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> mtable;
     // constructor table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Constructor>>> ctable;
@@ -47,4 +47,16 @@ class SymbolTable {
         bool isFieldDeclared(const std::string& key) const;
         void beginScope();
         void endScope();
+        
+        
+        // inherited method table
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> imtable;
+        bool imtablePopulated = false;
+        SymbolTable() : imtablePopulated(false) {}
+
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getIMTable();
+
+
+
 };
