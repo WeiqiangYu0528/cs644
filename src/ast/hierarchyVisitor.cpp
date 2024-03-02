@@ -149,38 +149,6 @@ bool checkInterfaceImplementation(std::shared_ptr<ClassDecl> n, std::shared_ptr<
     return true;
 }
 
-// bool checkInterfaceImplementation(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> scope) {
-//     // If the class is abstract, it is allowed not to implement any methods from an interface
-//     if (n->modifier == "abstract") {
-//         return true;
-//     }
-//
-//     // Check if the class or its superclasses implement all methods from its interfaces
-//     for (std::shared_ptr<IdentifierType> impl : n->implemented) {
-//         if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
-//             std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(st->getAst()->classOrInterfaceDecl);
-//             if (interfaceDecl) {
-//                 for (auto interfaceMethod : interfaceDecl->methods) {
-//                     if (!checkSuperclassesForMethod(n, scope, interfaceMethod)) {
-//                         std::cerr << "Error: Class " << n->id->name << " and its superclasses do not implement method " << interfaceMethod->methodName->name << " from interface" << std::endl;
-//                         return false;
-//                     }
-//                     // Check if a protected method is overriding a public method from an interface
-//                     for (auto decl : n->declarations[1]) {
-//                         auto method = std::dynamic_pointer_cast<Method>(decl);
-//                         if (method && method->methodName->name == interfaceMethod->methodName->name && !method->isPublic() && interfaceMethod->isPublic()) {
-//                             std::cerr << "Error: Protected method " << method->methodName->name << " in class " << n->id->name << " cannot override public method from interface" << std::endl;
-//                             return false;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//
-//     return true;
-// }
-
 struct VectorStringHash {
     size_t operator()(const std::vector<std::string>& v) const {
         std::hash<std::string> hasher;
@@ -432,45 +400,9 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
 {
     const std::string key {n->methodName->name};
 
-    if (scope->current->getPackage() == "java.lang" || scope->current->getPackage() == "java.util" || scope->current->getPackage() == "java.io") {
+    if (scope->current->getPackage() == "java.lang" || scope->current->getPackage() == "java.util" || scope->current->getPackage() == "java.io")
+    {
         return;
-    }
-
-    for (const auto& symbolTable : scope->supers) {
-        if (symbolTable != nullptr && symbolTable->getMethod(key)) {
-            for (const auto& node : symbolTable->mtable[key]) {
-                auto methodNode = std::dynamic_pointer_cast<Method>(node);
-                if (!methodNode) continue; // Ensure methodNode is valid before accessing its members
-                bool isStatic = false;
-                for (auto modifier : methodNode->modifiers) {
-                    // Rule 11
-                    if (modifier == Modifiers::STATIC) {
-                        isStatic = true;
-                        bool flag = false;
-                        for (auto methodModifier : n->modifiers) {
-                            if (methodModifier == Modifiers::STATIC) {
-                                flag = true;
-                            }
-                            if (!flag) {
-                                std::cerr << "Error: Static method in super class is not static in sub class" << std::endl;
-                                error = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                // Rule 12
-                if (!isStatic) {
-                    for (auto methodModifier : n->modifiers) {
-                        if (methodModifier == Modifiers::STATIC) {
-                            std::cerr << "Error: Non-Static method in super class is static in sub class" << std::endl;
-                            error = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     auto processContainer = [&](const auto& container) {
