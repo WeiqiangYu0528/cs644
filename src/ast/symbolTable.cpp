@@ -68,3 +68,10 @@ void SymbolTable::setClassOrInterfaceDecl(std::shared_ptr<ClassOrInterfaceDecl> 
 std::shared_ptr<ClassOrInterfaceDecl> SymbolTable::getClassOrInterfaceDecl() const {
     return cdecl;
 }
+
+std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getMTable() {
+    return mtable;
+}
+std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getIMTable() {
+    return imtable;
+}
