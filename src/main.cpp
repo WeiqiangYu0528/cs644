@@ -105,8 +105,9 @@ int main(int argc, char* argv[])
         if (!program) continue;
         if (program->classOrInterfaceDecl) {
             //Add extended list to supers
-            for (std::shared_ptr<IdentifierType> idType : program->classOrInterfaceDecl->extended)
+            for (std::shared_ptr<IdentifierType> idType : program->classOrInterfaceDecl->extended) {
                 program->scope->supers.push_back(program->scope->getNameInScope(idType->id->name, idType->simple));
+            }
             //Check if this program holds a ClassDecl
             std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
             if (classDecl != nullptr) {

@@ -524,6 +524,15 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        bool isStatic() const
+        {
+            return std::find(modifiers.begin(), modifiers.end(), Modifiers::STATIC) != modifiers.end();
+        }
+
+        bool isPublic() const
+        {
+            return std::find(modifiers.begin(), modifiers.end(), Modifiers::PUBLIC) != modifiers.end();
+        }
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
