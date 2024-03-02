@@ -59,6 +59,36 @@ bool detectCycle(std::vector<std::shared_ptr<T>> decls) {
     return false;
 }
 
+void populateIMTable(std::shared_ptr<Program> n) {
+    assert(n->scope->current->imtablePopulated == false);
+    
+    n->scope->current->imtablePopulated = true;
+    
+    auto& imtable = n->scope->current->imtable;
+    
+    //for each super's table:
+    for (std::shared_ptr<SymbolTable> superTable : n->scope->supers) {
+        if (!superTable) continue; //THIS IS A TEMPORARY SOLUTION
+        //for each super, populate imtable if needed, then get their methods
+        //recursively populate super imtable
+        if (superTable->imtablePopulated == false) {
+            populateIMTable(superTable->getAst());
+        }
+        
+        //for each entry in the super's imtable
+        for (auto& pair : superTable->imtable) {
+            //add the entry to the corresponding entry in the current imtable
+            imtable[pair.first].insert(imtable[pair.first].end(), pair.second.begin(), pair.second.end());
+        }
+        //do the same with the super's mtable
+        for (auto& pair : superTable->getMTable()) {
+            imtable[pair.first].insert(imtable[pair.first].end(), pair.second.begin(), pair.second.end());
+        }
+        
+    }
+    
+}
+
 int main(int argc, char* argv[])
 {
     // std::unordered_map<std::string, 
@@ -105,16 +135,40 @@ int main(int argc, char* argv[])
     for (auto program : asts) {
         if (!program) continue;
         if (program->classOrInterfaceDecl) {
+
+            bool debugoutput = false;
+            std::string classname = program->classOrInterfaceDecl->id->name;
+            if (classname == "A" || classname == "B" || classname == "C" || classname == "Main") debugoutput = true;
+
+            if (debugoutput) std::cout << "adding supers of " << program->classOrInterfaceDecl->id->name << std::endl;
+
             //Add extended list to supers
-            for (std::shared_ptr<IdentifierType> idType : program->classOrInterfaceDecl->extended)
+            for (std::shared_ptr<IdentifierType> idType : program->classOrInterfaceDecl->extended) {
                 program->scope->supers.push_back(program->scope->getNameInScope(idType->id->name, idType->simple));
+                if (debugoutput) {
+                    std::cout << "Name of super that should be added: " << idType->id->name << "\n";
+                    if (success) std::cout << "Success!\n";
+                    else std::cout << "Unsuccessful.\n";
+                }
+            }
             //Check if this program holds a ClassDecl
             std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
             if (classDecl != nullptr) {
                 //if yes, add to classDecls but also add implemented list to supers
                 classDecls.push_back(classDecl);
-                for (std::shared_ptr<IdentifierType> idType : classDecl->implemented)
+                for (std::shared_ptr<IdentifierType> idType : classDecl->implemented) {
+                    auto x = program->scope->getNameInScope(idType->id->name, idType->simple);
+                    bool success = true;
+                    if (x == nullptr) success = false;
                     program->scope->supers.push_back(program->scope->getNameInScope(idType->id->name, idType->simple));
+                    if (debugoutput) {
+                        std::cout << "Name of super that should be added: " << idType->id->name << "\n";
+                        if (success) std::cout << "Success!\n";
+                        else std::cout << "Unsuccessful.\n";
+                    }
+                 
+
+                }
             } else {
                 //otherwise, ensure that program holds an InterfaceDecl, and add to interfaceDecls
                 std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(program->classOrInterfaceDecl);
@@ -160,6 +214,189 @@ int main(int argc, char* argv[])
         }
     }
 
+
+    if (!error) {
+        for (auto ast : asts) {
+            if (ast->scope->current->imtablePopulated == false)
+                populateIMTable(ast);
+        }
+
+        struct PairVectorHash {
+            size_t operator()(const std::pair<std::vector<DataType>, std::vector<std::string>>& p) const {
+                std::hash<int> dataTypeHasher; // Hash function for DataType
+                std::hash<std::string> stringHasher; // Hash function for std::string
+
+                size_t seed = 0;
+                for (const DataType& d : p.first) {
+                    seed ^= dataTypeHasher(static_cast<int>(d)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+                }
+                for (const std::string& s : p.second) {
+                    seed ^= stringHasher(s) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+                }
+                return seed;
+            }
+        };
+
+        std::unordered_map<DataType, DataType> arrayDataTypes = {
+        {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
+        {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY},
+        {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY},
+        {DataType::OBJECT, DataType::OBJECTARRAY}
+        };
+
+        //Rule 9: Class/interface can't contain (declare or inherit) two methods with same signature but diff return types
+        for (auto ast : asts) {
+            std::string classname = ast->classOrInterfaceDecl->id->name;
+            bool debugoutput = false;
+            if (classname == "A" || classname == "B" || classname == "C" || classname == "Main") debugoutput = true;
+            if (debugoutput) std::cout << "start of internal ast loop for " << classname << "\n";
+
+        //get vector of strings
+            std::unordered_set<std::string> methodNames; //to avoid double checks for the same method name if included in mtable and imtable
+            for (const auto& mtableEntry : ast->scope->current->getMTable()){
+                methodNames.insert(mtableEntry.first);
+                if (debugoutput && mtableEntry.first == "test") std::cout <<"declares test method\n";
+            }
+            int x = 1;
+            for (int i = 0; i < 100; ++i) ++x;
+            for (const auto& imtableEntry : ast->scope->current->getIMTable()){
+                methodNames.insert(imtableEntry.first);
+                if (debugoutput && imtableEntry.first == "test") std::cout <<"inherits test method\n";
+            }
+
+            for (std::string s : methodNames) {
+                if (debugoutput) std::cout << "start of internal methodNames loop for " << s << "\n";
+
+                std::unordered_map<std::pair<std::vector<DataType>, std::vector<std::string>>, 
+                std::pair<DataType, std::string>, PairVectorHash> mp;
+
+                for (std::shared_ptr<Method> methodPtr : ast->scope->current->getMTable()[s]) {
+                    std::pair<DataType, std::string> returnTypePair;
+                    std::string returnObject = "";
+
+                    DataType d = methodPtr->returnType->type;
+                    if (d == DataType::ARRAY) {
+                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->returnType);
+                        assert(arrayType != nullptr);
+                        d = arrayDataTypes[arrayType->dataType->type];
+                        if (d == DataType::OBJECTARRAY) {
+                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
+                            assert(idType != nullptr);
+                            returnObject = idType->id->name;
+                        }
+                    } else if (d == DataType::OBJECT) {
+                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->returnType);
+                        assert(idType != nullptr);
+                        returnObject = idType->id->name;
+                    }
+                    //create the return pair
+                    returnTypePair = std::make_pair(d, returnObject);
+
+                    //next, create the vector of parameter types
+                    std::vector<DataType> paramTypes;
+                    std::vector<std::string> objectNames;
+                    for (auto fp : methodPtr->formalParameters) {
+                        d = fp->type->type;
+                        if (d == DataType::ARRAY) {
+                            std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
+                            assert(arrayType != nullptr);
+                            d = arrayDataTypes[arrayType->dataType->type];  
+                            if (d == DataType::OBJECTARRAY) {
+                                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
+                                assert(idType != nullptr);
+                                objectNames.push_back(idType->id->name);
+                            }
+                        } else if (d == DataType::OBJECT) {
+                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
+                            assert(idType != nullptr);
+                            objectNames.push_back(idType->id->name);
+                        }
+                        paramTypes.push_back(d);
+                    }
+
+                    std::pair<std::vector<DataType>, std::vector<std::string>> key = std::make_pair(paramTypes, objectNames);
+
+                    if (mp.find(key) != mp.end()) { //mp has the paramTypes and objectNames
+                        if (mp[key] != returnTypePair) {
+                            error = true;
+                            break;
+                        } else {
+                            //ignore
+                        }
+                    } else {
+                        mp[key] = returnTypePair;
+                    }
+                }
+
+                if (error == true) break;
+
+                for (std::shared_ptr<Method> methodPtr : ast->scope->current->getIMTable()[s]) {
+                    std::pair<DataType, std::string> returnTypePair;
+                    std::string returnObject = "";
+
+                    DataType d = methodPtr->returnType->type;
+                    if (d == DataType::ARRAY) {
+                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->returnType);
+                        assert(arrayType != nullptr);
+                        d = arrayDataTypes[arrayType->dataType->type];
+                        if (d == DataType::OBJECTARRAY) {
+                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
+                            assert(idType != nullptr);
+                            returnObject = idType->id->name;
+                        }
+                    } else if (d == DataType::OBJECT) {
+                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->returnType);
+                        assert(idType != nullptr);
+                        returnObject = idType->id->name;
+                    }
+                    //create the return pair
+                    returnTypePair = std::make_pair(d, returnObject);
+
+                    //next, create the vector of parameter types
+                    std::vector<DataType> paramTypes;
+                    std::vector<std::string> objectNames;
+                    for (auto fp : methodPtr->formalParameters) {
+                        d = fp->type->type;
+                        if (d == DataType::ARRAY) {
+                            std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
+                            assert(arrayType != nullptr);
+                            d = arrayDataTypes[arrayType->dataType->type];  
+                            if (d == DataType::OBJECTARRAY) {
+                                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
+                                assert(idType != nullptr);
+                                objectNames.push_back(idType->id->name);
+                            }
+                        } else if (d == DataType::OBJECT) {
+                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
+                            assert(idType != nullptr);
+                            objectNames.push_back(idType->id->name);
+                        }
+                        paramTypes.push_back(d);
+                    }
+
+                    std::pair<std::vector<DataType>, std::vector<std::string>> key = std::make_pair(paramTypes, objectNames);
+
+                    if (mp.find(key) != mp.end()) { //mp has the paramTypes and objectNames
+                        if (mp[key] != returnTypePair) {
+                            error = true;
+                            break;
+                        } else {
+                            //ignore
+                        }
+                    } else {
+                        mp[key] = returnTypePair;
+                    }
+                }
+
+                if (error == true) break;
+
+            }
+
+        }
+
+    }
+
+    /*
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
             TypeCheckingVisitor tcvisitor(program->scope);
@@ -171,6 +408,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+    */
 
     if (error)
         return 42;

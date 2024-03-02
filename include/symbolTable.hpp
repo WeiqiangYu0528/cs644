@@ -12,7 +12,7 @@ class SymbolTable {
     std::shared_ptr<ClassOrInterfaceDecl> cdecl;
     // field table
     std::unordered_map<std::string, std::shared_ptr<Field>> ftable;
-    // method table
+    // declared method table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> mtable;
     // constructor table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Constructor>>> ctable;
@@ -37,4 +37,16 @@ class SymbolTable {
         std::shared_ptr<ClassOrInterfaceDecl> getClassOrInterfaceDecl() const;
         void beginScope();
         void endScope();
+        
+        
+        // inherited method table
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> imtable;
+        bool imtablePopulated = false;
+        SymbolTable() : imtablePopulated(false) {}
+
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getIMTable();
+
+
+
 };
