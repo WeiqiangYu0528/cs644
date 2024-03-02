@@ -42,6 +42,11 @@ bool checkAbstractClass(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> sco
         }
     }
 
+    // If the class is abstract, it is allowed not to implement any methods from an interface
+    if (n->modifier == "abstract") {
+        return true;
+    }
+
     // Check if the class inherits any abstract methods
     for (std::shared_ptr<IdentifierType> ext : n->extended) {
         if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
