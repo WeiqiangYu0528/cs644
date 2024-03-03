@@ -491,6 +491,9 @@ void BlockStatements::accept(Visitor *v)
 }
 
 Program::Program(std::shared_ptr<Package> p, std::shared_ptr<ImportStatements> i, std::shared_ptr<ClassOrInterfaceDecl> c) : package(p), importStatements(i), classOrInterfaceDecl(c) {
+    if (p->id && p->id->name == "java.lang" && c->id->name == "Object") {
+        c->extended.clear();
+    }
 }
 
 void Program::accept(Visitor* v) {
