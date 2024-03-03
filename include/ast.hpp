@@ -538,6 +538,11 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         {
             return std::find(modifiers.begin(), modifiers.end(), Modifiers::FINAL) != modifiers.end();
         }
+
+        bool isAbstract() const
+        {
+            return std::find(modifiers.begin(), modifiers.end(), Modifiers::ABSTRACT) != modifiers.end();
+        }
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
@@ -561,6 +566,15 @@ class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_th
         ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
         std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
         void accept(Visitor* v) override;
+        bool isAbstract ()
+        {
+            return modifier == "abstract";
+        }
+
+        bool isFinal ()
+        {
+            return modifier == "final";
+        }
 };
 
 class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from_this<InterfaceDecl> {

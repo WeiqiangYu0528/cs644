@@ -43,7 +43,7 @@ bool checkAbstractClass(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> sco
     }
 
     // If the class is abstract, it is allowed not to implement any methods from an interface
-    if (n->modifier == "abstract") {
+    if (n->isAbstract()) {
         return true;
     }
 
@@ -102,7 +102,7 @@ bool checkSuperclassesForMethod(std::shared_ptr<ClassDecl> n, std::shared_ptr<Sc
 
 bool checkInterfaceImplementation(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> scope) {
     // If the class is abstract, it is allowed not to implement any methods from an interface
-    if (n->modifier == "abstract") {
+    if (n->isAbstract()) {
         return true;
     }
 
@@ -125,7 +125,7 @@ bool checkInterfaceImplementation(std::shared_ptr<ClassDecl> n, std::shared_ptr<
     for (std::shared_ptr<IdentifierType> ext : n->extended) {
         if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
             std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
-            if (parentClassDecl && parentClassDecl->modifier == "abstract") {
+            if (parentClassDecl && parentClassDecl->isAbstract()) {
                 for (std::shared_ptr<IdentifierType> impl : parentClassDecl->implemented) {
                     if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
                         std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(st->getAst()->classOrInterfaceDecl);
@@ -256,7 +256,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             //Rule #4
             std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
             assert(classDecl != nullptr); //Rule #1 already ensures that you can't extend an interface, so this cast should succeed
-            if (classDecl->modifier == "final") {
+            if (classDecl->isFinal()){
                 std::cerr << "Error: Class " << n->id->name << " extends final Class " << classDecl->id->name << std::endl;
                 error = true;
                 return;
@@ -432,7 +432,6 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     {
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
-
             if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
                 for (const auto& node : symbolTableHere->mtable[key]) {
                     auto methodNode = std::dynamic_pointer_cast<Method>(node);
