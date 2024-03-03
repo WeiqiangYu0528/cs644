@@ -96,7 +96,8 @@ def single(dir_or_file):
 
 if __name__ == "__main__":
     args = parse_arguments()
-    jsl_dir = './JSL_2.0'
+    jsl_dir = './JSL_3.0'
+    #test_dir = './tests/a3-tests'
     test_dir = './tests/a2-tests'
 
     if args.single:

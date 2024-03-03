@@ -686,7 +686,7 @@ ClassBodyDeclaration
     }
     | ClassBodyDeclarationOpt1 MemberDecl {
         $$ = $2; //with placeholder modifiers
-        $$->modifiers = $1;
+        $$->setModifiers($1);
 
         std::vector<int> modifiers = std::vector<int>(6, 0);
         for (Modifiers m : $1) {

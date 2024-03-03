@@ -351,10 +351,10 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
                 // Check if any of the methods in the subclass are instance methods and override a static method from the superclass
                 for (auto decl : n->declarations[1]) {
                     auto method = std::dynamic_pointer_cast<Method>(decl);
-                    if (method && !method->isStatic()) {
+                    if (method && !method->isStaticCall()) {
                         for (auto parentDecl : parentClassDecl->declarations[1]) {
                             auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
-                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isStatic()) {
+                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isStaticCall()) {
                                 // Check if the parameter types are the same
                                 if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
                                     bool isSameParameters = true;
@@ -432,19 +432,19 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     {
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
-            if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
+            if (!symbolTableHere->getMethod(key).empty() && entry.first != scope->current->getPackage()) {
                 for (const auto& superMethod : symbolTableHere->mtable[key]) {
                     if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                     // Rule 13
                     // This is a hack, should be removed after the type is refined.
-                    if (superMethod->returnType->type == DataType::OBJECT && n->returnType->type ==DataType::OBJECT) {
-                        if (std::dynamic_pointer_cast<IdentifierType>(superMethod->returnType)->id->name != std::dynamic_pointer_cast<IdentifierType>(n->returnType)->id->name) {
+                    if (superMethod->type->type == DataType::OBJECT && n->type->type ==DataType::OBJECT) {
+                        if (std::dynamic_pointer_cast<IdentifierType>(superMethod->type)->id->name != std::dynamic_pointer_cast<IdentifierType>(n->type)->id->name) {
                             std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                             error = true;
                             break;
                         }
                     }
-                    if (!Type::isSameType(superMethod->returnType, n->returnType)) {
+                    if (!Type::isSameType(superMethod->type, n->type)) {
                         std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                         error = true;
                         break;
@@ -462,7 +462,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                         error = true;
                         break;
                     }
-                    if (!superMethod->isStatic() && n->isStatic())
+                    if (!superMethod->isStaticCall() && n->isStaticCall())
                     {
                         // This is a hack, I do not want to check all symbol tables
                         if (symbolTableHere->pkg != "java.lang")
@@ -481,11 +481,11 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     processContainer(scope->onDemandImported);
     processContainer(scope->singleImported);
     for(auto& symbolTable : scope->supers) {
-        if (symbolTable != nullptr && symbolTable->getMethod(key)) {
+        if (symbolTable != nullptr && !symbolTable->getMethod(key).empty()) {
             for (const auto& superMethod : symbolTable->mtable[key]) {
                 if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                 // Rule 13
-                if (!Type::isSameType(superMethod->returnType, n->returnType)) {
+                if (!Type::isSameType(superMethod->type, n->type)) {
                     std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                     error = true;
                     break;

@@ -21,6 +21,31 @@
             } \
         } \
     } while(0)
+
+    char parseChar(const std::string& str) {
+        if (str.length() < 2 || str.front() != '\'' || str.back() != '\'') {
+            throw std::invalid_argument("Invalid string format.");
+        }
+
+        if (str.length() == 3 && str[1] != '\\') {
+            return str[1];
+        } else if (str.length() == 4 && str[1] == '\\' && str[2] != '\\') {
+            switch (str[2]) {
+                case 'n':
+                    return '\n';
+                case 't':
+                    return '\t';
+                case '\'':
+                    return '\'';
+                case '\"':
+                    return '\"';
+                default:
+                    throw std::invalid_argument("Invalid escape sequence.");
+            }
+        } else {
+            throw std::invalid_argument("Invalid string format.");
+        }
+    }
 %}
 
 DIGIT   [0-9]
@@ -97,8 +122,8 @@ ESCAPE [\\]([btnfr'"\\]|([0-3]?[0-7])?[0-7])
 "false"                 { update_yylloc; return Token::FALSE; }
 {IDENTIFIER}            { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::IDENTIFIER; }
 (0|[1-9]{DIGIT}*)       { update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::INTEGER; }
-\"({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])*\" {update_yylloc; yylval->emplace<std::string>(std::string(yytext)); return Token::STRING; }
-\'({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])\' {update_yylloc; return Token::CHARACTER; }
+\"({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])*\" {update_yylloc; yylval->emplace<std::string>(std::string(yytext + 1, yytext + strlen(yytext) - 1)); return Token::STRING; }
+\'({ESCAPE}|[\x00-\x21\x23-\x5b\x5d-\x7F])\' {update_yylloc; yylval->emplace<char>(parseChar(std::string(yytext))); return Token::CHARACTER; }
 {WHITESPACE}            { update_yylloc; }
 .                       { update_yylloc; return Token::INVALID; }
 %%

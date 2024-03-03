@@ -2,7 +2,10 @@
 #include <memory>
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include "ast.hpp"
+class Scope;
+
 class SymbolTable {
     public:
 
@@ -14,21 +17,24 @@ class SymbolTable {
     std::shared_ptr<ClassOrInterfaceDecl> cdecl;
     // field table
     std::unordered_map<std::string, std::shared_ptr<Field>> ftable;
+    // field table used to verify the forward reference of fields, Section 8.3.2.3 
+    std::unordered_set<std::string> fieldDecls;
     // declared method table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> mtable;
     // constructor table
-    std::unordered_map<std::string, std::vector<std::shared_ptr<AstNode>>> ctable;
+    std::unordered_map<std::string, std::vector<std::shared_ptr<Constructor>>> ctable;
     // local variable table
     std::unordered_map<std::string, std::shared_ptr<AstNode>> ltable;
     std::stack<std::string> stack_t;
+    std::shared_ptr<Scope> scope;
 
+    public:
         void putField(const std::string& key, const std::shared_ptr<Field> value);
-        std::shared_ptr<AstNode> getField(const std::string& key) const;
-        void putMethod(const std::string& key, const std::shared_ptr<AstNode> value);
-        std::shared_ptr<AstNode> getMethod(const std::string& key, size_t idx = 0) const;
+        std::shared_ptr<Field> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<Method> value);
-        void putConstuctor(const std::string& key, const std::shared_ptr<AstNode> value);
-        std::shared_ptr<AstNode> getConstructor(const std::string& key, size_t idx = 0) const;
+        std::vector<std::shared_ptr<Method>> getMethod(const std::string& key) const;
+        void putConstuctor(const std::string& key, const std::shared_ptr<Constructor> value);
+        std::vector<std::shared_ptr<Constructor>> getConstructor(const std::string& key) const;
         void putVar(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getVar(const std::string& key) const;
         void setAst(std::shared_ptr<Program> a);
@@ -37,6 +43,10 @@ class SymbolTable {
         std::string getPackage() const;
         void setClassOrInterfaceDecl(std::shared_ptr<ClassOrInterfaceDecl> c);
         std::shared_ptr<ClassOrInterfaceDecl> getClassOrInterfaceDecl() const;
+        void setScope(std::shared_ptr<Scope> s);
+        std::shared_ptr<Scope> getScope() const;
+        void setFieldDecl(const std::string& key);
+        bool isFieldDeclared(const std::string& key) const;
         void beginScope();
         void endScope();
         

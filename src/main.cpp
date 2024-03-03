@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "contextVisitor.hpp"
 #include "symbolTable.hpp"
+#include "typeCheckingVisitor.hpp"
 #include "typeLinkingVisitor.hpp"
 #include "hierarchyVisitor.hpp"
 
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
                 break;
             }
             program->scope = std::make_shared<Scope>(symbolTable, pkgTrie);
+            symbolTable->setScope(program->scope);
             asts.push_back(program);
         }
     }
@@ -234,9 +236,9 @@ int main(int argc, char* argv[])
                 for (auto methodPtr : methodPtrs) {
                     std::pair<DataType, std::string> returnTypePair;
                     std::string returnObject = "";
-                    DataType d = methodPtr->returnType->type;
+                    DataType d = methodPtr->type->type;
                     if (d == DataType::ARRAY) {
-                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->returnType);
+                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->type);
                         assert(arrayType != nullptr);
                         d = arrayDataTypes[arrayType->dataType->type];
                         if (d == DataType::OBJECTARRAY) {
@@ -245,7 +247,7 @@ int main(int argc, char* argv[])
                             returnObject = idType->id->name;
                         }
                     } else if (d == DataType::OBJECT) {
-                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->returnType);
+                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->type);
                         assert(idType != nullptr);
                         returnObject = idType->id->name;
                     }
@@ -300,6 +302,7 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
+            break; // only for developing
         }
     }
     */
