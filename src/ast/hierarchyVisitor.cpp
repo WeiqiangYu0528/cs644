@@ -432,6 +432,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     {
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
+
             if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
                 for (const auto& node : symbolTableHere->mtable[key]) {
                     auto methodNode = std::dynamic_pointer_cast<Method>(node);
@@ -452,6 +453,17 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     if (methodNode->isPublic() && !n->isPublic())
                     {
                         std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    if (!methodNode->isStatic() && n->isStatic())
+                    {
+                        // This is a hack, I do not want to check all symbol tables
+                        if (symbolTableHere->pkg != "java.lang")
+                        {
+                            continue;
+                        }
+                        std::cerr << "Error: Static Method " << key << " can not override Instance method" << std::endl;
                         error = true;
                         break;
                     }
