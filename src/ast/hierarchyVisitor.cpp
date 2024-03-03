@@ -228,6 +228,20 @@ std::string hierarchyRuleSevenEight(std::vector<std::shared_ptr<T>>& methodsOrCo
     return "";
 }
 
+// Custom hash function for shared_ptr<A>
+struct SharedPtrHash {
+    size_t operator()(const std::shared_ptr<SymbolTable>& ptr) const {
+        return std::hash<SymbolTable*>()(ptr.get());
+    }
+};
+
+// Custom equality function for shared_ptr<A>
+struct SharedPtrEqual {
+    bool operator()(const std::shared_ptr<SymbolTable>& lhs, const std::shared_ptr<SymbolTable>& rhs) const {
+        return lhs.get() == rhs.get();
+    }
+};
+
 void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     //Rule #1: Class must not extend an interface
     //Rule #4: Class must not extend final class
@@ -252,7 +266,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     }
     //Rule #2: Class must not implement a class
     //Rule #3: An interface must not be repeated in a class's implements clause
-    std::unordered_set<std::string> implementedInterfaces;
+    std::unordered_set<std::shared_ptr<SymbolTable>, SharedPtrHash, SharedPtrEqual> newImplementedInterfaces;
     for (std::shared_ptr<IdentifierType> impl : n->implemented) {
         //Rule #2
         if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
@@ -263,12 +277,12 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             }
         }
         //Rule #3
-        if (implementedInterfaces.contains(impl->id->name)) {
+        if (newImplementedInterfaces.contains(scope->getNameInScope(impl->id->name, impl->simple))) {
             std::cerr << "Error: Class " << n->id->name << " implements Interface " << impl->id->name << " more than once" << std::endl;
             error = true;
-            return;    
+            return;
         } else {
-            implementedInterfaces.insert(impl->id->name);
+            newImplementedInterfaces.insert(scope->getNameInScope(impl->id->name, impl->simple));
         }
     }
     //Rule #7: Class must not declare two methods with the same name and parameter types
@@ -372,7 +386,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     //Rule #3: Interfaces must not be repeated in an interface's extends clause
     //Rule #5: Interface must not extend a class
-    std::unordered_set<std::string> extendedInterfaces;
+    std::unordered_set<std::shared_ptr<SymbolTable>, SharedPtrHash, SharedPtrEqual> newExtendedInterfaces;
     for (std::shared_ptr<IdentifierType> ext : n->extended) {
         //Rule #5
         if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
@@ -384,12 +398,12 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
             }
         }
         //Rule #3
-        if (extendedInterfaces.contains(ext->id->name)) {
-            std::cerr << "Error: Interface " << n->id->name << " extends Interface " << ext->id->name << " more than once" << std::endl;
+        if (newExtendedInterfaces.contains(scope->getNameInScope(ext->id->name, ext->simple))) {
+            std::cerr << "Error: Class " << n->id->name << " implements Interface " << ext->id->name << " more than once" << std::endl;
             error = true;
-            return; 
+            return;
         } else {
-            extendedInterfaces.insert(ext->id->name);
+            newExtendedInterfaces.insert(scope->getNameInScope(ext->id->name, ext->simple));
         }
     }
     //Rule #7: Interface must not declare two methods with the same name and parameter types
