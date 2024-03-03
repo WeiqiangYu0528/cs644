@@ -533,6 +533,11 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         {
             return std::find(modifiers.begin(), modifiers.end(), Modifiers::PUBLIC) != modifiers.end();
         }
+
+        bool isFinal() const
+        {
+            return std::find(modifiers.begin(), modifiers.end(), Modifiers::FINAL) != modifiers.end();
+        }
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {

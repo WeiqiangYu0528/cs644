@@ -414,7 +414,8 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
         return;
     }
 
-    auto processContainer = [&](const auto& container) {
+    auto processContainer = [&](const auto& container)
+    {
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
             if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
@@ -427,28 +428,22 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                         error = true;
                         break;
                     }
-                    for (auto modifier : methodNode->modifiers) {
-                        // Rule 15
-                        if (modifier == Modifiers::FINAL) {
-                            std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
-                            error = true;
-                            break;
-                        }
-                        // Rule 14
-                        if (modifier == Modifiers::PUBLIC) {
-                            for (auto currentModifier : n->modifiers) {
-                                if (currentModifier == Modifiers::PROTECTED) {
-                                    std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
-                                    error = true;
-                                    break;
-                                }
-                            }
-                        }
+                    // Rule 15
+                    if (methodNode->isFinal()) {
+                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    // Rule 14
+                    if (methodNode->isPublic() && !n->isPublic())
+                    {
+                        std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
+                        error = true;
+                        break;
                     }
                 }
             }
         }
-
     };
 
     processContainer(scope->onDemandImported);
