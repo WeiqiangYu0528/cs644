@@ -436,6 +436,14 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                 for (const auto& superMethod : symbolTableHere->mtable[key]) {
                     if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                     // Rule 13
+                    // This is a hack, should be removed after the type is refined.
+                    if (superMethod->returnType->type == DataType::OBJECT && n->returnType->type ==DataType::OBJECT) {
+                        if (std::dynamic_pointer_cast<IdentifierType>(superMethod->returnType)->id->name != std::dynamic_pointer_cast<IdentifierType>(n->returnType)->id->name) {
+                            std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+                            error = true;
+                            break;
+                        }
+                    }
                     if (!Type::isSameType(superMethod->returnType, n->returnType)) {
                         std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                         error = true;
