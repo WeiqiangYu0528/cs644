@@ -399,6 +399,10 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
         error = true;
         return;
     }
+
+    for (std::shared_ptr<MemberDecl> m : n->methods) {
+        m->accept(this);
+    }
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<Method> n) 
