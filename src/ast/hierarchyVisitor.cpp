@@ -317,10 +317,10 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
                 // Check if any of the methods in the subclass are protected and override a public method from the superclass
                 for (auto decl : n->declarations[1]) {
                     auto method = std::dynamic_pointer_cast<Method>(decl);
-                    if (method && !method->isPublic()) {
+                    if (method && !method->isPublic) {
                         for (auto parentDecl : parentClassDecl->declarations[1]) {
                             auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
-                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isPublic()) {
+                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isPublic) {
                                 // Check if the parameter types are the same
                                 if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
                                     bool isSameParameters = true;
@@ -351,10 +351,10 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
                 // Check if any of the methods in the subclass are instance methods and override a static method from the superclass
                 for (auto decl : n->declarations[1]) {
                     auto method = std::dynamic_pointer_cast<Method>(decl);
-                    if (method && !method->isStaticCall()) {
+                    if (method && !method->isStatic) {
                         for (auto parentDecl : parentClassDecl->declarations[1]) {
                             auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
-                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isStaticCall()) {
+                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isStatic) {
                                 // Check if the parameter types are the same
                                 if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
                                     bool isSameParameters = true;
@@ -433,7 +433,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
             if (!symbolTableHere->getMethod(key).empty() && entry.first != scope->current->getPackage()) {
-                for (const auto& superMethod : symbolTableHere->mtable[key]) {
+                for (const auto& superMethod : symbolTableHere->getMTable()[key]) {
                     if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                     // Rule 13
                     // This is a hack, should be removed after the type is refined.
@@ -450,22 +450,22 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                         break;
                     }
                     // Rule 15
-                    if (superMethod->isFinal()) {
+                    if (superMethod->isFinal) {
                         std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
                         error = true;
                         break;
                     }
                     // Rule 14
-                    if (superMethod->isPublic() && !n->isPublic())
+                    if (superMethod->isPublic && !n->isPublic)
                     {
                         std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
                         error = true;
                         break;
                     }
-                    if (!superMethod->isStaticCall() && n->isStaticCall())
+                    if (!superMethod->isStatic && n->isStatic)
                     {
                         // This is a hack, I do not want to check all symbol tables
-                        if (symbolTableHere->pkg != "java.lang")
+                        if (symbolTableHere->getPackage() != "java.lang")
                         {
                             continue;
                         }
@@ -482,7 +482,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     processContainer(scope->singleImported);
     for(auto& symbolTable : scope->supers) {
         if (symbolTable != nullptr && !symbolTable->getMethod(key).empty()) {
-            for (const auto& superMethod : symbolTable->mtable[key]) {
+            for (const auto& superMethod : symbolTable->getMTable()[key]) {
                 if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                 // Rule 13
                 if (!Type::isSameType(superMethod->type, n->type)) {
@@ -490,7 +490,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     error = true;
                     break;
                 }
-                if (superMethod->isPublic() && !n->isPublic())
+                if (superMethod->isPublic && !n->isPublic)
                 {
                     if (superMethod->formalParameters.size() == n->formalParameters.size()) {
                         bool isSameParameters = true;

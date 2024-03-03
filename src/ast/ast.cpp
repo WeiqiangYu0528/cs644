@@ -395,7 +395,18 @@ void Method::setModifiers(std::vector<Modifiers>& m) {
     for (Modifiers modifier : m) {
         if (modifier == Modifiers::STATIC) {
             isStatic = true;
-            break;
+        }
+        if (modifier == Modifiers::ABSTRACT)
+        {
+            isAbstract = true;
+        }
+        if (modifier == Modifiers::FINAL)
+        {
+            isFinal = true;
+        }
+        if (modifier == Modifiers::PUBLIC)
+        {
+            isPublic = true;
         }
     }
 }

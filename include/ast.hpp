@@ -6,7 +6,6 @@
 #include <vector>
 #include "weeder.hpp"
 
-class IdentifierType;
 class Visitor;
 class Scope;
 
@@ -521,6 +520,10 @@ class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
         bool isStatic;
+        // No isProtected and just use !isPublic
+        bool isPublic;
+        bool isFinal;
+        bool isAbstract;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
@@ -529,25 +532,6 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
-        bool isStaticCall() const
-        {
-            return std::find(modifiers.begin(), modifiers.end(), Modifiers::STATIC) != modifiers.end();
-        }
-
-        bool isPublic() const
-        {
-            return std::find(modifiers.begin(), modifiers.end(), Modifiers::PUBLIC) != modifiers.end();
-        }
-
-        bool isFinal() const
-        {
-            return std::find(modifiers.begin(), modifiers.end(), Modifiers::FINAL) != modifiers.end();
-        }
-
-        bool isAbstract() const
-        {
-            return std::find(modifiers.begin(), modifiers.end(), Modifiers::ABSTRACT) != modifiers.end();
-        }
         void setModifiers(std::vector<Modifiers>& m) override;
 };
 

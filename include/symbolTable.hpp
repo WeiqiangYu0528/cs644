@@ -7,8 +7,6 @@
 class Scope;
 
 class SymbolTable {
-    public:
-
     // program AST
     std::shared_ptr<Program> ast;
     // package
