@@ -235,7 +235,10 @@ NormalClassDeclarationOpt1
     ;
 
 NormalClassDeclarationOpt2
-    : {$$ = {};}
+    : { std::string obj{"Object"};
+        std::shared_ptr<Identifier> id = std::make_shared<Identifier>(obj);
+        $$ = {std::make_shared<IdentifierType>(id, true)};
+    }
     | EXTENDS TypeList {$$ = $2;}
     ;
 
