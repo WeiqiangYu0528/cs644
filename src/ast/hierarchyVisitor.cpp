@@ -15,6 +15,144 @@ void HierarchyVisitor::visit(std::shared_ptr<Program> n) {
     n->classOrInterfaceDecl->accept(this);
 }
 
+Modifiers stringToModifier(const std::string& str) {
+    if (str == "public") return Modifiers::PUBLIC;
+    else if (str == "protected") return Modifiers::PROTECTED;
+    else if (str == "final") return Modifiers::FINAL;
+    else if (str == "abstract") return Modifiers::ABSTRACT;
+    else if (str == "static") return Modifiers::STATIC;
+    else if (str == "native") return Modifiers::NATIVE;
+    // else throw std::invalid_argument("Unknown modifier: " + str);
+}
+
+bool checkAbstractClass(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> scope) {
+    if (scope->current->getPackage() == "java.lang" || scope->current->getPackage() == "java.util" || scope->current->getPackage() == "java.io") {
+        return true;
+    }
+    // Check if the class itself declares any abstract methods
+    for (auto decl : n->declarations[1]) {
+        auto method = std::dynamic_pointer_cast<Method>(decl);
+        if (method) {
+            for (auto modifier : method->modifiers) {
+                if (modifier == Modifiers::ABSTRACT && (stringToModifier(n->modifier) != Modifiers::ABSTRACT)) {
+                    std::cerr << "Error: Class " << n->id->name << " declares abstract method but is not declared as abstract" << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    // If the class is abstract, it is allowed not to implement any methods from an interface
+    if (n->isAbstract()) {
+        return true;
+    }
+
+    // Check if the class inherits any abstract methods
+    for (std::shared_ptr<IdentifierType> ext : n->extended) {
+        if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
+            std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
+            if (parentClassDecl) {
+                for (auto parentDecl : parentClassDecl->declarations[1]) {
+                    auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
+                    if (parentMethod) {
+                        for (auto modifier : parentMethod->modifiers) {
+                            if (modifier == Modifiers::ABSTRACT) {
+                                bool isImplemented = false;
+                                for (auto decl : n->declarations[1]) {
+                                    auto method = std::dynamic_pointer_cast<Method>(decl);
+                                    if (method && method->methodName->name == parentMethod->methodName->name) {
+                                        isImplemented = true;
+                                        break;
+                                    }
+                                }
+                                if (!isImplemented) {
+                                    std::cerr << "Error: Class " << n->id->name << " does not implement abstract method " << parentMethod->methodName->name << " from superclass" << std::endl;
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool checkSuperclassesForMethod(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> scope, std::shared_ptr<Method> interfaceMethod) {
+    for (auto decl : n->declarations[1]) {
+        auto method = std::dynamic_pointer_cast<Method>(decl);
+        if (method && method->methodName->name == interfaceMethod->methodName->name) {
+            return true;
+        }
+    }
+
+    for (std::shared_ptr<IdentifierType> ext : n->extended) {
+        if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
+            std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
+            if (parentClassDecl && checkSuperclassesForMethod(parentClassDecl, scope, interfaceMethod)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool checkInterfaceImplementation(std::shared_ptr<ClassDecl> n, std::shared_ptr<Scope> scope) {
+    // If the class is abstract, it is allowed not to implement any methods from an interface
+    if (n->isAbstract()) {
+        return true;
+    }
+
+    // Check if the class or its superclasses implement all methods from its interfaces
+    for (std::shared_ptr<IdentifierType> impl : n->implemented) {
+        if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
+            std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(st->getAst()->classOrInterfaceDecl);
+            if (interfaceDecl) {
+                for (auto interfaceMethod : interfaceDecl->methods) {
+                    if (!checkSuperclassesForMethod(n, scope, interfaceMethod)) {
+                        std::cerr << "Error: Class " << n->id->name << " and its superclasses do not implement method " << interfaceMethod->methodName->name << " from interface" << std::endl;
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    // Check if the class that extends an abstract class implements all the abstract methods from the interfaces that the abstract class implements
+    for (std::shared_ptr<IdentifierType> ext : n->extended) {
+        if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
+            std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
+            if (parentClassDecl && parentClassDecl->isAbstract()) {
+                for (std::shared_ptr<IdentifierType> impl : parentClassDecl->implemented) {
+                    if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
+                        std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(st->getAst()->classOrInterfaceDecl);
+                        if (interfaceDecl) {
+                            for (auto interfaceMethod : interfaceDecl->methods) {
+                                bool isImplemented = false;
+                                for (auto decl : n->declarations[1]) {
+                                    auto method = std::dynamic_pointer_cast<Method>(decl);
+                                    if (method && method->methodName->name == interfaceMethod->methodName->name) {
+                                        isImplemented = true;
+                                        break;
+                                    }
+                                }
+                                if (!isImplemented) {
+                                    std::cerr << "Error: Class " << n->id->name << " does not implement abstract method " << interfaceMethod->methodName->name << " from interface implemented by abstract superclass" << std::endl;
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
 
 struct VectorStringHash {
     size_t operator()(const std::vector<std::string>& v) const {
@@ -90,6 +228,20 @@ std::string hierarchyRuleSevenEight(std::vector<std::shared_ptr<T>>& methodsOrCo
     return "";
 }
 
+// Custom hash function for shared_ptr<A>
+struct SharedPtrHash {
+    size_t operator()(const std::shared_ptr<SymbolTable>& ptr) const {
+        return std::hash<SymbolTable*>()(ptr.get());
+    }
+};
+
+// Custom equality function for shared_ptr<A>
+struct SharedPtrEqual {
+    bool operator()(const std::shared_ptr<SymbolTable>& lhs, const std::shared_ptr<SymbolTable>& rhs) const {
+        return lhs.get() == rhs.get();
+    }
+};
+
 void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     //Rule #1: Class must not extend an interface
     //Rule #4: Class must not extend final class
@@ -104,7 +256,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             //Rule #4
             std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
             assert(classDecl != nullptr); //Rule #1 already ensures that you can't extend an interface, so this cast should succeed
-            if (classDecl->modifier == "final") {
+            if (classDecl->isFinal()){
                 std::cerr << "Error: Class " << n->id->name << " extends final Class " << classDecl->id->name << std::endl;
                 error = true;
                 return;
@@ -114,7 +266,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
     }
     //Rule #2: Class must not implement a class
     //Rule #3: An interface must not be repeated in a class's implements clause
-    std::unordered_set<std::string> implementedInterfaces;
+    std::unordered_set<std::shared_ptr<SymbolTable>, SharedPtrHash, SharedPtrEqual> newImplementedInterfaces;
     for (std::shared_ptr<IdentifierType> impl : n->implemented) {
         //Rule #2
         if (auto st = scope->getNameInScope(impl->id->name, impl->simple)) {
@@ -125,12 +277,12 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
             }
         }
         //Rule #3
-        if (implementedInterfaces.contains(impl->id->name)) {
+        if (newImplementedInterfaces.contains(scope->getNameInScope(impl->id->name, impl->simple))) {
             std::cerr << "Error: Class " << n->id->name << " implements Interface " << impl->id->name << " more than once" << std::endl;
             error = true;
-            return;    
+            return;
         } else {
-            implementedInterfaces.insert(impl->id->name);
+            newImplementedInterfaces.insert(scope->getNameInScope(impl->id->name, impl->simple));
         }
     }
     //Rule #7: Class must not declare two methods with the same name and parameter types
@@ -151,13 +303,90 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
         error = true;
         return;
     }
-    
+
+    // Rule #10:
+    if (!checkAbstractClass(n, scope) || !checkInterfaceImplementation(n, scope)) {
+        error = true;
+        return;
+    }
+
+    for (std::shared_ptr<IdentifierType> ext : n->extended) {
+        if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
+            std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
+            if (parentClassDecl) {
+                // Check if any of the methods in the subclass are protected and override a public method from the superclass
+                for (auto decl : n->declarations[1]) {
+                    auto method = std::dynamic_pointer_cast<Method>(decl);
+                    if (method && !method->isPublic) {
+                        for (auto parentDecl : parentClassDecl->declarations[1]) {
+                            auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
+                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isPublic) {
+                                // Check if the parameter types are the same
+                                if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
+                                    bool isSameParameters = true;
+                                    for (int i = 0; i < parentMethod->formalParameters.size(); i++) {
+                                        if (parentMethod->formalParameters[i]->type->type != method->formalParameters[i]->type->type) {
+                                            isSameParameters = false;
+                                            break;
+                                        }
+                                    }
+                                    if (isSameParameters) {
+                                        std::cerr << "Error: Protected method " << method->methodName->name << " in class " << n->id->name << " cannot override public method from superclass" << std::endl;
+                                        error = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (std::shared_ptr<IdentifierType> ext : n->extended) {
+        if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
+            std::shared_ptr<ClassDecl> parentClassDecl = std::dynamic_pointer_cast<ClassDecl>(st->getAst()->classOrInterfaceDecl);
+            if (parentClassDecl) {
+                // Check if any of the methods in the subclass are instance methods and override a static method from the superclass
+                for (auto decl : n->declarations[1]) {
+                    auto method = std::dynamic_pointer_cast<Method>(decl);
+                    if (method && !method->isStatic) {
+                        for (auto parentDecl : parentClassDecl->declarations[1]) {
+                            auto parentMethod = std::dynamic_pointer_cast<Method>(parentDecl);
+                            if (parentMethod && parentMethod->methodName->name == method->methodName->name && parentMethod->isStatic) {
+                                // Check if the parameter types are the same
+                                if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
+                                    bool isSameParameters = true;
+                                    for (int i = 0; i < parentMethod->formalParameters.size(); i++) {
+                                        if (parentMethod->formalParameters[i]->type->type != method->formalParameters[i]->type->type) {
+                                            isSameParameters = false;
+                                            break;
+                                        }
+                                    }
+                                    if (isSameParameters) {
+                                        std::cerr << "Error: Instance method " << method->methodName->name << " in class " << n->id->name << " cannot override static method from superclass" << std::endl;
+                                        error = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (std::shared_ptr<MemberDecl> m : n->declarations[1]) {
+        m->accept(this);
+    }
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     //Rule #3: Interfaces must not be repeated in an interface's extends clause
     //Rule #5: Interface must not extend a class
-    std::unordered_set<std::string> extendedInterfaces;
+    std::unordered_set<std::shared_ptr<SymbolTable>, SharedPtrHash, SharedPtrEqual> newExtendedInterfaces;
     for (std::shared_ptr<IdentifierType> ext : n->extended) {
         //Rule #5
         if (auto st = scope->getNameInScope(ext->id->name, ext->simple)) {
@@ -169,12 +398,12 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
             }
         }
         //Rule #3
-        if (extendedInterfaces.contains(ext->id->name)) {
-            std::cerr << "Error: Interface " << n->id->name << " extends Interface " << ext->id->name << " more than once" << std::endl;
+        if (newExtendedInterfaces.contains(scope->getNameInScope(ext->id->name, ext->simple))) {
+            std::cerr << "Error: Class " << n->id->name << " implements Interface " << ext->id->name << " more than once" << std::endl;
             error = true;
-            return; 
+            return;
         } else {
-            extendedInterfaces.insert(ext->id->name);
+            newExtendedInterfaces.insert(scope->getNameInScope(ext->id->name, ext->simple));
         }
     }
     //Rule #7: Interface must not declare two methods with the same name and parameter types
@@ -184,4 +413,102 @@ void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
         error = true;
         return;
     }
+
+    for (std::shared_ptr<MemberDecl> m : n->methods) {
+        m->accept(this);
+    }
+}
+
+void HierarchyVisitor::visit(std::shared_ptr<Method> n) 
+{
+    const std::string key {n->methodName->name};
+
+    if (scope->current->getPackage() == "java.lang" || scope->current->getPackage() == "java.util" || scope->current->getPackage() == "java.io")
+    {
+        return;
+    }
+
+    auto processContainer = [&](const auto& container)
+    {
+        for (const auto& entry : container) {
+            const auto& symbolTableHere = entry.second;
+            if (!symbolTableHere->getMethod(key).empty() && entry.first != scope->current->getPackage()) {
+                for (const auto& superMethod : symbolTableHere->getMTable()[key]) {
+                    if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
+                    // Rule 13
+                    // This is a hack, should be removed after the type is refined.
+                    if (superMethod->type->type == DataType::OBJECT && n->type->type ==DataType::OBJECT) {
+                        if (std::dynamic_pointer_cast<IdentifierType>(superMethod->type)->id->name != std::dynamic_pointer_cast<IdentifierType>(n->type)->id->name) {
+                            std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+                            error = true;
+                            break;
+                        }
+                    }
+                    if (!Type::isSameType(superMethod->type, n->type)) {
+                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+                        error = true;
+                        break;
+                    }
+                    // Rule 15
+                    if (superMethod->isFinal) {
+                        std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    // Rule 14
+                    if (superMethod->isPublic && !n->isPublic)
+                    {
+                        std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                    if (!superMethod->isStatic && n->isStatic)
+                    {
+                        // This is a hack, I do not want to check all symbol tables
+                        if (symbolTableHere->getPackage() != "java.lang")
+                        {
+                            continue;
+                        }
+                        std::cerr << "Error: Static Method " << key << " can not override Instance method" << std::endl;
+                        error = true;
+                        break;
+                    }
+                }
+            }
+        }
+    };
+
+    processContainer(scope->onDemandImported);
+    processContainer(scope->singleImported);
+    for(auto& symbolTable : scope->supers) {
+        if (symbolTable != nullptr && !symbolTable->getMethod(key).empty()) {
+            for (const auto& superMethod : symbolTable->getMTable()[key]) {
+                if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
+                // Rule 13
+                if (!Type::isSameType(superMethod->type, n->type)) {
+                    std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+                    error = true;
+                    break;
+                }
+                if (superMethod->isPublic && !n->isPublic)
+                {
+                    if (superMethod->formalParameters.size() == n->formalParameters.size()) {
+                        bool isSameParameters = true;
+                        for (int i = 0; i < superMethod->formalParameters.size(); i++) {
+                            if (superMethod->formalParameters[i]->type->type != n->formalParameters[i]->type->type) {
+                                isSameParameters = false;
+                                break;
+                            }
+                        }
+                        if (isSameParameters) {
+                            std::cerr << "Error: Protected method " << superMethod->methodName->name << " in class " << n->methodName->name << " cannot override public method from superclass" << std::endl;
+                            error = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Visitor::visit(n);
 }

@@ -199,8 +199,9 @@ MethodDeclarations
 
 MethodDeclaration
     : PUBLIC MethodDeclarationOpt ResultType Variable FormalParameters SEMICOLON {
-        std::vector<Modifiers> m{};
+        std::vector<Modifiers> m{Modifiers::PUBLIC, Modifiers::ABSTRACT};
         $$ = std::make_shared<Method>(MemberType::METHODWITHOUTBODY, m, $3, $4, $5, nullptr);
+        $$->setModifiers(m);
     }
     ;
 

@@ -9,16 +9,9 @@ std::shared_ptr<Field> SymbolTable::getField(const std::string& key) const {
     return ftable.contains(key) ? ftable.at(key) : nullptr;
 }
 
-void SymbolTable::setFieldDecl(const std::string& key) {
-    fieldDecls.insert(key);
-}
-
-bool SymbolTable::isFieldDeclared(const std::string& key) const {
-    return fieldDecls.contains(key);
-}
-
 void SymbolTable::putMethod(const std::string& key, const std::shared_ptr<Method> value) {
     mtable[key].push_back(value);
+
 }
 
 std::vector<std::shared_ptr<Method>> SymbolTable::getMethod(const std::string& key) const {
@@ -92,3 +85,12 @@ void SymbolTable::setScope(std::shared_ptr<Scope> s) {
 std::shared_ptr<Scope> SymbolTable::getScope() const {
     return scope;
 }
+
+void SymbolTable::setFieldDecl(const std::string& key) {
+    fieldDecls.insert(key);
+}
+
+bool SymbolTable::isFieldDeclared(const std::string& key) const {
+    return fieldDecls.contains(key);
+}
+

@@ -26,6 +26,10 @@ class Type : public AstNode {
         DataType type;
         Type(DataType t);
         ~Type() = default;
+        static bool isSameType(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b) {
+            if (!a || !b) return false;
+            return a->type == b->type;
+        }
         virtual void accept(Visitor* v) = 0;
 };
 
@@ -516,6 +520,10 @@ class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
         bool isStatic;
+        // No isProtected and just use !isPublic
+        bool isPublic;
+        bool isFinal;
+        bool isAbstract;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
@@ -549,6 +557,15 @@ class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_th
         ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
         std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
         void accept(Visitor* v) override;
+        bool isAbstract ()
+        {
+            return modifier == "abstract";
+        }
+
+        bool isFinal ()
+        {
+            return modifier == "final";
+        }
 };
 
 class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from_this<InterfaceDecl> {
