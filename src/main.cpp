@@ -178,6 +178,11 @@ int main(int argc, char* argv[])
         }
     }
 
+    if (!error) 
+        for (auto ast : asts)
+            if (ast->scope->current->imtablePopulated == false)
+                populateIMTable(ast);
+
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
             HierarchyVisitor hvisitor(program->scope);
@@ -191,11 +196,7 @@ int main(int argc, char* argv[])
     }
 
 
-    if (!error) {
-        for (auto ast : asts)
-            if (ast->scope->current->imtablePopulated == false)
-                populateIMTable(ast);
-        
+    if (!error) {        
         struct PairVectorHash {
             size_t operator()(const std::pair<std::vector<DataType>, std::vector<std::string>>& p) const {
                 std::hash<int> dataTypeHasher; // Hash function for DataType
