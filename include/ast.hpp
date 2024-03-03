@@ -6,6 +6,7 @@
 #include <vector>
 #include "weeder.hpp"
 
+class IdentifierType;
 class Visitor;
 class Scope;
 

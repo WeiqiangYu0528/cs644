@@ -433,29 +433,28 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
         for (const auto& entry : container) {
             const auto& symbolTableHere = entry.second;
             if (symbolTableHere->getMethod(key) && entry.first != scope->current->getPackage()) {
-                for (const auto& node : symbolTableHere->mtable[key]) {
-                    auto methodNode = std::dynamic_pointer_cast<Method>(node);
-                    if (!methodNode) continue; // Ensure methodNode is valid before accessing its members
+                for (const auto& superMethod : symbolTableHere->mtable[key]) {
+                    if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                     // Rule 13
-                    if (!Type::isSameType(methodNode->returnType, n->returnType)) {
+                    if (!Type::isSameType(superMethod->returnType, n->returnType)) {
                         std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                         error = true;
                         break;
                     }
                     // Rule 15
-                    if (methodNode->isFinal()) {
+                    if (superMethod->isFinal()) {
                         std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
                         error = true;
                         break;
                     }
                     // Rule 14
-                    if (methodNode->isPublic() && !n->isPublic())
+                    if (superMethod->isPublic() && !n->isPublic())
                     {
                         std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
                         error = true;
                         break;
                     }
-                    if (!methodNode->isStatic() && n->isStatic())
+                    if (!superMethod->isStatic() && n->isStatic())
                     {
                         // This is a hack, I do not want to check all symbol tables
                         if (symbolTableHere->pkg != "java.lang")
@@ -475,14 +474,30 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
     processContainer(scope->singleImported);
     for(auto& symbolTable : scope->supers) {
         if (symbolTable != nullptr && symbolTable->getMethod(key)) {
-            for (const auto& node : symbolTable->mtable[key]) {
-                auto methodNode = std::dynamic_pointer_cast<Method>(node);
-                if (!methodNode) continue; // Ensure methodNode is valid before accessing its members
+            for (const auto& superMethod : symbolTable->mtable[key]) {
+                if (!superMethod) continue; // Ensure methodNode is valid before accessing its members
                 // Rule 13
-                if (!Type::isSameType(methodNode->returnType, n->returnType)) {
+                if (!Type::isSameType(superMethod->returnType, n->returnType)) {
                     std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                     error = true;
                     break;
+                }
+                if (superMethod->isPublic() && !n->isPublic())
+                {
+                    if (superMethod->formalParameters.size() == n->formalParameters.size()) {
+                        bool isSameParameters = true;
+                        for (int i = 0; i < superMethod->formalParameters.size(); i++) {
+                            if (superMethod->formalParameters[i]->type->type != n->formalParameters[i]->type->type) {
+                                isSameParameters = false;
+                                break;
+                            }
+                        }
+                        if (isSameParameters) {
+                            std::cerr << "Error: Protected method " << superMethod->methodName->name << " in class " << n->methodName->name << " cannot override public method from superclass" << std::endl;
+                            error = true;
+                            break;
+                        }
+                    }
                 }
             }
         }
