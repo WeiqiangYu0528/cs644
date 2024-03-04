@@ -363,7 +363,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    /*
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
             TypeCheckingVisitor tcvisitor(program->scope);
@@ -373,10 +372,8 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
-            break; // only for developing
         }
     }
-    */
 
     if (error)
         return 42;
