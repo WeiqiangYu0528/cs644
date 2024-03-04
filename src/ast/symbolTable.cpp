@@ -74,8 +74,14 @@ std::shared_ptr<ClassOrInterfaceDecl> SymbolTable::getClassOrInterfaceDecl() con
 std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getMTable() {
     return mtable;
 }
-std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getIMTable() {
+/*std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getIMTable() {
     return imtable;
+}*/
+std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getISCMTable() {
+    return iscmtable;
+}
+std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTable::getISIMTable() {
+    return isimtable;
 }
 
 void SymbolTable::setScope(std::shared_ptr<Scope> s) {

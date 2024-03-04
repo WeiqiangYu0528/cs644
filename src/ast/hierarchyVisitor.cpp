@@ -174,16 +174,19 @@ struct VectorDataTypeHash {
         return seed;
     }
 };
-std::unordered_map<DataType, DataType> arrayDataTypes = {
-    {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
-    {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY},
-    {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY},
-    {DataType::OBJECT, DataType::OBJECTARRAY}
-};
+
 
 //Requires: T is one of Method, Constructor
 template <typename T>
 std::string hierarchyRuleSevenEight(std::vector<std::shared_ptr<T>>& methodsOrConstructors) {
+
+    std::unordered_map<DataType, DataType> arrayDataTypes = {
+    {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
+    {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY},
+    {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY},
+    {DataType::OBJECT, DataType::OBJECTARRAY}
+    };
+
     const bool isMethod = std::is_same<T, Method>::value;
     const bool isConstructor = std::is_same<T, Constructor>::value;
     static_assert(isMethod == true || isConstructor == true, "T must be either Method or Constructor");

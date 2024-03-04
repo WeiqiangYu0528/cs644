@@ -48,15 +48,16 @@ class SymbolTable {
         void beginScope();
         void endScope();
         
-        
-        // inherited method table
-        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> imtable;
-        bool imtablePopulated = false;
-        SymbolTable() : imtablePopulated(false) {}
+        //inherited from superclass
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> iscmtable;
+        //inherited from superinterface
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> isimtable;
+
+        bool imtablesPopulated = false;
+        SymbolTable() : imtablesPopulated(false) {}
 
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
-        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getIMTable();
-
-
-
+        //std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getIMTable();
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();
+        std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISIMTable();
 };
