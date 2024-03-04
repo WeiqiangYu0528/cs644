@@ -159,9 +159,10 @@ void populateIMTables(std::shared_ptr<Program> n, bool& error) {
             if (error) return;
             //add extended interface methods to isimtable unless overridden
             std::shared_ptr<InterfaceDecl> sidecl = std::dynamic_pointer_cast<InterfaceDecl>(superTable->getClassOrInterfaceDecl());
-            assert(sidecl != nullptr);
-            processTable(superTable->getMTable(), isimtable, false, error);
-            processTable(superTable->getISIMTable(), isimtable, false, error);
+            if (sidecl != nullptr) {
+                processTable(superTable->getMTable(), isimtable, false, error);
+                processTable(superTable->getISIMTable(), isimtable, false, error);
+            } //otherwise, most likely an interface is extending a class, which will be caught later in hierarchy checking
         }
     }
     else {
@@ -181,31 +182,13 @@ void populateIMTables(std::shared_ptr<Program> n, bool& error) {
                 processTable(superTable->getISIMTable(), isimtable, true, error);
             } else {
                 //add extended superclass methods to iscmtable unless overridden
-                std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(n->classOrInterfaceDecl);
+                std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getClassOrInterfaceDecl());
                 assert(scdecl != nullptr);
                 processTable(superTable->getMTable(), iscmtable, false, error);
                 processTable(superTable->getISCMTable(), iscmtable, false, error);
             }
         }
     }
-
-
-
-
-/*
-
-    //for each super's table:
-    for (std::shared_ptr<SymbolTable> superTable : n->scope->supers) {
-        //recursively populate super imtable
-        if (superTable->imtablesPopulated == false) populateIMTables(superTable->getAst(), error);
-        //add each entry in the super's imtable to the corresponding entry in the current imtable
-        for (auto& pair : superTable->imtable) 
-            imtable[pair.first].insert(imtable[pair.first].end(), pair.second.begin(), pair.second.end());
-        //do the same with the super's mtable
-        for (auto& pair : superTable->getMTable()) 
-            imtable[pair.first].insert(imtable[pair.first].end(), pair.second.begin(), pair.second.end());
-    }
-    */
 }
 
 int main(int argc, char* argv[])
@@ -313,6 +296,12 @@ int main(int argc, char* argv[])
     }
 
     if (!error) {
+        for (auto ast : asts)
+            if (ast->scope->current->imtablesPopulated == false)
+                populateIMTables(ast, error);
+    }
+
+    if (!error) {
         for (std::shared_ptr<Program> program : asts) {
             HierarchyVisitor hvisitor(program->scope);
             program->accept(&hvisitor);
@@ -325,44 +314,10 @@ int main(int argc, char* argv[])
     }
 
 
-    if (!error) {
-        for (auto ast : asts)
-            if (ast->scope->current->imtablesPopulated == false)
-                populateIMTables(ast, error);
-    }
+    
 
     if (!error) {  
-        /* 
-        struct PairVectorHash {
-            size_t operator()(const std::pair<std::vector<DataType>, std::vector<std::string>>& p) const {
-                std::hash<int> dataTypeHasher; // Hash function for DataType
-                std::hash<std::string> stringHasher; // Hash function for std::string
-                size_t seed = 0;
-                for (const DataType& d : p.first)
-                    seed ^= dataTypeHasher(static_cast<int>(d)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                for (const std::string& s : p.second)
-                    seed ^= stringHasher(s) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                return seed;
-            }
-        };
-        */
-
-       /*
-        struct PairVectorHash {
-            size_t operator()(const std::vector<std::pair<DataType, std::string>>& vec) const {
-                std::hash<int> dataTypeHasher; // Hash function for DataType
-                std::hash<std::string> stringHasher; // Hash function for std::string
-                size_t seed = 0;
-                for (const auto& pair : vec) {
-                    seed ^= dataTypeHasher(static_cast<int>(pair.first)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                    seed ^= stringHasher(pair.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                }
-                return seed;
-            }
-        };*/
-
         //Rule 9: Class/interface can't contain (declare or inherit) two methods with same signature but diff return types
-
         for (auto ast : asts) {
             //std::unordered_map<std::vector<std::pair<DataType, std::string>>, std::pair<DataType, std::string>, PairVectorHash> mapSignatureToReturnType; //stores signatures seen thus far
             std::unordered_map<std::pair<std::string, std::vector<std::pair<DataType, std::string>>>, std::pair<DataType, std::string>, PairStringVectorHash> mapSignatureToReturnType;
