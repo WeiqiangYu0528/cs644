@@ -390,123 +390,22 @@ int main(int argc, char* argv[])
             //if its an interface,
             std::shared_ptr<InterfaceDecl> idecl = std::dynamic_pointer_cast<InterfaceDecl>(ast->classOrInterfaceDecl);
             if (idecl != nullptr) {
-                //go through all methods in our mtable and isimtable
-                /*
-                    get the method's signature and return type
-                    if the signature is in mapSignatureToReturnType,
-                        if the return type is different, give an error
-                        else do nothing
-                    else add to mapSignatureToReturnType
-                */
-               processTable(ast->scope->current->getMTable(), error);
-               if (error) break;
-               processTable(ast->scope->current->getISIMTable(), error);
-               if (error) break;
-            }
-
-            else {
+                processTable(ast->scope->current->getMTable(), error); //check declared methods
+                if (error) break;
+                processTable(ast->scope->current->getISIMTable(), error); //check inherited from superinterfaces
+                if (error) break;
+            } else {
                 //assert its a class
                 std::shared_ptr<ClassDecl> cdecl = std::dynamic_pointer_cast<ClassDecl>(ast->classOrInterfaceDecl);
                 assert(cdecl != nullptr);
-                //go through all methods in our mtable and iscmtable
-                /*  
-                    get the method's signature and return type
-                    if the signature is already in the map
-                        if the return type is different, give an error
-                        else do nothing
-                    else add to map sig to return type
-                */
-               processTable(ast->scope->current->getMTable(), error);
-               if (error) break;
-               processTable(ast->scope->current->getISCMTable(), error);
-               if (error) break;
+                processTable(ast->scope->current->getMTable(), error); //check declared
+                if (error) break;
+                processTable(ast->scope->current->getISCMTable(), error); //check inherited from superclass
+                if (error) break;
+                processTable(ast->scope->current->getISIMTable(), error); //check inherited from superinterface
+                if (error) break;
             }
-
         }
-
-
-
-/*
-        for (auto ast : asts) {
-        //get vector of strings
-            std::unordered_set<std::string> methodNames; //to avoid double checks for the same method name if included in mtable and imtable
-            for (const auto& mtableEntry : ast->scope->current->getMTable())
-                methodNames.insert(mtableEntry.first);
-            //for (const auto& imtableEntry : ast->scope->current->getIMTable())
-            //    methodNames.insert(imtableEntry.first);
-            for (const auto& iscmtableEntry : ast->scope->current->getISCMTable())
-                methodNames.insert(iscmtableEntry.first);
-            for (const auto& isimtableEntry : ast->scope->current->getISIMTable())
-                methodNames.insert(isimtableEntry.first);
-
-            for (std::string s : methodNames) {
-                std::unordered_map<std::pair<std::vector<DataType>, std::vector<std::string>>, 
-                std::pair<DataType, std::string>, PairVectorHash> mp;
-
-                std::vector<std::shared_ptr<Method>> methodPtrs;
-                for (auto methodPtr : ast->scope->current->getMTable()[s]) methodPtrs.push_back(methodPtr);
-                //for (auto methodPtr : ast->scope->current->getIMTable()[s]) methodPtrs.push_back(methodPtr);
-                for (auto methodPtr : ast->scope->current->getISCMTable()[s]) methodPtrs.push_back(methodPtr);
-                for (auto methodPtr : ast->scope->current->getISIMTable()[s]) methodPtrs.push_back(methodPtr);
-                
-                for (auto methodPtr : methodPtrs) {
-                    std::pair<DataType, std::string> returnTypePair;
-                    std::string returnObject = "";
-                    DataType d = methodPtr->type->type;
-                    if (d == DataType::ARRAY) {
-                        std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(methodPtr->type);
-                        assert(arrayType != nullptr);
-                        d = arrayDataTypes[arrayType->dataType->type];
-                        if (d == DataType::OBJECTARRAY) {
-                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                            assert(idType != nullptr);
-                            returnObject = idType->id->name;
-                        }
-                    } else if (d == DataType::OBJECT) {
-                        std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(methodPtr->type);
-                        assert(idType != nullptr);
-                        returnObject = idType->id->name;
-                    }
-                    //create the return pair
-                    returnTypePair = std::make_pair(d, returnObject);
-                    //next, create the vector of parameter types
-                    std::vector<DataType> paramTypes;
-                    std::vector<std::string> objectNames;
-                    for (auto fp : methodPtr->formalParameters) {
-                        d = fp->type->type;
-                        if (d == DataType::ARRAY) {
-                            std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(fp->type);
-                            assert(arrayType != nullptr);
-                            d = arrayDataTypes[arrayType->dataType->type];  
-                            if (d == DataType::OBJECTARRAY) {
-                                std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(arrayType->dataType);
-                                assert(idType != nullptr);
-                                objectNames.push_back(idType->id->name);
-                            }
-                        } else if (d == DataType::OBJECT) {
-                            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(fp->type);
-                            assert(idType != nullptr);
-                            objectNames.push_back(idType->id->name);
-                        }
-                        paramTypes.push_back(d);
-                    }
-                    std::pair<std::vector<DataType>, std::vector<std::string>> key = std::make_pair(paramTypes, objectNames);
-                    if (mp.find(key) != mp.end()) { //mp has the paramTypes and objectNames
-                        if (mp[key] != returnTypePair) {
-                            std::cerr << "Error: Inherited/Declared method signature repeated with different return type" << std::endl;
-                            std::cerr << "Error: Hierarchy Checking failed" << std::endl;
-                            error = true;
-                            break;
-                        }
-                    } else mp[key] = returnTypePair;
-                    
-                }
-                if (error == true) break;
-            }
-            if (error == true) break;
-        }
-        */
-
     }
 
     /*
