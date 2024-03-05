@@ -132,7 +132,7 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
+FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f) : exp(e), field(f) {
 }
 
 void FieldAccessExp::accept(Visitor* v) {
@@ -363,21 +363,52 @@ void FormalParameter::accept(Visitor* v) {
 MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt), modifiers(m) {
 }
 
-Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
-: MemberDecl(mt, m), returnType(rt), fieldName(fn), initializer(i) {
+Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
+: MemberDecl(mt, m), isStatic(false), type(t), fieldName(fn), initializer(i) {
 }
 
 void Field::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+void Field::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
+    for (Modifiers modifier : m) {
+        if (modifier == Modifiers::STATIC) {
+            isStatic = true;
+            break;
+        }
+    }
+}
+
+Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
-: MemberDecl(mt, m), returnType(rt), methodName(mn), formalParameters(fp), block(b) {
+: MemberDecl(mt, m), isStatic(false), type(t), methodName(mn), formalParameters(fp), block(b) {
 }
 
 void Method::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+void Method::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
+    for (Modifiers modifier : m) {
+        if (modifier == Modifiers::STATIC) {
+            isStatic = true;
+        }
+        if (modifier == Modifiers::ABSTRACT)
+        {
+            isAbstract = true;
+        }
+        if (modifier == Modifiers::FINAL)
+        {
+            isFinal = true;
+        }
+        if (modifier == Modifiers::PUBLIC)
+        {
+            isPublic = true;
+        }
+    }
 }
 
 Constructor::Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
@@ -387,6 +418,10 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement
 
 void Constructor::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+void Constructor::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
 }
 
 ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 

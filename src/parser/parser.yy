@@ -199,8 +199,9 @@ MethodDeclarations
 
 MethodDeclaration
     : PUBLIC MethodDeclarationOpt ResultType Variable FormalParameters SEMICOLON {
-        std::vector<Modifiers> m{};
+        std::vector<Modifiers> m{Modifiers::PUBLIC, Modifiers::ABSTRACT};
         $$ = std::make_shared<Method>(MemberType::METHODWITHOUTBODY, m, $3, $4, $5, nullptr);
+        $$->setModifiers(m);
     }
     ;
 
@@ -550,7 +551,10 @@ DimExprs:
     ;
 
 FieldAccess:
-    Primary DOT Variable {$$ = std::make_shared<FieldAccessExp>($1, $3);}
+    Primary DOT Variable {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<FieldAccessExp>($1, ie);
+    }
     | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
     ;
 
@@ -686,7 +690,7 @@ ClassBodyDeclaration
     }
     | ClassBodyDeclarationOpt1 MemberDecl {
         $$ = $2; //with placeholder modifiers
-        $$->modifiers = $1;
+        $$->setModifiers($1);
 
         std::vector<int> modifiers = std::vector<int>(6, 0);
         for (Modifiers m : $1) {
