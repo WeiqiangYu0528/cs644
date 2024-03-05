@@ -577,13 +577,13 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
         }
     }
     else if (left_type == ExpType::Array) {
-        if (right_type == ExpType::Array && left_array_type == right_array_type) {
-            if (left_array_type == DataType::OBJECT && left_obj_name != right_obj_name) {
-                error = true;
-                std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
+        if (right_type == ExpType::Array) {
+            if (left_array_type == DataType::OBJECT && right_array_type == DataType::OBJECT) {
+              if (left_obj_name == "Object" || left_obj_name == right_obj_name) 
                 return;
             }
-            return;
+            else if (left_array_type == right_array_type)
+                 return;
         }
         error = true;
         std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;

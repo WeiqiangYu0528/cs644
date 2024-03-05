@@ -55,12 +55,19 @@ class TypeCheckingVisitor : public Visitor {
             // short + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Short},
             // short + byte
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Byte},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Byte}, ExpType::Short},
             // byte + byte
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
             // char + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
                         
+
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::String}, ExpType::String},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::String}, ExpType::String},                                   
+
+
             // int < int
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Integer}, ExpType::Boolean},
             // int < char
@@ -107,13 +114,17 @@ class TypeCheckingVisitor : public Visitor {
         std::set<std::pair<ExpType, ExpType>> castingRules = {
             // first <= second
             {ExpType::Integer, ExpType::Integer},
+            {ExpType::Integer, ExpType::Short},    
+            {ExpType::Integer, ExpType::Byte},                        
             {ExpType::Short, ExpType::Integer},
+            {ExpType::Short, ExpType::Char},            
             {ExpType::Char, ExpType::Integer},
             {ExpType::Byte, ExpType::Integer},
             {ExpType::Short, ExpType::Short},
             {ExpType::Byte, ExpType::Short},
             {ExpType::Byte, ExpType::Byte},
             {ExpType::Char, ExpType::Char},
+            {ExpType::Byte, ExpType::Char},            
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
             {ExpType::Object, ExpType::Object},
