@@ -26,10 +26,6 @@ class Type : public AstNode {
         DataType type;
         Type(DataType t);
         ~Type() = default;
-        static bool isSameType(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b) {
-            if (!a || !b) return false;
-            return a->type == b->type;
-        }
         virtual void accept(Visitor* v) = 0;
 };
 
@@ -47,7 +43,6 @@ class MemberDecl : public AstNode {
         MemberDecl(MemberType mt, std::vector<Modifiers> m);
         virtual ~MemberDecl() = default;
         virtual void accept(Visitor* v) = 0;
-        virtual void setModifiers(std::vector<Modifiers>& m) = 0;
 };
 
 class Identifier : public AstNode, public std::enable_shared_from_this<Identifier> {
@@ -219,8 +214,8 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
 class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAccessExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::shared_ptr<IdentifierExp> field;
-        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
+        std::shared_ptr<Identifier> id;
+        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i);
         void accept(Visitor* v) override;
 };
 
@@ -506,33 +501,25 @@ class FormalParameter : public AstNode, public std::enable_shared_from_this<Form
 
 class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
-        bool isStatic;
-        std::shared_ptr<Type> type;
+        std::shared_ptr<Type> returnType;
         std::shared_ptr<Identifier> fieldName;
         std::shared_ptr<Exp> initializer;
 
-        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, 
+        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, 
         std::shared_ptr<Exp> i);
         void accept(Visitor* v) override;
-        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
-        bool isStatic;
-        // No isProtected and just use !isPublic
-        bool isPublic;
-        bool isFinal;
-        bool isAbstract;
-        std::shared_ptr<Type> type;
+        std::shared_ptr<Type> returnType;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
         std::shared_ptr<BlockStatement> block;
 
-        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
+        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
-        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
@@ -544,7 +531,6 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
-        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
@@ -557,15 +543,6 @@ class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_th
         ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
         std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
         void accept(Visitor* v) override;
-        bool isAbstract ()
-        {
-            return modifier == "abstract";
-        }
-
-        bool isFinal ()
-        {
-            return modifier == "final";
-        }
 };
 
 class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from_this<InterfaceDecl> {
