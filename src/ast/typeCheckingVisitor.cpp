@@ -427,7 +427,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
-    currentExpType = ExpType::Any;
+    currentExpType = ExpType::Array;
+
+    if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)){
+        currentArrayDataType = DataType::OBJECT;
+        currentObjectTypeName = type->id->name;
+    }
+    else
+        currentArrayDataType = n->type->type;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
