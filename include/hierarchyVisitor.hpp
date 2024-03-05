@@ -4,13 +4,14 @@
 #include "visitor.hpp"
 
 class HierarchyVisitor: public Visitor {
-    public:
+    private:
         std::shared_ptr<Scope> scope;
         bool error;
+
+    public:
         HierarchyVisitor(std::shared_ptr<Scope> s);
         void visit(std::shared_ptr<Program> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
         void visit(std::shared_ptr<InterfaceDecl> n) override;
-        void visit(std::shared_ptr<Method> n) override;
         bool isError() const;
 };

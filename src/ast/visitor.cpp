@@ -69,7 +69,6 @@ void Visitor::visit(std::shared_ptr<IdentifierType> n) {
 
 void Visitor::visit(std::shared_ptr<FieldAccessExp> n) { 
     n->exp->accept(this);
-    n->field->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<NewArrayExp> n) {
@@ -217,13 +216,13 @@ void Visitor::visit(std::shared_ptr<Constructor> n) {
 }
 
 void Visitor::visit(std::shared_ptr<Method> n) {
-    n->type->accept(this);
+    n->returnType->accept(this);
     for (auto fp : n->formalParameters) fp->accept(this);
     if (n->block) n->block->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<Field> n) {
-    n->type->accept(this);
+    n->returnType->accept(this);
     if (n->initializer) n->initializer->accept(this);
 }
 
