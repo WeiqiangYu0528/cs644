@@ -1,6 +1,6 @@
 #include "typeCheckingVisitor.hpp"
 
-TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false) {
+TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false), staticMethod(false) {
     // for testing only
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
 }
@@ -60,7 +60,9 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Method> n) {
     scope->current->beginScope();
+    if (n->isStatic) staticMethod = true;
     Visitor::visit(n);
+    staticMethod = false;
     scope->current->endScope();
 }
 
@@ -117,14 +119,30 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
-    std::cout << "field access" << std::endl;
-    Visitor::visit(n);
+    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
+        if (staticMethod) {
+            std::cerr << "Error: Cannot use this in a static method" << std::endl;
+            error = true;
+            return;
+        }
+        bool init{initialized};
+        initialized = false;
+        n->field->accept(this);
+        initialized = init;
+    } else {
+        Visitor::visit(n);
+    }
     currentExpType = ExpType::Any;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
-      if (n->primary != nullptr) {
-        n->primary->accept(this);
+      if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
+        if (staticMethod) {
+            std::cerr << "Error: Cannot use this in a static method" << std::endl;
+            error = true;
+            return;
+        }
+        // n->primary->accept(this);
     }
     if (n->methodName != nullptr) {
         std::string identifier {n->methodName->id->name};
@@ -132,6 +150,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             if (scope->current->getMethod(identifier).empty()) {
                 std::cerr << "Error: Invalid non-static method name " << identifier << std::endl;
                 error = true;
+            }
+            if (staticMethod) {
+                std::cerr << "Error: Cannot call non-static method in a static method" << std::endl;
+                error = true;
+                return;
             }
         } 
         else {
@@ -141,17 +164,22 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             }
         }
     }
+
+    for (auto& arg : n->arguments) {
+        arg->accept(this);
+    }
+
     currentExpType = ExpType::Any;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
-    // if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
-    //     const std::string key {left->id->name};
-    // }
     std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
     DataType left_array_type, right_array_type;
 
+    bool init{initialized};
+    initialized = false;
     auto left_type = GetExpType(n->left);
+    initialized = init;
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
         if (left_obj_name == "String")
