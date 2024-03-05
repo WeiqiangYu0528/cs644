@@ -19,20 +19,7 @@ enum class ExpType {
     Any
 };
 
-std::string expTypeString[] =
-{
-    "Int",
-    "Short",
-    "Char",
-    "Byte",
-    "Boolean",
-    "Object",
-    "Array",
-    "String",
-    "Null",
-    "Undefined",
-    "Any"
-};
+extern std::string expTypeString[];
 
 enum class ExpRuleType {
     ArithmeticOrBitwise,

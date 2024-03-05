@@ -1,5 +1,21 @@
 #include "typeCheckingVisitor.hpp"
 
+std::string expTypeString[] =
+{
+    "Int",
+    "Short",
+    "Char",
+    "Byte",
+    "Boolean",
+    "Object",
+    "Array",
+    "String",
+    "Null",
+    "Undefined",
+    "Any"
+};
+
+
 TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false), staticMethod(false) {
     // for testing only
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
