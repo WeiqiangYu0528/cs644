@@ -454,7 +454,52 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
-    currentExpType = ExpType::Any;
+    auto expType = GetExpType(n->exp);
+    
+    ExpType castType {ExpType::Undefined};
+    std::string castObjectTypeName;
+    DataType castArrayDataType;
+    if (auto type = std::dynamic_pointer_cast<ArrayType>(n->type)) {
+        castType = ExpType::Array;
+        if (auto dataType = std::dynamic_pointer_cast<IdentifierType>(type->dataType)){
+            castArrayDataType = DataType::OBJECT;
+            castObjectTypeName = dataType->id->name;
+        }
+        else 
+            castArrayDataType = type->dataType->type;
+    }
+    else if (auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        castType = ExpType::Object;
+        castObjectTypeName = type->id->name;
+    }
+    else
+    {
+       std::map<DataType, ExpType> d2e = {
+            {DataType::INT, ExpType::Integer},
+            {DataType::SHORT, ExpType::Short},
+            {DataType::CHAR, ExpType::Char},
+            {DataType::BOOLEAN, ExpType::Boolean},
+            {DataType::BYTE, ExpType::Byte},
+        };
+        if (d2e.contains(n->type->type)) 
+            castType = d2e[n->type->type];
+        else {
+            error = true;
+            std::cerr << "Error: Undefined casting " << std::endl;
+            return;
+        }
+    }
+    
+    // casting rules here
+    if (!castingRules.contains({castType, expType})) {
+        error = true;
+        std::cerr << "Error: Undefined casting " << std::endl;
+        return;
+    }
+    
+    currentExpType = castType;
+    currentObjectTypeName = castObjectTypeName;
+    currentArrayDataType = castArrayDataType;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
@@ -469,8 +514,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
-    currentExpType = ExpType::Any;
-    Visitor::visit(n);
+    currentExpType = GetExpType(n->exp);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
@@ -520,24 +564,34 @@ void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambigu
 void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, 
     std::string left_obj_name, std::string right_obj_name, DataType left_array_type, DataType right_array_type) {
     if(left_type == ExpType::Any || right_type == ExpType::Any) return;
-    if (!assginmentRules.contains({left_type, right_type})) {
+
+    if(left_type == ExpType::Object) {
+        if (left_obj_name == "Object" && (right_type == ExpType::Object || right_type == ExpType::Array || right_type == ExpType::String || right_type == ExpType::Null))
+            return;
+        else if(right_type == ExpType::Object && left_obj_name == right_obj_name)
+                return;
+        else {
+            error = true;
+            std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Object" << std::endl;
+            return;
+        }
+    }
+    else if (left_type == ExpType::Array) {
+        if (right_type == ExpType::Array && left_array_type == right_array_type) {
+            if (left_array_type == DataType::OBJECT && left_obj_name != right_obj_name) {
+                error = true;
+                std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
+                return;
+            }
+            return;
+        }
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
+        return;
+    }
+    else if (!assginmentRules.contains({left_type, right_type})) {
         error = true;
         std::cerr << "Error: Invalid Assignment Type: " << expTypeString[(int)left_type] << " <=== " << expTypeString[(int)right_type] << std::endl;              
     }
-    else if(left_type == ExpType::Object && right_type == ExpType::Object) {
-        if (!(left_obj_name == right_obj_name || left_obj_name == "Object")) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
-        }
-    }
-    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
-        if (!(left_array_type == right_array_type && (left_obj_name == right_obj_name || left_obj_name == "Object"))) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
-        }
-    } 
-    else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
-    }          
+
 }
