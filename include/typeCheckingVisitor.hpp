@@ -90,6 +90,7 @@ class TypeCheckingVisitor : public Visitor {
         };
 
         std::set<std::pair<ExpType, ExpType>> assginmentRules = {
+            // first <= second
             {ExpType::Integer, ExpType::Integer},
             {ExpType::Integer, ExpType::Short},
             {ExpType::Integer, ExpType::Char},
@@ -99,12 +100,25 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Byte, ExpType::Byte},                                    
             {ExpType::Char, ExpType::Char},                                                
             {ExpType::Boolean, ExpType::Boolean},   
-            {ExpType::String, ExpType::String},        
-            {ExpType::Object, ExpType::Object},
-            {ExpType::Array, ExpType::Array},            
-            {ExpType::Object, ExpType::Null},
-            {ExpType::String, ExpType::Null},  
+            {ExpType::String, ExpType::String},                       
+            {ExpType::String, ExpType::Null},              
         };
+
+        std::set<std::pair<ExpType, ExpType>> castingRules = {
+            // first <= second
+            {ExpType::Integer, ExpType::Integer},
+            {ExpType::Short, ExpType::Integer},
+            {ExpType::Char, ExpType::Integer},
+            {ExpType::Byte, ExpType::Integer},
+            {ExpType::Short, ExpType::Short},
+            {ExpType::Byte, ExpType::Short},
+            {ExpType::Byte, ExpType::Byte},
+            {ExpType::Char, ExpType::Char},
+            {ExpType::Boolean, ExpType::Boolean},
+            {ExpType::String, ExpType::String},
+            {ExpType::Object, ExpType::Object},
+            {ExpType::Array, ExpType::Array},
+        };      
 
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
