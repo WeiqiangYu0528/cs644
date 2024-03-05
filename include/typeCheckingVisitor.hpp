@@ -24,6 +24,12 @@ enum class ExpRuleType {
     Undefined = -1
 };
 
+struct argumentExp {
+    ExpType expType = ExpType::Undefined;
+    std::string objectName;
+    DataType arrayType;
+};
+
 class TypeCheckingVisitor : public Visitor {
     private:
         std::shared_ptr<Scope> scope;
@@ -159,4 +165,6 @@ class TypeCheckingVisitor : public Visitor {
         void SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambiguousName);
         void AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, std::string left_obj_name, 
             std::string right_obj_name, DataType left_array_type, DataType right_array_type);
+
+        //std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentType>& arguments);
 };

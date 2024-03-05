@@ -15,9 +15,16 @@ void SymbolTable::putMethod(const std::string& key, const std::shared_ptr<Method
 }
 
 std::vector<std::shared_ptr<Method>> SymbolTable::getMethod(const std::string& key) const {
-    if (mtable.contains(key)) return mtable.at(key);
-    if (iscmtable.contains(key)) return iscmtable.at(key);
-    return std::vector<std::shared_ptr<Method>>{};
+    std::vector<std::shared_ptr<Method>> methods;
+    if (mtable.contains(key)) {
+        auto m = mtable.at(key);
+        std::for_each(m.begin(), m.end(), [&methods](std::shared_ptr<Method> method){methods.push_back(method);});
+    }
+    if (iscmtable.contains(key)) {
+        auto m = iscmtable.at(key);
+        std::for_each(m.begin(), m.end(), [&methods](std::shared_ptr<Method> method){methods.push_back(method);});
+    }
+    return methods;
 }
 
 void SymbolTable::putConstuctor(const std::string& key, const std::shared_ptr<Constructor> value) {

@@ -606,17 +606,29 @@ ReturnStatements:
     ;
 
 MethodInvocation:
-    Name LEFT_PAREN ArgumentList RIGHT_PAREN {
-        $$ = std::make_shared<MethodInvocation>(nullptr, nullptr, $1, $3);
+    Variable LEFT_PAREN ArgumentList RIGHT_PAREN {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($1, true);
+        $$ = std::make_shared<MethodInvocation>(ie, $3);
     }
-    | Name LEFT_PAREN RIGHT_PAREN {
-        $$ = std::make_shared<MethodInvocation>(nullptr, nullptr, $1, std::vector<std::shared_ptr<Exp>>());
+    | Variable LEFT_PAREN RIGHT_PAREN {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($1, true);
+        $$ = std::make_shared<MethodInvocation>(ie, std::vector<std::shared_ptr<Exp>>());
+    }
+    | Name DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<MethodInvocation>($1, ie, $5);
+    }
+    | Name DOT Variable LEFT_PAREN RIGHT_PAREN {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<MethodInvocation>($1, ie, std::vector<std::shared_ptr<Exp>>());
     }
     | Primary DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN {
-        $$ = std::make_shared<MethodInvocation>($1, $3, nullptr, $5); 
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<MethodInvocation>($1, ie, $5); 
     }
     | Primary DOT Variable LEFT_PAREN RIGHT_PAREN {
-        $$ = std::make_shared<MethodInvocation>($1, $3, nullptr, std::vector<std::shared_ptr<Exp>>());
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<MethodInvocation>($1, ie, std::vector<std::shared_ptr<Exp>>());
     }
     | SUPER DOT Variable LEFT_PAREN ArgumentList RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }
     | SUPER DOT Variable LEFT_PAREN RIGHT_PAREN { throw syntax_error(@1, std::string("super method calls not allowed")); }

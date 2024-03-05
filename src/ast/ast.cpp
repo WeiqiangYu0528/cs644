@@ -274,10 +274,20 @@ void MethodInvocation::accept(Visitor* v) {
 }
 
 MethodInvocation::MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<Identifier> primaryMethodName,
-        std::shared_ptr<IdentifierType> methodName, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
         std::vector<std::shared_ptr<Exp>> arguments)
-        : primary(primary), primaryMethodName(primaryMethodName), methodName(methodName), arguments(arguments) {
+        : primary(primary), primaryMethodName(primaryMethodName), arguments(arguments) {
+}
+
+MethodInvocation::MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName, 
+        std::shared_ptr<IdentifierExp> ambiguousMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments)
+        : ambiguousName(ambiguousName), ambiguousMethodName(ambiguousMethodName), arguments(arguments) {
+}
+
+MethodInvocation::MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments)
+        : ambiguousMethodName(ambiguousMethodName), arguments(arguments) {
 }
 
 void ClassInstanceCreationExp::accept(Visitor* v) {

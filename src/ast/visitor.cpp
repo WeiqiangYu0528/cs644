@@ -153,12 +153,14 @@ void Visitor::visit(std::shared_ptr<Assignment> n) {
 }
 
 void Visitor::visit(std::shared_ptr<MethodInvocation> n) {
-    if (n->primary != nullptr)
+    if (n->primary != nullptr) {
         n->primary->accept(this);
-
-    if (n->methodName != nullptr)
-        n->methodName->accept(this);
-
+        n->primaryMethodName->accept(this);
+    }
+    if (n->ambiguousName != nullptr) {
+        n->ambiguousName->accept(this);
+        n->ambiguousMethodName->accept(this);
+    }
     for (auto& arg : n->arguments) {
         arg->accept(this);
     }

@@ -56,8 +56,6 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
     std::istringstream qualifiedName(name);
     std::string segment;
     AmbiguousName ambiguousName;
-    //a.length;
-    // to do consider basic cases
     while (std::getline(qualifiedName, segment, '.')) {
         if (ambiguousName.type == AmbiguousNamesType::ERROR) break;
         if (ambiguousName.type == AmbiguousNamesType::UNINITIALIZED) {
@@ -71,10 +69,6 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
                         if (ambiguousName.symbolTable->getField(segment) != nullptr) {
                             // ambiguousName.symbolTable->getField(segment)
                             ambiguousName = reclassifyAmbiguousNameByField(segment, ambiguousName.symbolTable, false);
-                        }
-                        else if(!ambiguousName.symbolTable->getMethod(segment).empty()) {
-                            // to do, select the closest method
-                            ambiguousName = reclassifyAmbiguousNameByMethod(segment, ambiguousName.symbolTable, false);
                         } else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
                         }
@@ -97,10 +91,6 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
                     if (ambiguousName.symbolTable != nullptr) {
                         if (ambiguousName.symbolTable->getField(segment) != nullptr) {
                             ambiguousName = reclassifyAmbiguousNameByField(segment, ambiguousName.symbolTable, true);
-                        }
-                        else if (!ambiguousName.symbolTable->getMethod(segment).empty()) {
-                            // to do, select the closest method
-                            ambiguousName = reclassifyAmbiguousNameByMethod(segment, ambiguousName.symbolTable, true);
                         } else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
                         }
@@ -145,14 +135,6 @@ AmbiguousName Scope::reclassifyAmbiguousNameByField(const std::string& name, std
     auto field = st->getField(name);
     AmbiguousName ambiguousName = createAmbiguousName(field->type, st);
     if (staticField != field->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
-    return ambiguousName;
-}
-
-AmbiguousName Scope::reclassifyAmbiguousNameByMethod(const std::string& name, std::shared_ptr<SymbolTable> st, bool staticMethod) {
-    // todo: select the closest method, currently just selects the first one
-    auto method = st->getMethod(name)[0];
-    AmbiguousName ambiguousName = createAmbiguousName(method->type, st);
-    if (staticMethod != method->isStatic ) ambiguousName.type = AmbiguousNamesType::ERROR;
     return ambiguousName;
 }
 

@@ -193,8 +193,8 @@ void populateIMTables(std::shared_ptr<Program> n, bool& error) {
 
 int main(int argc, char* argv[])
 {
-    // std::unordered_map<std::string, 
-    //                    std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
+    std::unordered_map<std::string, 
+                       std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
     std::shared_ptr<PackageTrie> pkgTrie = std::make_shared<PackageTrie>();
     std::vector<std::shared_ptr<Program>> asts;
     bool error {false};
@@ -369,7 +369,7 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
-            break;
+            // break;
         }
     }
 

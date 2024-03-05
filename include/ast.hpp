@@ -344,13 +344,18 @@ public:
 class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
 public:
     std::shared_ptr<Exp> primary;
-    std::shared_ptr<Identifier> primaryMethodName;
-    std::shared_ptr<IdentifierType> methodName;
+    std::shared_ptr<IdentifierExp> primaryMethodName;
+    std::shared_ptr<IdentifierType> ambiguousName;
+    std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<Identifier> primaryMethodName,
-        std::shared_ptr<IdentifierType> methodName, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
         std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
+    std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
     void accept(Visitor* v) override;
 };
 

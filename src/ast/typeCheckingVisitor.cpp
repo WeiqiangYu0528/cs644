@@ -109,6 +109,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
+    std::cout << "IdentifierExp: " << key << std::endl;
     auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized);
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
@@ -136,7 +137,13 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
-      if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
+    std::vector<argumentExp> arguments;
+    for (auto& arg : n->arguments) {
+        arg->accept(this);
+        arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
+    }
+    //primary method invocation
+    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
         if (staticMethod) {
             std::cerr << "Error: Cannot use this in a static method" << std::endl;
             error = true;
@@ -144,31 +151,50 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         }
         // n->primary->accept(this);
     }
-    if (n->methodName != nullptr) {
-        std::string identifier {n->methodName->id->name};
-        if (n->methodName->simple) {
-            if (scope->current->getMethod(identifier).empty()) {
-                std::cerr << "Error: Invalid non-static method name " << identifier << std::endl;
-                error = true;
+    //normal method invocation
+    if (n->ambiguousMethodName != nullptr) {
+        std::string methodName {n->ambiguousMethodName->id->name};
+        if (n->ambiguousName) {
+            AmbiguousName ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized);
+            if (ambiguousName.type == AmbiguousNamesType::TYPE) {
+                auto methods = ambiguousName.symbolTable->getMethod(methodName);
+                if (methods.empty()) {
+                    std::cerr << "Error: Invalid method name " << methodName << std::endl;
+                    error = true;
+                    return;
+                }
             }
+            else if (ambiguousName.type == AmbiguousNamesType::EXPRESSION) {
+                auto methods = ambiguousName.symbolTable->getMethod(methodName);
+                if (methods.empty()) {
+                    std::cerr << "Error: Invalid method name " << methodName << std::endl;
+                    error = true;
+                    return;
+                }
+            }
+            else {
+                std::cerr << "Error: Invalid ambiguous name " << n->ambiguousName->id->name << std::endl;
+                error = true;     
+                return;
+            }
+        }
+        else {
             if (staticMethod) {
                 std::cerr << "Error: Cannot call non-static method in a static method" << std::endl;
                 error = true;
                 return;
             }
-        } 
-        else {
-            if (scope->reclassifyAmbiguousName(identifier, false, initialized).type == AmbiguousNamesType::ERROR) {
-                std::cerr << "Error: Invalid non-static method name " << identifier << std::endl;
+            std::vector<std::shared_ptr<Method>> methods = scope->current->getMethod(methodName);
+            if (methods.empty()) {
+                std::cerr << "Error: Invalid non-static method name " << methodName << std::endl;
                 error = true;
+                return;
             }
+            // if (){
+
+            // }
         }
     }
-
-    for (auto& arg : n->arguments) {
-        arg->accept(this);
-    }
-
     currentExpType = ExpType::Any;
 }
 
@@ -176,10 +202,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
     DataType left_array_type, right_array_type;
 
-    bool init{initialized};
-    initialized = false;
+    // bool init{initialized};
+    // initialized = false;
     auto left_type = GetExpType(n->left);
-    initialized = init;
+    // initialized = init;
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
         if (left_obj_name == "String")
@@ -407,6 +433,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
+    std::cout << "ParExp" << std::endl;
     currentExpType = ExpType::Any;
     Visitor::visit(n);
 }
@@ -490,3 +517,12 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
             std::cerr << "Error: Undefined Error: " << (int)left_type << " <=== " << (int)right_type << std::endl;
     }
 }
+
+// std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentType>& arguments) {
+//     for (auto method : methods) {
+//         if (method->formalParameters.size() != arguments.size()) continue;
+//         for (size_t i = 0; i < method->formalParameters.size(); ++i) {
+//             if ()
+//         }
+//     }
+// }
