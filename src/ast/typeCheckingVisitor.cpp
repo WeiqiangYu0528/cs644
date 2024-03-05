@@ -339,7 +339,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<EqualExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto type1 = GetExpType(n->exp1);
+    auto type2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::Equality, type1, type2);
+    if (currentExpType == ExpType::Undefined) 
+        currentExpType = CalcExpType(ExpRuleType::Comparison, type1, type2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid EqualExp Type " << std::endl;
         error = true;
@@ -347,7 +351,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<EqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto type1 = GetExpType(n->exp1);
+    auto type2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::Equality, type1, type2);
+    if (currentExpType == ExpType::Undefined) 
+        currentExpType = CalcExpType(ExpRuleType::Comparison, type1, type2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid NotEqualExp Type " << std::endl;
         error = true;
