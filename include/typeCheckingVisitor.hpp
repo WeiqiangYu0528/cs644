@@ -14,8 +14,24 @@ enum class ExpType {
     Object,
     Array,
     String,
-    Undefined = -1,
-    Any = -2
+    Null,
+    Undefined,
+    Any
+};
+
+std::string expTypeString[] =
+{
+    "Int",
+    "Short",
+    "Char",
+    "Byte",
+    "Boolean",
+    "Object",
+    "Array",
+    "String",
+    "Null",
+    "Undefined",
+    "Any"
 };
 
 enum class ExpRuleType {
@@ -91,6 +107,10 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Char, ExpType::Char},                                                
             {ExpType::Boolean, ExpType::Boolean},   
             {ExpType::String, ExpType::String},        
+            {ExpType::Object, ExpType::Object},
+            {ExpType::Array, ExpType::Array},            
+            {ExpType::Object, ExpType::Null},
+            {ExpType::String, ExpType::Null},  
         };
 
     public:
