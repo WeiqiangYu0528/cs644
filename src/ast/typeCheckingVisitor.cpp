@@ -13,7 +13,43 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FormalParameter> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
     const std::string key {n->id->name};
     scope->current->putVar(key, n);
-    if (n->exp) n->exp->accept(this);
+    if (n->exp) {
+        auto ambiguousName = scope->reclassifyAmbiguousNameByLocal(key);
+        SetCurrentExpTypebyAmbiguousName(ambiguousName);
+        std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
+        DataType left_array_type, right_array_type;
+    
+        auto left_type = currentExpType;
+        if (left_type == ExpType::Object) {
+            left_obj_name = currentObjectTypeName;
+            if (left_obj_name == "String")
+                left_type = ExpType::String;
+        }
+        else if (left_type == ExpType::Array) {
+            left_array_type = currentArrayDataType;
+            if (left_array_type == DataType::OBJECT)
+                left_obj_name = currentObjectTypeName;
+        }
+            
+        auto right_type = GetExpType(n->exp);
+        if (right_type == ExpType::Object) {
+            right_obj_name = currentObjectTypeName;
+            if (right_obj_name == "String")
+                right_type = ExpType::String;        
+        }
+
+        else if (right_type == ExpType::Array) {
+            right_array_type = currentArrayDataType;
+            if (right_array_type == DataType::OBJECT)
+                right_obj_name = currentObjectTypeName;
+        }
+
+        AssignmentTypeCheckingLogic(
+            left_type, right_type,
+            left_obj_name, right_obj_name,
+            left_array_type, right_array_type
+        );         
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
@@ -77,34 +113,13 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
         error = true;
     }
     Visitor::visit(n);
-
-    if (ambiguousName.typeNode->type == DataType::INT)
-        currentExpType = ExpType::Integer;
-    else if (ambiguousName.typeNode->type == DataType::CHAR)        
-        currentExpType = ExpType::Char;
-    else if (ambiguousName.typeNode->type == DataType::SHORT)
-        currentExpType = ExpType::Short;
-    else if (ambiguousName.typeNode->type == DataType::BOOLEAN)        
-        currentExpType = ExpType::Boolean;
-    else if (ambiguousName.typeNode->type == DataType::OBJECT) {
-        currentExpType = ExpType::Object;    
-        currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(ambiguousName.typeNode)->id->name;
-    }
-    else if (ambiguousName.typeNode->type == DataType::ARRAY) {
-        currentExpType = ExpType::Array;                
-        auto dataTypeNode = std::dynamic_pointer_cast<ArrayType>(ambiguousName.typeNode)->dataType;
-        currentArrayDataType = dataTypeNode->type;
-        if (currentArrayDataType == DataType::OBJECT) {
-            currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(dataTypeNode)->id->name;
-        }                
-    }
-    else
-        currentExpType = ExpType::Undefined;
+    SetCurrentExpTypebyAmbiguousName(ambiguousName);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     std::cout << "field access" << std::endl;
     Visitor::visit(n);
+    currentExpType = ExpType::Any;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
@@ -126,6 +141,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             }
         }
     }
+    currentExpType = ExpType::Any;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
@@ -160,38 +176,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
             right_obj_name = currentObjectTypeName;
     }
 
-    if(left_type == ExpType::Object && right_type == ExpType::Object) {
-        if (left_obj_name != right_obj_name) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
-        }
-    }
-    else if ((left_type != ExpType::Object && right_type == ExpType::Object) || (left_type == ExpType::Object && right_type != ExpType::Object)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between object and non-object type" << std::endl;
-    }
-    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
-        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
-        }
-    } 
-    else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
-    }
-    else if((left_type == ExpType::String && right_type != ExpType::String) || (left_type != ExpType::String && right_type == ExpType::String)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between string and non-string type" << std::endl;        
-    }
-    else if (!assginmentRules.contains({left_type, right_type})) {
-        error = true;
-        if (left_type == ExpType::Boolean || right_type == ExpType::Boolean)
-            std::cerr << "Error: Invalid Assignment Type: assignment between int/char/short and boolean" << std::endl;
-        else
-            std::cerr << "Error: Invalid Assignment Type: narrowing conversion" << std::endl;
-    }
-    
+    AssignmentTypeCheckingLogic(
+        left_type, right_type,
+        left_obj_name, right_obj_name,
+        left_array_type, right_array_type
+    );
 }
 
 bool TypeCheckingVisitor::isError() const {
@@ -248,7 +237,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<DivideExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ModuloExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid ModuloExp Type " << std::endl;
         error = true;
@@ -256,17 +245,18 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ModuloExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NotExp> n) {
-    auto exp_type = GetExpType(n->exp);
-    if (exp_type != ExpType::Boolean) {
-        std::cerr << "Error: NotExp Type " << std::endl;
+    currentExpType = GetExpType(n->exp);
+    if (currentExpType == ExpType::Any) return;
+    if (currentExpType != ExpType::Boolean) {
+        std::cerr << "Error: Invalid NotExp Type " << std::endl;
         error = true;
     }
 }
 
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NegExp> n) {
-    auto exp_type = GetExpType(n->exp);
-    if(exp_type != ExpType::Char && exp_type != ExpType::Integer && exp_type != ExpType::Short) {
+    currentExpType = GetExpType(n->exp);
+    if(currentExpType != ExpType::Char && currentExpType != ExpType::Integer && currentExpType != ExpType::Short) {
         std::cerr << "Error: Invalid NegExp Type " << std::endl;
         error = true;
     }
@@ -348,23 +338,127 @@ void TypeCheckingVisitor::visit(std::shared_ptr<OrExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
     auto left_type = GetExpType(n->exp1);
     auto right_type = GetExpType(n->exp2);
+    if (left_type == ExpType::Any || right_type == ExpType::Any) return;
     if (left_type != ExpType::Boolean || right_type != ExpType::Boolean) {
         std::cerr << "Error: Invalid ConditionalAndExp Type " << std::endl;
         error = true;
     }
+    currentExpType = ExpType::Boolean;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
     auto left_type = GetExpType(n->exp1);
     auto right_type = GetExpType(n->exp2);
+    if (left_type == ExpType::Any || right_type == ExpType::Any) return;
     if (left_type != ExpType::Boolean || right_type != ExpType::Boolean) {
         std::cerr << "Error: Invalid ConditionalOrExp Type " << std::endl;
         error = true;
     }
+    currentExpType = ExpType::Boolean;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
+    currentExpType = ExpType::Object;
+    currentObjectTypeName = n->classType->id->name;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
+    currentExpType = ExpType::Any;
+}
+
+ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
+    if (lhs_type == ExpType::Any || rhs_type == ExpType::Any) return ExpType::Any;
+    if (lhs_type == ExpType::Undefined || rhs_type == ExpType::Undefined) {
+        return ExpType::Undefined;
+    }
+    if (typeOperationRules.contains({exp, lhs_type, rhs_type}))
+        return typeOperationRules[{exp, lhs_type, rhs_type}];
+    else if(typeOperationRules.contains({exp, rhs_type, lhs_type}))
+        return typeOperationRules[{exp, rhs_type, lhs_type}];                
+    else
+        return ExpType::Undefined;
 }
 
 
+void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambiguousName) {
+    if (ambiguousName.typeNode->type == DataType::INT)
+        currentExpType = ExpType::Integer;
+    else if (ambiguousName.typeNode->type == DataType::CHAR)        
+        currentExpType = ExpType::Char;
+    else if (ambiguousName.typeNode->type == DataType::BYTE)
+        currentExpType = ExpType::Byte;                
+    else if (ambiguousName.typeNode->type == DataType::SHORT)
+        currentExpType = ExpType::Short;
+    else if (ambiguousName.typeNode->type == DataType::BOOLEAN)        
+        currentExpType = ExpType::Boolean;
+    else if (ambiguousName.typeNode->type == DataType::OBJECT) {
+        currentExpType = ExpType::Object;    
+        currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(ambiguousName.typeNode)->id->name;
+    }
+    else if (ambiguousName.typeNode->type == DataType::ARRAY) {
+        currentExpType = ExpType::Array;                
+        auto dataTypeNode = std::dynamic_pointer_cast<ArrayType>(ambiguousName.typeNode)->dataType;
+        currentArrayDataType = dataTypeNode->type;
+        if (currentArrayDataType == DataType::OBJECT) {
+            currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(dataTypeNode)->id->name;
+        }                
+    }
+    else
+        currentExpType = ExpType::Undefined;
+}
 
-// void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
-//     currentExpType = ExpType::String;
-// }
+void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, 
+    std::string left_obj_name, std::string right_obj_name, DataType left_array_type, DataType right_array_type) {
+    if(left_type == ExpType::Any || right_type == ExpType::Any) return;
+    if(left_type == ExpType::Object && right_type == ExpType::Object) {
+        if (left_obj_name != right_obj_name) {
+            error = true;
+            std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
+        }
+    }
+    else if ((left_type != ExpType::Object && right_type == ExpType::Object) || (left_type == ExpType::Object && right_type != ExpType::Object)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between object and non-object type" << std::endl;
+    }
+    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
+        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
+            error = true;
+            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
+        }
+    } 
+    else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
+    }
+    else if((left_type == ExpType::String && right_type != ExpType::String) || (left_type != ExpType::String && right_type == ExpType::String)) {
+        error = true;
+        std::cerr << "Error: Invalid Assignment Type: assignment between string and non-string type" << std::endl;        
+    }
+    else if (!assginmentRules.contains({left_type, right_type})) {
+        error = true;
+        if (left_type == ExpType::Boolean || right_type == ExpType::Boolean)
+            std::cerr << "Error: Invalid Assignment Type: assignment between int/char/short and boolean" << std::endl;
+        else
+            std::cerr << "Error: Undefined Error: " << (int)left_type << " <=== " << (int)right_type << std::endl;
+    }
+}
