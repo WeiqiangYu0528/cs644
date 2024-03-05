@@ -99,7 +99,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
-    n->exp->accept(this);
+    // n->exp->accept(this);
+    auto type = GetExpType(n->exp);
+    if(type != ExpType::Boolean) {
+        std::cerr << "Error: Condition clause in if must have type boolean" << std::endl;
+        error = true;
+        return;
+    }
+
     scope->current->beginScope();
     n->statement1->accept(this);
     scope->current->endScope();
@@ -112,6 +119,12 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
+    auto type = GetExpType(n->exp);
+    if(type != ExpType::Boolean) {
+        std::cerr << "Error: While condition must be of type boolean" << std::endl;
+        error = true;
+        return;
+    }
     scope->current->beginScope();
     Visitor::visit(n);
     scope->current->endScope();
@@ -225,6 +238,9 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
         left_obj_name, right_obj_name,
         left_array_type, right_array_type
     );
+    currentExpType = left_type;
+    currentObjectTypeName = left_obj_name;
+    currentArrayDataType = left_array_type;
 }
 
 bool TypeCheckingVisitor::isError() const {
@@ -494,19 +510,13 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
         std::cerr << "Error: Invalid Assignment Type: " << expTypeString[(int)left_type] << " <=== " << expTypeString[(int)right_type] << std::endl;              
     }
     else if(left_type == ExpType::Object && right_type == ExpType::Object) {
-        if (left_obj_name != right_obj_name) {
+        if (!(left_obj_name == right_obj_name || left_obj_name == "Object")) {
             error = true;
             std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
         }
     }
     else if (left_type == ExpType::Array && right_type == ExpType::Array) {
-        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
-        }
-    }
-    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
-        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
+        if (!(left_array_type == right_array_type && (left_obj_name == right_obj_name || left_obj_name == "Object"))) {
             error = true;
             std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
         }
