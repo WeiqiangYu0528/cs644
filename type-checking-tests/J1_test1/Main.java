@@ -2,7 +2,9 @@ import foo.*;
 import foo.test.A;
 public class Main {
     public Main() {}
+    public static int v() { return 1; }
     public static int test() {
+        int q = v();
         int a;
         int b;
         a = b;

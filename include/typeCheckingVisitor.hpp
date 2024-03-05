@@ -9,11 +9,13 @@ enum class ExpType {
     Integer = 0,
     Short,
     Char,
+    Byte,
     Boolean,
     Object,
     Array,
     String,
     Undefined = -1,
+    Any = -2
 };
 
 enum class ExpRuleType {
@@ -39,11 +41,17 @@ class TypeCheckingVisitor : public Visitor {
             // int + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Char}, ExpType::Integer},
             // int + short
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Short}, ExpType::Integer},            
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Short}, ExpType::Integer},    
+            // int + byte
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Byte}, ExpType::Integer},    
             // short + short           
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Short}, ExpType::Short},
             // short + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Short},
+            // short + byte
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Byte},
+            // byte + byte
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
             // char + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
                         
@@ -52,11 +60,19 @@ class TypeCheckingVisitor : public Visitor {
             // int < char
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Char}, ExpType::Boolean},
             // int < short
-            {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},            
+            {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},
+            // int < byte
+            {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},                        
             // short < short           
             {{ExpRuleType::Comparison, ExpType::Short, ExpType::Short}, ExpType::Boolean},
             // short < char
             {{ExpRuleType::Comparison, ExpType::Short, ExpType::Char}, ExpType::Boolean},
+            // short < byte
+            {{ExpRuleType::Comparison, ExpType::Short, ExpType::Byte}, ExpType::Boolean},              
+            // byte < byte
+            {{ExpRuleType::Comparison, ExpType::Byte, ExpType::Byte}, ExpType::Boolean},   
+            // byte < char
+            {{ExpRuleType::Comparison, ExpType::Byte, ExpType::Char}, ExpType::Boolean},                             
             // char < char
             {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},            
         };
@@ -65,8 +81,12 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Integer, ExpType::Integer},
             {ExpType::Integer, ExpType::Short},
             {ExpType::Integer, ExpType::Char},
+            {ExpType::Integer, ExpType::Byte},            
             {ExpType::Short, ExpType::Short},
-            {ExpType::Short, ExpType::Char},            
+            {ExpType::Short, ExpType::Char},  
+            {ExpType::Short, ExpType::Byte},                        
+            {ExpType::Byte, ExpType::Byte},                                    
+            {ExpType::Char, ExpType::Char},                                                
             {ExpType::Boolean, ExpType::Boolean},   
             {ExpType::String, ExpType::String},        
         };
@@ -97,17 +117,7 @@ class TypeCheckingVisitor : public Visitor {
             return currentExpType;
         }
 
-        ExpType CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
-            if (lhs_type == ExpType::Undefined || rhs_type == ExpType::Undefined) {
-                return ExpType::Undefined;
-            }
-            if (typeOperationRules.contains({exp, lhs_type, rhs_type}))
-                return typeOperationRules[{exp, lhs_type, rhs_type}];
-            else if(typeOperationRules.contains({exp, rhs_type, lhs_type}))
-                return typeOperationRules[{exp, rhs_type, lhs_type}];                
-            else
-                return ExpType::Undefined;
-        }
+        ExpType CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type);
         
         void visit(std::shared_ptr<IntegerLiteralExp> n) override;
         void visit(std::shared_ptr<CharLiteralExp> n) override;
@@ -135,5 +145,16 @@ class TypeCheckingVisitor : public Visitor {
 
         void visit(std::shared_ptr<ConditionalAndExp> n) override;
         void visit(std::shared_ptr<ConditionalOrExp> n) override;        
-    
+
+        void visit(std::shared_ptr<ClassInstanceCreationExp> n) override;
+        void visit(std::shared_ptr<NulLiteralExp> n) override;
+        void visit(std::shared_ptr<ThisExp> n) override;
+        void visit(std::shared_ptr<CastExp> n) override;
+        void visit(std::shared_ptr<NewArrayExp> n) override;
+        void visit(std::shared_ptr<ParExp> n) override;
+        void visit(std::shared_ptr<InstanceOfExp> n) override;
+
+        void SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambiguousName);
+        void AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, std::string left_obj_name, 
+            std::string right_obj_name, DataType left_array_type, DataType right_array_type);
 };
