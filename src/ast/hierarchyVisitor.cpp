@@ -454,6 +454,10 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     }
                     // Rule 15
                     if (superMethod->isFinal) {
+                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
+                        {
+                            continue;
+                        }
                         std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
                         error = true;
                         break;
@@ -467,8 +471,8 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     }
                     if (!superMethod->isStatic && n->isStatic)
                     {
-                        // This is a hack, I do not want to check all symbol tables
-                        if (symbolTableHere->getPackage() != "java.lang")
+                        // This is a hack, I do not want to check all symbol tables but just Object.java table
+                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
                         {
                             continue;
                         }
