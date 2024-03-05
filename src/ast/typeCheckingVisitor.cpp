@@ -205,6 +205,12 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
     DataType left_array_type, right_array_type;
 
+    auto right_exp = n->right;
+    auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
+
+    if (casted_right_exp) {
+        visit(casted_right_exp);
+    }
     bool init{initialized};
     initialized = false;
     auto left_type = GetExpType(n->left);
@@ -428,6 +434,15 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     currentExpType = ExpType::Object;
     currentObjectTypeName = n->classType->id->name;
+    auto& methods = scope->onDemandImported;
+    for (auto& [name, symbolTable] : methods) {
+        auto classDecl = std::dynamic_pointer_cast<ClassDecl>(symbolTable->getClassOrInterfaceDecl());
+        if (classDecl && classDecl->isAbstract() && currentObjectTypeName == classDecl->id->name) {
+            std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
+            error = true;
+            break;
+        }
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
