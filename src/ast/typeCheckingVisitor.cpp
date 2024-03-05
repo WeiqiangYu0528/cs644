@@ -75,8 +75,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
         error = true;
+        return;
     }
-    Visitor::visit(n);
 
     if (ambiguousName.typeNode->type == DataType::INT)
         currentExpType = ExpType::Integer;
