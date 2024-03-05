@@ -24,6 +24,7 @@ extern std::string expTypeString[];
 enum class ExpRuleType {
     ArithmeticOrBitwise,
     Comparison,
+    Equality,
     Undefined = -1
 };
 
@@ -79,7 +80,13 @@ class TypeCheckingVisitor : public Visitor {
             // byte < char
             {{ExpRuleType::Comparison, ExpType::Byte, ExpType::Char}, ExpType::Boolean},                             
             // char < char
-            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},            
+            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},
+
+            {{ExpRuleType::Equality, ExpType::Boolean, ExpType::Boolean}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::Object, ExpType::Object}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::Array, ExpType::Array}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::String, ExpType::String}, ExpType::Boolean},
+
         };
 
         std::set<std::pair<ExpType, ExpType>> assginmentRules = {
@@ -87,8 +94,7 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Integer, ExpType::Short},
             {ExpType::Integer, ExpType::Char},
             {ExpType::Integer, ExpType::Byte},            
-            {ExpType::Short, ExpType::Short},
-            {ExpType::Short, ExpType::Char},  
+            {ExpType::Short, ExpType::Short}, 
             {ExpType::Short, ExpType::Byte},                        
             {ExpType::Byte, ExpType::Byte},                                    
             {ExpType::Char, ExpType::Char},                                                
