@@ -551,7 +551,10 @@ DimExprs:
     ;
 
 FieldAccess:
-    Primary DOT Variable {$$ = std::make_shared<FieldAccessExp>($1, $3);}
+    Primary DOT Variable {
+        std::shared_ptr<IdentifierExp> ie = std::make_shared<IdentifierExp>($3, true);
+        $$ = std::make_shared<FieldAccessExp>($1, ie);
+    }
     | SUPER DOT Variable { throw syntax_error(@1, std::string("super not supported")); }
     ;
 

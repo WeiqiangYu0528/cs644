@@ -219,8 +219,8 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
 class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAccessExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::shared_ptr<Identifier> id;
-        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i);
+        std::shared_ptr<IdentifierExp> field;
+        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
         void accept(Visitor* v) override;
 };
 

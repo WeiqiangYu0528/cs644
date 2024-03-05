@@ -313,9 +313,6 @@ int main(int argc, char* argv[])
         }
     }
 
-
-    
-
     if (!error) {  
         //Rule 9: Class/interface can't contain (declare or inherit) two methods with same signature but diff return types
         for (auto ast : asts) {
@@ -363,7 +360,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    /*
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
             TypeCheckingVisitor tcvisitor(program->scope);
@@ -373,10 +369,9 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
-            break; // only for developing
+            break;
         }
     }
-    */
 
     if (error)
         return 42;

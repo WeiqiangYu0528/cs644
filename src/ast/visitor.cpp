@@ -69,6 +69,7 @@ void Visitor::visit(std::shared_ptr<IdentifierType> n) {
 
 void Visitor::visit(std::shared_ptr<FieldAccessExp> n) { 
     n->exp->accept(this);
+    n->field->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<NewArrayExp> n) {

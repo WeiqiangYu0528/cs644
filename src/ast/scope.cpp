@@ -144,7 +144,7 @@ AmbiguousName Scope::reclassifyAmbiguousNameByLocal(const std::string& name) {
 AmbiguousName Scope::reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> st, bool staticField) {
     auto field = st->getField(name);
     AmbiguousName ambiguousName = createAmbiguousName(field->type, st);
-    if (staticField && !field->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
+    if (staticField != field->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
     return ambiguousName;
 }
 
@@ -152,7 +152,7 @@ AmbiguousName Scope::reclassifyAmbiguousNameByMethod(const std::string& name, st
     // todo: select the closest method, currently just selects the first one
     auto method = st->getMethod(name)[0];
     AmbiguousName ambiguousName = createAmbiguousName(method->type, st);
-    if (staticMethod && !method->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
+    if (staticMethod != method->isStatic ) ambiguousName.type = AmbiguousNamesType::ERROR;
     return ambiguousName;
 }
 

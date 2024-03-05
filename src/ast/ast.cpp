@@ -132,7 +132,7 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
+FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f) : exp(e), field(f) {
 }
 
 void FieldAccessExp::accept(Visitor* v) {
