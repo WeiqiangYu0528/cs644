@@ -101,7 +101,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
     // n->exp->accept(this);
     auto type = GetExpType(n->exp);
-    if(type != ExpType::Boolean) {
+    if(type != ExpType::Any && type != ExpType::Boolean) {
         std::cerr << "Error: Condition clause in if must have type boolean" << std::endl;
         error = true;
         return;
@@ -120,7 +120,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
     auto type = GetExpType(n->exp);
-    if(type != ExpType::Boolean) {
+    if(type != ExpType::Any && type != ExpType::Boolean) {
         std::cerr << "Error: While condition must be of type boolean" << std::endl;
         error = true;
         return;
