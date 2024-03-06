@@ -807,7 +807,7 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(
     std::string& cname {n->classType->id->name};
     std::shared_ptr<SymbolTable> st = scope->getNameInScope(cname, n->classType->simple);
     auto classDecl = std::dynamic_pointer_cast<ClassDecl>(st->getClassOrInterfaceDecl());
-    if (classDecl->isAbstract()) {
+    if (classDecl && classDecl->isAbstract()) {
         std::cerr << "Error: Cannot instantiate abstract class " << cname << std::endl;
         error = true;
         return nullptr;
