@@ -549,8 +549,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
-    currentExpType = ExpType::Object;
-    currentObjectTypeName = n->classType->id->name;
+    auto newExpType = currentExpType = ExpType::Object;
+    auto newObjectTypeName = currentObjectTypeName = n->classType->id->name;
     auto& methods = scope->onDemandImported;
     for (auto& [name, symbolTable] : methods) {
         auto classDecl = std::dynamic_pointer_cast<ClassDecl>(symbolTable->getClassOrInterfaceDecl());
@@ -600,6 +600,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
             std::cerr << "Error: No matching constructor found" << std::endl;
         }
     }
+    currentExpType = newExpType;
+    currentObjectTypeName = newObjectTypeName;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
