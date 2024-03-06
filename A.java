@@ -3,10 +3,14 @@
 public class A{
     public A() {
     }
-    public void println() {
-        println("");
+    public void write(int b) {
     }
-    public int println(String s) {
-      return 0;
+    public void write(char c) {
+    }
+    public void println() {
+      println("");
+    }
+    public void println(String s) {
+      write('c');
     }
 }

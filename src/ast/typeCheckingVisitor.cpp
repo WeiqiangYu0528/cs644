@@ -31,7 +31,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatemen
     scope->current->putVar(key, n);
     if (n->exp) {
         auto ambiguousName = scope->reclassifyAmbiguousNameByLocal(key);
-        SetCurrentExpTypebyAmbiguousName(ambiguousName);
+        SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
         std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
         DataType left_array_type, right_array_type;
     
@@ -144,7 +144,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
         error = true;
         return;
     }
-    SetCurrentExpTypebyAmbiguousName(ambiguousName);
+    SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
@@ -165,10 +165,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
+    std::shared_ptr<Method> method;
     std::vector<argumentExp> arguments;
     for (auto& arg : n->arguments) {
         arg->accept(this);
-        std::cout << static_cast<int>(currentExpType) << " " << currentObjectTypeName<< " " << static_cast<int>(currentArrayDataType) << std::endl;
         arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
     }
     //primary method invocation
@@ -187,7 +187,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             AmbiguousName ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized);
             if (ambiguousName.type == AmbiguousNamesType::TYPE) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
-                auto method = getClosestMatchMethod(methods, arguments);
+                method = getClosestMatchMethod(methods, arguments);
                 if (!method) {
                     std::cerr << "Error: Invalid method name " << methodName << std::endl;
                     error = true;
@@ -206,7 +206,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             }
             else if (ambiguousName.type == AmbiguousNamesType::EXPRESSION) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
-                auto method = getClosestMatchMethod(methods, arguments);
+                method = getClosestMatchMethod(methods, arguments);
                 if (!method) {
                     std::cerr << "Error: Invalid method name " << methodName << std::endl;
                     error = true;
@@ -236,7 +236,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
                 return;
             }
             std::vector<std::shared_ptr<Method>> methods = scope->current->getMethod(methodName);
-            auto method = getClosestMatchMethod(methods, arguments);
+            method = getClosestMatchMethod(methods, arguments);
             if (!method) {
                 std::cerr << "Error: Invalid non-static method name " << methodName << std::endl;
                 error = true;
@@ -249,7 +249,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             }
         }
     }
-    currentExpType = ExpType::Any;
+    if (method) SetCurrentExpTypebyAmbiguousName(method->type);
+    else currentExpType = ExpType::Any;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
@@ -583,24 +584,25 @@ ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpT
         return ExpType::Undefined;
 }
 
-void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambiguousName) {
-    if (ambiguousName.typeNode->type == DataType::INT)
+void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode) {
+    if (typeNode->type == DataType::INT)
         currentExpType = ExpType::Integer;
-    else if (ambiguousName.typeNode->type == DataType::CHAR)        
+    else if (typeNode->type == DataType::CHAR)        
         currentExpType = ExpType::Char;
-    else if (ambiguousName.typeNode->type == DataType::BYTE)
+    else if (typeNode->type == DataType::BYTE)
         currentExpType = ExpType::Byte;                
-    else if (ambiguousName.typeNode->type == DataType::SHORT)
+    else if (typeNode->type == DataType::SHORT)
         currentExpType = ExpType::Short;
-    else if (ambiguousName.typeNode->type == DataType::BOOLEAN)        
+    else if (typeNode->type == DataType::BOOLEAN)        
         currentExpType = ExpType::Boolean;
-    else if (ambiguousName.typeNode->type == DataType::OBJECT) {
-        currentExpType = ExpType::Object;    
-        currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(ambiguousName.typeNode)->id->name;
+    else if (typeNode->type == DataType::OBJECT) {
+        currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(typeNode)->id->name;
+        if (currentObjectTypeName == "String") currentExpType = ExpType::String;
+        else currentExpType = ExpType::Object;
     }
-    else if (ambiguousName.typeNode->type == DataType::ARRAY) {
+    else if (typeNode->type == DataType::ARRAY) {
         currentExpType = ExpType::Array;                
-        auto dataTypeNode = std::dynamic_pointer_cast<ArrayType>(ambiguousName.typeNode)->dataType;
+        auto dataTypeNode = std::dynamic_pointer_cast<ArrayType>(typeNode)->dataType;
         currentArrayDataType = dataTypeNode->type;
         if (currentArrayDataType == DataType::OBJECT) {
             currentObjectTypeName = std::dynamic_pointer_cast<IdentifierType>(dataTypeNode)->id->name;
@@ -666,7 +668,6 @@ std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<s
 }
 
 bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument) {
-    std::cout << static_cast<int>(argument.expType) << " " << argument.objectName << " " << static_cast<int>(argument.arrayType) << std::endl;
     if (dataType->type == DataType::INT && argument.expType == ExpType::Integer) return true;
     if (dataType->type == DataType::SHORT && argument.expType == ExpType::Short) return true;
     if (dataType->type == DataType::CHAR && argument.expType == ExpType::Char) return true;
