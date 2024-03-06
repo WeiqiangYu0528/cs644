@@ -23,24 +23,24 @@ TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), e
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Program> n) {
     if (n->scope->supers.size() > 0) {
-        bool isZeroArgConstructor = false;
         for (std::shared_ptr<SymbolTable> superMethod : n->scope->supers) {
             // check if zero argument constructor is present
                 std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(superMethod->getClassOrInterfaceDecl());            
                 if (classDecl) {
-                for (auto& constructor : classDecl->declarations[2]) {
-                    if (std::dynamic_pointer_cast<Constructor>(constructor)->formalParameters.size() == 0) {
-                        isZeroArgConstructor = true;
+                    bool isZeroArgConstructor = false;
+                    for (auto& constructor : classDecl->declarations[2]) {
+                        if (std::dynamic_pointer_cast<Constructor>(constructor)->formalParameters.size() == 0) {
+                            isZeroArgConstructor = true;
+                        }
+                    }
+                    if (!isZeroArgConstructor) {
+                        std::cerr << "Error: No zero argument constructor found in super class" << std::endl;
+                        error = true;
                         return;
                     }
                 }
-            }  
         }
-        if (!isZeroArgConstructor) {
-            std::cerr << "Error: No zero argument constructor found in super class" << std::endl;
-            error = true;
-            return;
-        }
+
     }
     n->classOrInterfaceDecl->accept(this);
 }
