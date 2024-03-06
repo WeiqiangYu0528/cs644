@@ -124,15 +124,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
     // n->exp->accept(this);
+    scope->current->beginScope();
+    n->statement1->accept(this);
     auto type = GetExpType(n->exp);
     if(type != ExpType::Any && type != ExpType::Boolean) {
         std::cerr << "Error: Condition clause in if must have type boolean" << std::endl;
         error = true;
         return;
-    }
-
-    scope->current->beginScope();
-    n->statement1->accept(this);
+    }        
     scope->current->endScope();
     if (n->statement2) 
     {
@@ -143,24 +142,24 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
+    scope->current->beginScope();
+    Visitor::visit(n);
     auto type = GetExpType(n->exp);
     if(type != ExpType::Any && type != ExpType::Boolean) {
         std::cerr << "Error: While condition must be of type boolean" << std::endl;
         error = true;
         return;
     }
-    scope->current->beginScope();
-    Visitor::visit(n);
     scope->current->endScope();
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
+    scope->current->beginScope();
+    Visitor::visit(n);    
     if (GetExpType(n->exp) == ExpType::Null) {
         error = true;
         std::cerr << "Error: For condition must be of type boolean" << std::endl;
     }
-    scope->current->beginScope();
-    Visitor::visit(n);
     scope->current->endScope();
 }
 
@@ -667,10 +666,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
+    // not implemented
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
         
     }
-
     currentExpType = ExpType::Any;
 }
 

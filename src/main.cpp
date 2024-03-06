@@ -369,7 +369,6 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
-            break;            
         }
     }
     if (error)

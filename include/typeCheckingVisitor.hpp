@@ -149,6 +149,7 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
             {ExpType::Object, ExpType::Object},
+            {ExpType::String, ExpType::Object},            
             {ExpType::Array, ExpType::Array},
         };      
 
