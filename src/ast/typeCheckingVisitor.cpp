@@ -155,6 +155,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
+    if (GetExpType(n->exp) == ExpType::Null) {
+        error = true;
+        std::cerr << "Error: For condition must be of type boolean" << std::endl;
+    }
     scope->current->beginScope();
     Visitor::visit(n);
     scope->current->endScope();
