@@ -369,10 +369,9 @@ int main(int argc, char* argv[])
                 error = true;
                 break;
             }
-            // break;
+            break;            
         }
     }
-
     if (error)
         return 42;
     else

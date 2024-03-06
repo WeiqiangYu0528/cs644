@@ -168,6 +168,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::vector<argumentExp> arguments;
     for (auto& arg : n->arguments) {
         arg->accept(this);
+        std::cout << static_cast<int>(currentExpType) << " " << currentObjectTypeName<< " " << static_cast<int>(currentArrayDataType) << std::endl;
         arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
     }
     //primary method invocation
@@ -650,6 +651,7 @@ std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<s
         bool match{true};
         for (size_t i = 0; i < parameters.size(); ++i) {
             if (!isTypeCompatible(parameters[i]->type, arguments[i])) {
+                std::cout << static_cast<int>(parameters[i]->type->type) << " " << static_cast<int>(arguments[i].expType) << std::endl;
                 match = false;
                 break;
             }
@@ -663,16 +665,15 @@ std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<s
 }
 
 bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument) {
+    std::cout << static_cast<int>(argument.expType) << " " << argument.objectName << " " << static_cast<int>(argument.arrayType) << std::endl;
     if (dataType->type == DataType::INT && argument.expType == ExpType::Integer) return true;
     if (dataType->type == DataType::SHORT && argument.expType == ExpType::Short) return true;
     if (dataType->type == DataType::CHAR && argument.expType == ExpType::Char) return true;
     if (dataType->type == DataType::BYTE && argument.expType == ExpType::Byte) return true;
     if (dataType->type == DataType::BOOLEAN && argument.expType == ExpType::Boolean) return true;
-    if (dataType->type == DataType::OBJECT) {
-        auto it = std::dynamic_pointer_cast<IdentifierType>(dataType);
-        if (argument.expType == ExpType::Object) return it->id->name == argument.objectName;
-        if (argument.expType == ExpType::String) return it->id->name == "String";
-        return false;
+    if (dataType->type == DataType::OBJECT && (argument.expType == ExpType::Object || argument.expType == ExpType::String)) {
+        std::cout << std::dynamic_pointer_cast<IdentifierType>(dataType)->id->name << " " << argument.objectName << std::endl;
+        return std::dynamic_pointer_cast<IdentifierType>(dataType)->id->name == argument.objectName;
     }
     if (dataType->type == DataType::ARRAY && argument.expType == ExpType::Array) {
         auto arrayType = std::dynamic_pointer_cast<ArrayType>(dataType)->dataType;
@@ -683,4 +684,3 @@ bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argum
     }
     return false;
 }
-
