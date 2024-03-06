@@ -14,13 +14,17 @@ enum class ExpType {
     Object,
     Array,
     String,
-    Undefined = -1,
-    Any = -2
+    Null,
+    Undefined,
+    Any
 };
+
+extern std::string expTypeString[];
 
 enum class ExpRuleType {
     ArithmeticOrBitwise,
     Comparison,
+    Equality,
     Undefined = -1
 };
 
@@ -57,12 +61,19 @@ class TypeCheckingVisitor : public Visitor {
             // short + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Short},
             // short + byte
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Byte},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Byte}, ExpType::Short},
             // byte + byte
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
             // char + char
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
                         
+
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::String}, ExpType::String},
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::String}, ExpType::String},                                   
+
+
             // int < int
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Integer}, ExpType::Boolean},
             // int < char
@@ -82,22 +93,49 @@ class TypeCheckingVisitor : public Visitor {
             // byte < char
             {{ExpRuleType::Comparison, ExpType::Byte, ExpType::Char}, ExpType::Boolean},                             
             // char < char
-            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},            
+            {{ExpRuleType::Comparison, ExpType::Char, ExpType::Char}, ExpType::Boolean},
+
+            {{ExpRuleType::Equality, ExpType::Boolean, ExpType::Boolean}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::Object, ExpType::Object}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::Array, ExpType::Array}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::String, ExpType::String}, ExpType::Boolean},
+
         };
 
         std::set<std::pair<ExpType, ExpType>> assginmentRules = {
+            // first <= second
             {ExpType::Integer, ExpType::Integer},
             {ExpType::Integer, ExpType::Short},
             {ExpType::Integer, ExpType::Char},
             {ExpType::Integer, ExpType::Byte},            
-            {ExpType::Short, ExpType::Short},
-            {ExpType::Short, ExpType::Char},  
+            {ExpType::Short, ExpType::Short}, 
             {ExpType::Short, ExpType::Byte},                        
             {ExpType::Byte, ExpType::Byte},                                    
             {ExpType::Char, ExpType::Char},                                                
             {ExpType::Boolean, ExpType::Boolean},   
-            {ExpType::String, ExpType::String},        
+            {ExpType::String, ExpType::String},                       
+            {ExpType::String, ExpType::Null},              
         };
+
+        std::set<std::pair<ExpType, ExpType>> castingRules = {
+            // first <= second
+            {ExpType::Integer, ExpType::Integer},
+            {ExpType::Integer, ExpType::Short},    
+            {ExpType::Integer, ExpType::Byte},                        
+            {ExpType::Short, ExpType::Integer},
+            {ExpType::Short, ExpType::Char},            
+            {ExpType::Char, ExpType::Integer},
+            {ExpType::Byte, ExpType::Integer},
+            {ExpType::Short, ExpType::Short},
+            {ExpType::Byte, ExpType::Short},
+            {ExpType::Byte, ExpType::Byte},
+            {ExpType::Char, ExpType::Char},
+            {ExpType::Byte, ExpType::Char},            
+            {ExpType::Boolean, ExpType::Boolean},
+            {ExpType::String, ExpType::String},
+            {ExpType::Object, ExpType::Object},
+            {ExpType::Array, ExpType::Array},
+        };      
 
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
@@ -166,5 +204,6 @@ class TypeCheckingVisitor : public Visitor {
         void AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, std::string left_obj_name, 
             std::string right_obj_name, DataType left_array_type, DataType right_array_type);
 
-        //std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentType>& arguments);
+        std::shared_ptr<Method> getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments);
+        bool isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument);
 };

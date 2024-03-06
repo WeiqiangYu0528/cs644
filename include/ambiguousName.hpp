@@ -1,3 +1,4 @@
+#pragma once
 #include "PackageTrie.hpp"
 #include "ast.hpp"
 #include "symbolTable.hpp"

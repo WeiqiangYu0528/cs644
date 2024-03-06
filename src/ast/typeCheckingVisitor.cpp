@@ -1,5 +1,21 @@
 #include "typeCheckingVisitor.hpp"
 
+std::string expTypeString[] =
+{
+    "Int",
+    "Short",
+    "Char",
+    "Byte",
+    "Boolean",
+    "Object",
+    "Array",
+    "String",
+    "Null",
+    "Undefined",
+    "Any"
+};
+
+
 TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false), staticMethod(false) {
     // for testing only
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
@@ -83,7 +99,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
-    n->exp->accept(this);
+    // n->exp->accept(this);
+    auto type = GetExpType(n->exp);
+    if(type != ExpType::Boolean) {
+        std::cerr << "Error: Condition clause in if must have type boolean" << std::endl;
+        error = true;
+        return;
+    }
+
     scope->current->beginScope();
     n->statement1->accept(this);
     scope->current->endScope();
@@ -96,6 +119,12 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
+    auto type = GetExpType(n->exp);
+    if(type != ExpType::Boolean) {
+        std::cerr << "Error: While condition must be of type boolean" << std::endl;
+        error = true;
+        return;
+    }
     scope->current->beginScope();
     Visitor::visit(n);
     scope->current->endScope();
@@ -109,7 +138,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
-    std::cout << "IdentifierExp: " << key << std::endl;
     auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized);
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
@@ -158,19 +186,41 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
             AmbiguousName ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized);
             if (ambiguousName.type == AmbiguousNamesType::TYPE) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
-                if (methods.empty()) {
+                auto method = getClosestMatchMethod(methods, arguments);
+                if (!method) {
                     std::cerr << "Error: Invalid method name " << methodName << std::endl;
                     error = true;
                     return;
                 }
+                if (!method->isStatic) {
+                    std::cerr << "Error: no static method found for " << methodName << std::endl;
+                    error = true;
+                    return;
+                }
+                // if (!staticMethod) {
+                //     std::cerr << "Error: Cannot call static method in a non-static method" << std::endl;
+                //     error = true;
+                //     return;
+                // }
             }
             else if (ambiguousName.type == AmbiguousNamesType::EXPRESSION) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
-                if (methods.empty()) {
+                auto method = getClosestMatchMethod(methods, arguments);
+                if (!method) {
                     std::cerr << "Error: Invalid method name " << methodName << std::endl;
                     error = true;
                     return;
                 }
+                if (method->isStatic) {
+                    std::cerr << "Error: no non-static method found for " << methodName << std::endl;
+                    error = true;
+                    return;
+                }
+                // if (staticMethod) {
+                //     std::cerr << "Error: Cannot call non-static method in a static method" << std::endl;
+                //     error = true;
+                //     return;
+                // }
             }
             else {
                 std::cerr << "Error: Invalid ambiguous name " << n->ambiguousName->id->name << std::endl;
@@ -185,14 +235,17 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
                 return;
             }
             std::vector<std::shared_ptr<Method>> methods = scope->current->getMethod(methodName);
-            if (methods.empty()) {
+            auto method = getClosestMatchMethod(methods, arguments);
+            if (!method) {
                 std::cerr << "Error: Invalid non-static method name " << methodName << std::endl;
                 error = true;
                 return;
             }
-            // if (){
-
-            // }
+            if (method->isStatic) {
+                std::cerr << "Error: no non-static method found for " << methodName << std::endl;
+                error = true;
+                return;
+            }
         }
     }
     currentExpType = ExpType::Any;
@@ -202,10 +255,13 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     std::string left_obj_name {"basic_type"}, right_obj_name {"basic_type"};
     DataType left_array_type, right_array_type;
 
-    // bool init{initialized};
-    // initialized = false;
+    auto right_exp = n->right;
+    auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
+
+    if (casted_right_exp) {
+        visit(casted_right_exp);
+    }
     auto left_type = GetExpType(n->left);
-    // initialized = init;
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
         if (left_obj_name == "String")
@@ -235,6 +291,9 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
         left_obj_name, right_obj_name,
         left_array_type, right_array_type
     );
+    currentExpType = left_type;
+    currentObjectTypeName = left_obj_name;
+    currentArrayDataType = left_array_type;
 }
 
 bool TypeCheckingVisitor::isError() const {
@@ -349,7 +408,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<EqualExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto type1 = GetExpType(n->exp1);
+    auto type2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::Equality, type1, type2);
+    if (currentExpType == ExpType::Undefined) 
+        currentExpType = CalcExpType(ExpRuleType::Comparison, type1, type2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid EqualExp Type " << std::endl;
         error = true;
@@ -357,7 +420,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<EqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::Comparison, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto type1 = GetExpType(n->exp1);
+    auto type2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::Equality, type1, type2);
+    if (currentExpType == ExpType::Undefined) 
+        currentExpType = CalcExpType(ExpRuleType::Comparison, type1, type2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid NotEqualExp Type " << std::endl;
         error = true;
@@ -414,10 +481,19 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     currentExpType = ExpType::Object;
     currentObjectTypeName = n->classType->id->name;
+    auto& methods = scope->onDemandImported;
+    for (auto& [name, symbolTable] : methods) {
+        auto classDecl = std::dynamic_pointer_cast<ClassDecl>(symbolTable->getClassOrInterfaceDecl());
+        if (classDecl && classDecl->isAbstract() && currentObjectTypeName == classDecl->id->name) {
+            std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
+            error = true;
+            break;
+        }
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
-    currentExpType = ExpType::Any;
+    currentExpType = ExpType::Null;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
@@ -425,17 +501,67 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
-    currentExpType = ExpType::Any;
+    auto expType = GetExpType(n->exp);
+    
+    ExpType castType {ExpType::Undefined};
+    std::string castObjectTypeName;
+    DataType castArrayDataType;
+    if (auto type = std::dynamic_pointer_cast<ArrayType>(n->type)) {
+        castType = ExpType::Array;
+        if (auto dataType = std::dynamic_pointer_cast<IdentifierType>(type->dataType)){
+            castArrayDataType = DataType::OBJECT;
+            castObjectTypeName = dataType->id->name;
+        }
+        else 
+            castArrayDataType = type->dataType->type;
+    }
+    else if (auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        castType = ExpType::Object;
+        castObjectTypeName = type->id->name;
+    }
+    else
+    {
+       std::map<DataType, ExpType> d2e = {
+            {DataType::INT, ExpType::Integer},
+            {DataType::SHORT, ExpType::Short},
+            {DataType::CHAR, ExpType::Char},
+            {DataType::BOOLEAN, ExpType::Boolean},
+            {DataType::BYTE, ExpType::Byte},
+        };
+        if (d2e.contains(n->type->type)) 
+            castType = d2e[n->type->type];
+        else {
+            error = true;
+            std::cerr << "Error: Undefined casting " << std::endl;
+            return;
+        }
+    }
+    
+    // casting rules here
+    if (!castingRules.contains({castType, expType})) {
+        error = true;
+        std::cerr << "Error: Undefined casting " << std::endl;
+        return;
+    }
+    
+    currentExpType = castType;
+    currentObjectTypeName = castObjectTypeName;
+    currentArrayDataType = castArrayDataType;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
-    currentExpType = ExpType::Any;
+    currentExpType = ExpType::Array;
+
+    if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)){
+        currentArrayDataType = DataType::OBJECT;
+        currentObjectTypeName = type->id->name;
+    }
+    else
+        currentArrayDataType = n->type->type;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
-    std::cout << "ParExp" << std::endl;
-    currentExpType = ExpType::Any;
-    Visitor::visit(n);
+    currentExpType = GetExpType(n->exp);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
@@ -485,44 +611,76 @@ void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(AmbiguousName& ambigu
 void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, 
     std::string left_obj_name, std::string right_obj_name, DataType left_array_type, DataType right_array_type) {
     if(left_type == ExpType::Any || right_type == ExpType::Any) return;
-    if(left_type == ExpType::Object && right_type == ExpType::Object) {
-        if (left_obj_name != right_obj_name) {
+
+    if(left_type == ExpType::Object) {
+        if (left_obj_name == "Object" && (right_type == ExpType::Object || right_type == ExpType::Array || right_type == ExpType::String || right_type == ExpType::Null))
+            return;
+        else if(right_type == ExpType::Object && left_obj_name == right_obj_name)
+                return;
+        else {
             error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different object types" << std::endl;
+            std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Object" << std::endl;
+            return;
         }
     }
-    else if ((left_type != ExpType::Object && right_type == ExpType::Object) || (left_type == ExpType::Object && right_type != ExpType::Object)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between object and non-object type" << std::endl;
-    }
-    else if (left_type == ExpType::Array && right_type == ExpType::Array) {
-        if (!(left_array_type == right_array_type && left_obj_name == right_obj_name)) {
-            error = true;
-            std::cerr << "Error: Invalid Assignment Type: assignment between different array types" << std::endl;
+    else if (left_type == ExpType::Array) {
+        if (right_type == ExpType::Array) {
+            if (left_array_type == DataType::OBJECT && right_array_type == DataType::OBJECT) {
+              if (left_obj_name == "Object" || left_obj_name == right_obj_name) 
+                return;
+            }
+            else if (left_array_type == right_array_type)
+                 return;
         }
-    } 
-    else if ((left_type != ExpType::Array && right_type == ExpType::Array) || (left_type == ExpType::Array && right_type != ExpType::Array)) {
         error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between array and non-array type" << std::endl;
-    }
-    else if((left_type == ExpType::String && right_type != ExpType::String) || (left_type != ExpType::String && right_type == ExpType::String)) {
-        error = true;
-        std::cerr << "Error: Invalid Assignment Type: assignment between string and non-string type" << std::endl;        
+        std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
+        return;
     }
     else if (!assginmentRules.contains({left_type, right_type})) {
         error = true;
-        if (left_type == ExpType::Boolean || right_type == ExpType::Boolean)
-            std::cerr << "Error: Invalid Assignment Type: assignment between int/char/short and boolean" << std::endl;
-        else
-            std::cerr << "Error: Undefined Error: " << (int)left_type << " <=== " << (int)right_type << std::endl;
+        std::cerr << "Error: Invalid Assignment Type: " << expTypeString[(int)left_type] << " <=== " << expTypeString[(int)right_type] << std::endl;              
     }
 }
 
-// std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentType>& arguments) {
-//     for (auto method : methods) {
-//         if (method->formalParameters.size() != arguments.size()) continue;
-//         for (size_t i = 0; i < method->formalParameters.size(); ++i) {
-//             if ()
-//         }
-//     }
-// }
+std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments) {
+    std::shared_ptr<Method> closestMatch;
+    for (auto method : methods) {
+        auto parameters = method->formalParameters;
+        if (parameters.size() != arguments.size()) continue;
+        bool match{true};
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            if (!isTypeCompatible(parameters[i]->type, arguments[i])) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            closestMatch = method;
+            break;
+        }
+    }
+    return closestMatch;
+}
+
+bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument) {
+    if (dataType->type == DataType::INT && argument.expType == ExpType::Integer) return true;
+    if (dataType->type == DataType::SHORT && argument.expType == ExpType::Short) return true;
+    if (dataType->type == DataType::CHAR && argument.expType == ExpType::Char) return true;
+    if (dataType->type == DataType::BYTE && argument.expType == ExpType::Byte) return true;
+    if (dataType->type == DataType::BOOLEAN && argument.expType == ExpType::Boolean) return true;
+    if (dataType->type == DataType::OBJECT) {
+        auto it = std::dynamic_pointer_cast<IdentifierType>(dataType);
+        if (argument.expType == ExpType::Object) return it->id->name == argument.objectName;
+        if (argument.expType == ExpType::String) return it->id->name == "String";
+        return false;
+    }
+    if (dataType->type == DataType::ARRAY && argument.expType == ExpType::Array) {
+        auto arrayType = std::dynamic_pointer_cast<ArrayType>(dataType)->dataType;
+        if (auto it = std::dynamic_pointer_cast<IdentifierType>(arrayType)) {
+            return it->id->name == argument.objectName;
+        }
+        return arrayType->type  == argument.arrayType;
+    }
+    return false;
+}
+
