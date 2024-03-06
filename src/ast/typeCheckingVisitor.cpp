@@ -388,7 +388,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto t1 = GetExpType(n->exp1), t2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, t1, t2);
+    if (currentExpType == ExpType::Undefined)
+        currentExpType = CalcExpType(ExpRuleType::StringPlus, t1, t2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid PlusExp Type " << std::endl;
         error = true;
