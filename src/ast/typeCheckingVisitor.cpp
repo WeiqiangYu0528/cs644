@@ -554,24 +554,51 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     auto& methods = scope->onDemandImported;
     for (auto& [name, symbolTable] : methods) {
         auto classDecl = std::dynamic_pointer_cast<ClassDecl>(symbolTable->getClassOrInterfaceDecl());
+        auto interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(symbolTable->getClassOrInterfaceDecl());
         if (classDecl && classDecl->isAbstract() && currentObjectTypeName == classDecl->id->name) {
             std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
             error = true;
             break;
         }
+//        if (interfaceDecl && currentObjectTypeName == interfaceDecl->id->name) {
+//            std::cerr << "Error: Cannot instantiate interface " << n->classType->id->name << std::endl;
+//            error = true;
+//            break;
+//        }
     }
 
     std::shared_ptr<SymbolTable> className = scope->getUnqualifiedNameInScope(n->classType->id->name);
-    bool findRightConstructor = false;
-    for(std::shared_ptr<Constructor> constructor : className->getConstructor(n->classType->id->name)) {
-        if (constructor->formalParameters.size() == n->arguments.size()) {
-            //TODO check not only the size but type
-            findRightConstructor = true;
+    if (className) {
+        bool findRightConstructor = false;
+        for(std::shared_ptr<Constructor> constructor : className->getConstructor(n->classType->id->name)) {
+            if (constructor->formalParameters.size() == n->arguments.size()) {
+                if (n->arguments.size() == 0) {
+                    findRightConstructor = true;
+                    break;
+                }
+                std::vector<argumentExp> arguments;
+                for (auto& arg : n->arguments) {
+                    arg->accept(this);
+                    arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
+                }
+                for (size_t i = 0; i < n->arguments.size(); ++i) {
+                    if (!isTypeCompatible(constructor->formalParameters[i]->type, arguments[i])) {
+                        break;
+                    }
+                    // find the right constructor
+                    if (i == n->arguments.size() - 1) {
+                        findRightConstructor = true;
+                    }
+                }
+            }
+            if (findRightConstructor){
+                break;
+            }
         }
-    }
-    if (!findRightConstructor){
-        error = true;
-        std::cerr << "Error: No matching constructor found" << std::endl;
+        if (!findRightConstructor){
+            error = true;
+            std::cerr << "Error: No matching constructor found" << std::endl;
+        }
     }
 }
 
