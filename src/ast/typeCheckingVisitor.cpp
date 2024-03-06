@@ -678,7 +678,25 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
-    currentExpType = ExpType::Any;
+    auto lhsType = GetExpType(n->exp);
+    auto lhsObjectTyeName = currentObjectTypeName;
+    auto lhsArrayDataType = currentArrayDataType;
+
+    SetCurrentExpTypebyAmbiguousName(n->type);
+    auto rhsType = currentExpType;
+    auto rhsObjectTyeName = currentObjectTypeName;
+    auto rhsArrayDataType = currentArrayDataType;
+
+    currentExpType = ExpType::Boolean;
+
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (s.contains(lhsType)) {
+        error = true;
+        std::cerr << "Error: Instanceof on simple types" << std::endl;
+        return;
+    }        
+
+    
 }
 
 ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
@@ -748,6 +766,7 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
             else if (left_array_type == right_array_type)
                  return;
         }
+        else if (right_type == ExpType::Null) return;
         error = true;
         std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
         return;
