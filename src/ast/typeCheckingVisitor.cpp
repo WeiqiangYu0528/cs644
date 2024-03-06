@@ -162,7 +162,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
-    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized);
+    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized, staticMethod);
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
         error = true;
@@ -185,7 +185,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     } 
     else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) {
         if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(parExp->exp)) {
-            auto ambiguousName = scope->reclassifyAmbiguousName(ie->id->name, ie->simple, initialized);
+            auto ambiguousName = scope->reclassifyAmbiguousName(ie->id->name, ie->simple, initialized, staticMethod);
             if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
                 std::cerr << "Error: " << ie->id->name << " is not a valid name in the current scope" << std::endl;
                 error = true;
@@ -211,6 +211,16 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
                 SetCurrentExpTypebyAmbiguousName(field->type);
             }
         }
+    }
+    else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
+        std::shared_ptr<SymbolTable> st = scope->getNameInScope(classexp->classType->id->name, classexp->classType->simple);
+        auto field = st->getField(n->field->id->name);
+        if (!field || field->isStatic) {
+            std::cerr << "Error: Invalid field access" << std::endl;
+            error = true;
+            return;
+        }
+        SetCurrentExpTypebyAmbiguousName(field->type);
     }
     else {
         Visitor::visit(n);
@@ -238,7 +248,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     if (n->ambiguousMethodName != nullptr) {
         std::string methodName {n->ambiguousMethodName->id->name};
         if (n->ambiguousName) {
-            AmbiguousName ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized);
+            AmbiguousName ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized, staticMethod);
             if (ambiguousName.type == AmbiguousNamesType::TYPE) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
                 method = getClosestMatchMethod(methods, arguments);
