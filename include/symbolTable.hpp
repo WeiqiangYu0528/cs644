@@ -20,7 +20,7 @@ class SymbolTable {
     // declared method table
     std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> mtable;
     // constructor table
-    std::unordered_map<std::string, std::vector<std::shared_ptr<Constructor>>> ctable;
+    std::vector<std::shared_ptr<Constructor>> ctable;
     // local variable table
     std::unordered_map<std::string, std::shared_ptr<AstNode>> ltable;
     std::stack<std::string> stack_t;
@@ -31,8 +31,8 @@ class SymbolTable {
         std::shared_ptr<Field> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<Method> value);
         std::vector<std::shared_ptr<Method>> getMethod(const std::string& key) const;
-        void putConstuctor(const std::string& key, const std::shared_ptr<Constructor> value);
-        std::vector<std::shared_ptr<Constructor>> getConstructor(const std::string& key) const;
+        void putConstuctor(const std::shared_ptr<Constructor> value);
+        std::vector<std::shared_ptr<Constructor>>& getConstructor();
         void putVar(const std::string& key, const std::shared_ptr<AstNode> value);
         std::shared_ptr<AstNode> getVar(const std::string& key) const;
         void setAst(std::shared_ptr<Program> a);

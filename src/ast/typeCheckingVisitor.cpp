@@ -189,14 +189,16 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
         }
     }
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
-        std::shared_ptr<SymbolTable> st = scope->getNameInScope(classexp->classType->id->name, classexp->classType->simple);
-        auto field = st->getField(n->field->id->name);
-        if (!field || field->isStatic) {
-            std::cerr << "Error: Invalid field access" << std::endl;
-            error = true;
-            return;
+        std::shared_ptr<SymbolTable> st = visitClassInstanceCreationExp(classexp);
+        if (st) {
+            auto field = st->getField(n->field->id->name);
+            if (!field || field->isStatic) {
+                std::cerr << "Error: Invalid field access" << std::endl;
+                error = true;
+                return;
+            }
+            SetCurrentExpTypebyAmbiguousName(field->type);
         }
-        SetCurrentExpTypebyAmbiguousName(field->type);
     }
     else {
         Visitor::visit(n);
@@ -212,13 +214,27 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
     }
     //primary method invocation
-    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
-        if (staticMethod) {
-            std::cerr << "Error: Cannot use this in a static method" << std::endl;
-            error = true;
-            return;
+    if (n->primary) {
+        if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
+            if (staticMethod) {
+                std::cerr << "Error: Cannot use this in a static method" << std::endl;
+                error = true;
+                return;
+            }
+            // n->primary->accept(this);
         }
-        // n->primary->accept(this);
+        if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) {
+            std::shared_ptr<SymbolTable> st = visitClassInstanceCreationExp(classExp);
+            if (st) {
+                auto methods = st->getMethod(n->primaryMethodName->id->name);
+                method = getClosestMatchMethod(methods, arguments);
+                if (!method) {
+                    std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
+                    error = true;
+                    return;
+                }
+            }
+        }
     }
     //normal method invocation
     if (n->ambiguousMethodName != nullptr) {
@@ -244,7 +260,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
                 //     return;
                 // }
             }
-            else if (ambiguousName.type == AmbiguousNamesType::EXPRESSION) {
+            else if (ambiguousName.type == AmbiguousNamesType::EXPRESSION && ambiguousName.symbolTable) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
                 method = getClosestMatchMethod(methods, arguments);
                 if (!method) {
@@ -522,17 +538,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
-    currentExpType = ExpType::Object;
-    currentObjectTypeName = n->classType->id->name;
-    auto& methods = scope->onDemandImported;
-    for (auto& [name, symbolTable] : methods) {
-        auto classDecl = std::dynamic_pointer_cast<ClassDecl>(symbolTable->getClassOrInterfaceDecl());
-        if (classDecl && classDecl->isAbstract() && currentObjectTypeName == classDecl->id->name) {
-            std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
-            error = true;
-            break;
-        }
-    }
+    visitClassInstanceCreationExp(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
@@ -706,6 +712,26 @@ std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<s
     return closestMatch;
 }
 
+std::shared_ptr<Constructor> TypeCheckingVisitor::getClosestMatchConstructor(std::vector<std::shared_ptr<Constructor>>& constructors, std::vector<argumentExp>& arguments) {
+    std::shared_ptr<Constructor> closestMatch;
+    for (auto constructor : constructors) {
+        auto parameters = constructor->formalParameters;
+        if (parameters.size() != arguments.size()) continue;
+        bool match{true};
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            if (!isTypeCompatible(parameters[i]->type, arguments[i])) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            closestMatch = constructor;
+            break;
+        }
+    }
+    return closestMatch;
+}
+
 bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument) {
     if (dataType->type == DataType::INT && argument.expType == ExpType::Integer) return true;
     if (dataType->type == DataType::SHORT && argument.expType == ExpType::Short) return true;
@@ -723,4 +749,29 @@ bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argum
         return arrayType->type  == argument.arrayType;
     }
     return false;
+}
+
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n) {
+    currentExpType = ExpType::Object;
+    currentObjectTypeName = n->classType->id->name;
+    std::shared_ptr<SymbolTable> st = scope->getNameInScope(currentObjectTypeName, n->classType->simple);
+    auto classDecl = std::dynamic_pointer_cast<ClassDecl>(st->getClassOrInterfaceDecl());
+    if (classDecl->isAbstract()) {
+        std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
+        error = true;
+        return nullptr;
+    }
+    auto constructors = st->getConstructor();
+    std::vector<argumentExp> arguments;
+    for (auto& arg : n->arguments) {
+        arg->accept(this);
+        arguments.emplace_back(currentExpType, currentObjectTypeName, currentArrayDataType);
+    }
+    auto constructor = getClosestMatchConstructor(constructors, arguments);
+    if (!constructor) {
+        std::cerr << "Error: No matching constructor found for " << n->classType->id->name << std::endl;
+        error = true;
+        return nullptr;
+    }
+    return error ? nullptr : st;
 }
