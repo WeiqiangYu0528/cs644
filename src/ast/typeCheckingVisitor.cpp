@@ -158,10 +158,40 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
         initialized = false;
         n->field->accept(this);
         initialized = init;
-    } else {
-        Visitor::visit(n);
+    } 
+    else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) {
+        if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(parExp->exp)) {
+            auto ambiguousName = scope->reclassifyAmbiguousName(ie->id->name, ie->simple, initialized);
+            if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
+                std::cerr << "Error: " << ie->id->name << " is not a valid name in the current scope" << std::endl;
+                error = true;
+                return;
+            }
+            auto field = ambiguousName.symbolTable->getField(n->field->id->name);
+            if (!field || field->isStatic) {
+                std::cerr << "Error: Invalid field access" << std::endl;
+                error = true;
+                return;
+            }
+            SetCurrentExpTypebyAmbiguousName(field->type);
+        }
+        if (auto ce = std::dynamic_pointer_cast<CastExp>(parExp->exp)) {
+            if (auto ie = std::dynamic_pointer_cast<IdentifierType>(ce->type)) {
+                std::shared_ptr<SymbolTable> st = scope->getNameInScope(ie->id->name, ie->simple);
+                auto field = st->getField(n->field->id->name);
+                if (!field || field->isStatic) {
+                    std::cerr << "Error: Invalid field access" << std::endl;
+                    error = true;
+                    return;
+                }
+                SetCurrentExpTypebyAmbiguousName(field->type);
+            }
+        }
     }
-    currentExpType = ExpType::Any;
+    else {
+        Visitor::visit(n);
+        currentExpType = ExpType::Any;
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
@@ -654,7 +684,6 @@ std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<s
         bool match{true};
         for (size_t i = 0; i < parameters.size(); ++i) {
             if (!isTypeCompatible(parameters[i]->type, arguments[i])) {
-                std::cout << static_cast<int>(parameters[i]->type->type) << " " << static_cast<int>(arguments[i].expType) << std::endl;
                 match = false;
                 break;
             }
@@ -674,7 +703,6 @@ bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argum
     if (dataType->type == DataType::BYTE && argument.expType == ExpType::Byte) return true;
     if (dataType->type == DataType::BOOLEAN && argument.expType == ExpType::Boolean) return true;
     if (dataType->type == DataType::OBJECT && (argument.expType == ExpType::Object || argument.expType == ExpType::String)) {
-        std::cout << std::dynamic_pointer_cast<IdentifierType>(dataType)->id->name << " " << argument.objectName << std::endl;
         return std::dynamic_pointer_cast<IdentifierType>(dataType)->id->name == argument.objectName;
     }
     if (dataType->type == DataType::ARRAY && argument.expType == ExpType::Array) {
