@@ -27,12 +27,12 @@ std::vector<std::shared_ptr<Method>> SymbolTable::getMethod(const std::string& k
     return methods;
 }
 
-void SymbolTable::putConstuctor(const std::string& key, const std::shared_ptr<Constructor> value) {
-    ctable[key].push_back(value);
+void SymbolTable::putConstuctor(const std::shared_ptr<Constructor> value) {
+    ctable.push_back(value);
 }
 
-std::vector<std::shared_ptr<Constructor>> SymbolTable::getConstructor(const std::string& key) const {
-    return ctable.contains(key) ? ctable.at(key) : std::vector<std::shared_ptr<Constructor>>{};
+std::vector<std::shared_ptr<Constructor>>& SymbolTable::getConstructor() {
+    return ctable;
 }
 
 void SymbolTable::putVar(const std::string& key, const std::shared_ptr<AstNode> value) {

@@ -223,5 +223,8 @@ class TypeCheckingVisitor : public Visitor {
             std::string right_obj_name, DataType left_array_type, DataType right_array_type);
 
         std::shared_ptr<Method> getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments);
+        std::shared_ptr<Constructor> getClosestMatchConstructor(std::vector<std::shared_ptr<Constructor>>& constructors, std::vector<argumentExp>& arguments);
         bool isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument);
+
+        std::shared_ptr<SymbolTable> visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
 };

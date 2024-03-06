@@ -18,7 +18,7 @@ void ContextVisitor::visit(std::shared_ptr<Constructor> n) {
     symbolTable->beginScope();
     Visitor::visit(n);
     symbolTable->endScope();
-    symbolTable->putConstuctor(n->constructorName->name, n);
+    symbolTable->putConstuctor(n);
 }
 
 void ContextVisitor::visit(std::shared_ptr<Method> n) {
