@@ -216,6 +216,8 @@ class TypeCheckingVisitor : public Visitor {
         void visit(std::shared_ptr<ParExp> n) override;
         void visit(std::shared_ptr<InstanceOfExp> n) override;
 
+        void visit(std::shared_ptr<ArrayAccessExp> n) override;
+
         void SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode);
         void AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, std::string left_obj_name, 
             std::string right_obj_name, DataType left_array_type, DataType right_array_type);

@@ -702,6 +702,15 @@ void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
     
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
+    if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
+        
+    }
+
+    currentExpType = ExpType::Any;
+}
+
+
 ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
     if (lhs_type == ExpType::Any || rhs_type == ExpType::Any) return ExpType::Any;
     if (lhs_type == ExpType::Undefined || rhs_type == ExpType::Undefined) {
