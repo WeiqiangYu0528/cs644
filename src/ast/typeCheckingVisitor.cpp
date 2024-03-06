@@ -270,6 +270,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
     currentExpType = ExpType::String;
+    currentObjectTypeName = "String";
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
