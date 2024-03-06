@@ -149,6 +149,7 @@ class TypeCheckingVisitor : public Visitor {
 
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
+        void visit(std::shared_ptr<Program> n) override;
         void visit(std::shared_ptr<FormalParameter> n) override;
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
         void visit(std::shared_ptr<Constructor> n) override;
