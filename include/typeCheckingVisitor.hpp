@@ -93,7 +93,9 @@ class TypeCheckingVisitor : public Visitor {
             {{ExpRuleType::Equality, ExpType::Object, ExpType::Object}, ExpType::Boolean},
             {{ExpRuleType::Equality, ExpType::Array, ExpType::Array}, ExpType::Boolean},
             {{ExpRuleType::Equality, ExpType::String, ExpType::String}, ExpType::Boolean},
-
+            {{ExpRuleType::Equality, ExpType::Object, ExpType::Null}, ExpType::Boolean},
+            {{ExpRuleType::Equality, ExpType::String, ExpType::Null}, ExpType::Boolean},            
+            {{ExpRuleType::Equality, ExpType::Array, ExpType::Null}, ExpType::Boolean},            
         };
 
         std::set<std::pair<ExpType, ExpType>> assginmentRules = {
@@ -115,16 +117,24 @@ class TypeCheckingVisitor : public Visitor {
             // first <= second
             {ExpType::Integer, ExpType::Integer},
             {ExpType::Integer, ExpType::Short},    
-            {ExpType::Integer, ExpType::Byte},                        
+            {ExpType::Integer, ExpType::Byte},    
+            {ExpType::Integer, ExpType::Char},    
+
             {ExpType::Short, ExpType::Integer},
-            {ExpType::Short, ExpType::Char},            
-            {ExpType::Char, ExpType::Integer},
-            {ExpType::Byte, ExpType::Integer},
             {ExpType::Short, ExpType::Short},
+            {ExpType::Short, ExpType::Char},      
+            {ExpType::Short, ExpType::Byte},      
+
+            {ExpType::Char, ExpType::Integer},
+            {ExpType::Char, ExpType::Short},
+            {ExpType::Char, ExpType::Char},      
+            {ExpType::Char, ExpType::Byte},    
+
+            {ExpType::Byte, ExpType::Integer},
             {ExpType::Byte, ExpType::Short},
             {ExpType::Byte, ExpType::Byte},
-            {ExpType::Char, ExpType::Char},
-            {ExpType::Byte, ExpType::Char},            
+            {ExpType::Byte, ExpType::Char},
+                        
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
             {ExpType::Object, ExpType::Object},
