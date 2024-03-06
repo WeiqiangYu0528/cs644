@@ -323,7 +323,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
 
     auto right_exp = n->right;
     auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
-
     if (casted_right_exp) {
         visit(casted_right_exp);
     }
@@ -556,6 +555,19 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
             error = true;
             break;
         }
+    }
+
+    std::shared_ptr<SymbolTable> className = scope->getUnqualifiedNameInScope(n->classType->id->name);
+    bool findRightConstructor = false;
+    for(std::shared_ptr<Constructor> constructor : className->getConstructor(n->classType->id->name)) {
+        if (constructor->formalParameters.size() == n->arguments.size()) {
+            //TODO check not only the size but type
+            findRightConstructor = true;
+        }
+    }
+    if (!findRightConstructor){
+        error = true;
+        std::cerr << "Error: No matching constructor found" << std::endl;
     }
 }
 
