@@ -465,6 +465,10 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     // Rule 14
                     if (superMethod->isPublic && !n->isPublic)
                     {
+                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
+                        {
+                            continue;
+                        }
                         std::cerr << "Error: PROTECTED Method " << key << " can not override PUBLIC method" << std::endl;
                         error = true;
                         break;
