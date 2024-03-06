@@ -619,7 +619,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
             return;
         }
     }
-    
+    if(castType == ExpType::Object && castObjectTypeName == "String")
+        castType = ExpType::String; 
     // casting rules here
     if (!castingRules.contains({castType, expType})) {
         error = true;
