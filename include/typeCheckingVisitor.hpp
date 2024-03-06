@@ -25,6 +25,7 @@ enum class ExpRuleType {
     ArithmeticOrBitwise,
     Comparison,
     Equality,
+    StringPlus,
     Undefined = -1
 };
 
@@ -68,10 +69,14 @@ class TypeCheckingVisitor : public Visitor {
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
                         
 
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::String}, ExpType::String},    
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::String}, ExpType::String},
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::String}, ExpType::String},    
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::String}, ExpType::String},                                   
+            {{ExpRuleType::StringPlus, ExpType::Integer, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::StringPlus, ExpType::Short, ExpType::String}, ExpType::String},
+            {{ExpRuleType::StringPlus, ExpType::Byte, ExpType::String}, ExpType::String},    
+            {{ExpRuleType::StringPlus, ExpType::Char, ExpType::String}, ExpType::String},   
+            {{ExpRuleType::StringPlus, ExpType::Null, ExpType::String}, ExpType::String},                                               
+            {{ExpRuleType::StringPlus, ExpType::Array, ExpType::String}, ExpType::String}, 
+            {{ExpRuleType::StringPlus, ExpType::Object, ExpType::String}, ExpType::String},                                                           
+            {{ExpRuleType::StringPlus, ExpType::String, ExpType::String}, ExpType::String},                                                           
 
 
             // int < int
@@ -149,6 +154,7 @@ class TypeCheckingVisitor : public Visitor {
 
     public:
         TypeCheckingVisitor(std::shared_ptr<Scope> s);
+        void visit(std::shared_ptr<Program> n) override;
         void visit(std::shared_ptr<FormalParameter> n) override;
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
         void visit(std::shared_ptr<Constructor> n) override;

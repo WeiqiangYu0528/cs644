@@ -21,6 +21,30 @@ TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), e
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<Program> n) {
+    if (n->scope->supers.size() > 0) {
+        for (std::shared_ptr<SymbolTable> superMethod : n->scope->supers) {
+            // check if zero argument constructor is present
+                std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(superMethod->getClassOrInterfaceDecl());            
+                if (classDecl) {
+                    bool isZeroArgConstructor = false;
+                    for (auto& constructor : classDecl->declarations[2]) {
+                        if (std::dynamic_pointer_cast<Constructor>(constructor)->formalParameters.size() == 0) {
+                            isZeroArgConstructor = true;
+                        }
+                    }
+                    if (!isZeroArgConstructor) {
+                        std::cerr << "Error: No zero argument constructor found in super class" << std::endl;
+                        error = true;
+                        return;
+                    }
+                }
+        }
+
+    }
+    n->classOrInterfaceDecl->accept(this);
+}
+
 void TypeCheckingVisitor::visit(std::shared_ptr<FormalParameter> n) {
     const std::string key {n->variableName->name};
     scope->current->putVar(key, n);
@@ -131,6 +155,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
+    if (GetExpType(n->exp) == ExpType::Null) {
+        error = true;
+        std::cerr << "Error: For condition must be of type boolean" << std::endl;
+    }
     scope->current->beginScope();
     Visitor::visit(n);
     scope->current->endScope();
@@ -315,7 +343,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
 
     auto right_exp = n->right;
     auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
-
     if (casted_right_exp) {
         visit(casted_right_exp);
     }
@@ -377,7 +404,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
-    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
+    auto t1 = GetExpType(n->exp1), t2 = GetExpType(n->exp2);
+    currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, t1, t2);
+    if (currentExpType == ExpType::Undefined)
+        currentExpType = CalcExpType(ExpRuleType::StringPlus, t1, t2);
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid PlusExp Type " << std::endl;
         error = true;
@@ -585,7 +615,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
             return;
         }
     }
-    
+    if(castType == ExpType::Object && castObjectTypeName == "String")
+        castType = ExpType::String; 
     // casting rules here
     if (!castingRules.contains({castType, expType})) {
         error = true;
@@ -614,7 +645,25 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
-    currentExpType = ExpType::Any;
+    auto lhsType = GetExpType(n->exp);
+    auto lhsObjectTyeName = currentObjectTypeName;
+    auto lhsArrayDataType = currentArrayDataType;
+
+    SetCurrentExpTypebyAmbiguousName(n->type);
+    auto rhsType = currentExpType;
+    auto rhsObjectTyeName = currentObjectTypeName;
+    auto rhsArrayDataType = currentArrayDataType;
+
+    currentExpType = ExpType::Boolean;
+
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (s.contains(lhsType)) {
+        error = true;
+        std::cerr << "Error: Instanceof on simple types" << std::endl;
+        return;
+    }        
+
+    
 }
 
 ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
@@ -665,6 +714,8 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
     if(left_type == ExpType::Object) {
         if (left_obj_name == "Object" && (right_type == ExpType::Object || right_type == ExpType::Array || right_type == ExpType::String || right_type == ExpType::Null))
             return;
+        // Null can be assigned to any reference type
+        else if (right_type == ExpType::Null) return;
         else if(right_type == ExpType::Object && left_obj_name == right_obj_name)
                 return;
         else {
@@ -682,6 +733,7 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
             else if (left_array_type == right_array_type)
                  return;
         }
+        else if (right_type == ExpType::Null) return;
         error = true;
         std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
         return;
@@ -751,13 +803,12 @@ bool TypeCheckingVisitor::isTypeCompatible(std::shared_ptr<Type> dataType, argum
     return false;
 }
 
-std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n) {
-    currentExpType = ExpType::Object;
-    currentObjectTypeName = n->classType->id->name;
-    std::shared_ptr<SymbolTable> st = scope->getNameInScope(currentObjectTypeName, n->classType->simple);
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n) {  
+    std::string& cname {n->classType->id->name};
+    std::shared_ptr<SymbolTable> st = scope->getNameInScope(cname, n->classType->simple);
     auto classDecl = std::dynamic_pointer_cast<ClassDecl>(st->getClassOrInterfaceDecl());
     if (classDecl->isAbstract()) {
-        std::cerr << "Error: Cannot instantiate abstract class " << n->classType->id->name << std::endl;
+        std::cerr << "Error: Cannot instantiate abstract class " << cname << std::endl;
         error = true;
         return nullptr;
     }
@@ -769,9 +820,12 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(
     }
     auto constructor = getClosestMatchConstructor(constructors, arguments);
     if (!constructor) {
-        std::cerr << "Error: No matching constructor found for " << n->classType->id->name << std::endl;
+        std::cerr << "Error: No matching constructor found for " << cname << std::endl;
         error = true;
         return nullptr;
     }
+    currentExpType = ExpType::Object;
+    currentObjectTypeName = cname;
+
     return error ? nullptr : st;
 }
