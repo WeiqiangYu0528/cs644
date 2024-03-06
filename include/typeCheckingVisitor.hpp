@@ -71,7 +71,11 @@ class TypeCheckingVisitor : public Visitor {
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::String}, ExpType::String},    
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::String}, ExpType::String},
             {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::String}, ExpType::String},    
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::String}, ExpType::String},                                   
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::String}, ExpType::String},   
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Null, ExpType::String}, ExpType::String},                                               
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Array, ExpType::String}, ExpType::String}, 
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Object, ExpType::String}, ExpType::String},                                                           
+            {{ExpRuleType::ArithmeticOrBitwise, ExpType::String, ExpType::String}, ExpType::String},                                                           
 
 
             // int < int
