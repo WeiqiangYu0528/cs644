@@ -213,6 +213,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
+    if (n->primary) {
+        ExpType primaryType = GetExpType(n->primary);
+        if (GetExpType(n->primary) == ExpType::Integer) {
+            std::cerr << "Error: Invalid method invocation on Integer types" << std::endl;
+            error = true;
+            return;
+        }
+    }
     std::shared_ptr<Method> method;
     std::vector<argumentExp> arguments;
     for (auto& arg : n->arguments) {
