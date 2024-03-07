@@ -647,6 +647,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
+    auto indexType = GetExpType(n->exp);
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (!s.contains(indexType)) {
+        error = true;
+        std::cerr << "Error: Array index must have numeric type" << std::endl;
+        return;
+    }
+
     currentExpType = ExpType::Array;
 
     if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)){
@@ -686,6 +694,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
     // not finished yet
     Visitor::visit(n);
+    auto indexType = GetExpType(n->index);
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (!s.contains(indexType)) {
+        error = true;
+        std::cerr << "Error: Array index must have numeric type" << std::endl;
+        return;
+    }
+    
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
         auto ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, initialized, staticMethod);
         SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
