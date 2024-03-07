@@ -231,4 +231,7 @@ class TypeCheckingVisitor : public Visitor {
         std::shared_ptr<SymbolTable> visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
 
         bool checkIsSubclassByName(std::string o1, std::string o2);
+        std::shared_ptr<SymbolTable> visitCastExp(std::shared_ptr<CastExp> n);
+        std::shared_ptr<SymbolTable> visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
+        std::shared_ptr<SymbolTable> visitParExp(std::shared_ptr<ParExp> n);
 };

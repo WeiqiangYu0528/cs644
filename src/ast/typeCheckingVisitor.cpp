@@ -171,14 +171,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
-    const std::string key {n->id->name};
-    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized, staticMethod);
-    if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
-        std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
-        error = true;
-        return;
-    }
-    SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
+    visitIdentifierExp(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
@@ -194,36 +187,22 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
         initialized = init;
     } 
     else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) {
-        if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(parExp->exp)) {
-            auto ambiguousName = scope->reclassifyAmbiguousName(ie->id->name, ie->simple, initialized, staticMethod);
-            if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
-                std::cerr << "Error: " << ie->id->name << " is not a valid name in the current scope" << std::endl;
-                error = true;
-                return;
-            }
-            auto field = ambiguousName.symbolTable->getField(n->field->id->name);
-            if (!field || field->isStatic) {
-                std::cerr << "Error: Invalid field access" << std::endl;
-                error = true;
-                return;
-            }
-            SetCurrentExpTypebyAmbiguousName(field->type);
+        auto st = visitParExp(parExp);
+        if (!st) {
+            std::cerr << "Error: Invalid field access" << std::endl;
+            error = true;
+            return;
         }
-        if (auto ce = std::dynamic_pointer_cast<CastExp>(parExp->exp)) {
-            if (auto ie = std::dynamic_pointer_cast<IdentifierType>(ce->type)) {
-                std::shared_ptr<SymbolTable> st = scope->getNameInScope(ie->id->name, ie->simple);
-                auto field = st->getField(n->field->id->name);
-                if (!field || field->isStatic) {
-                    std::cerr << "Error: Invalid field access" << std::endl;
-                    error = true;
-                    return;
-                }
-                SetCurrentExpTypebyAmbiguousName(field->type);
-            }
+        auto field = st->getField(n->field->id->name);
+        if (!field || field->isStatic) {
+            std::cerr << "Error: Invalid field access" << std::endl;
+            error = true;
+            return;
         }
+        SetCurrentExpTypebyAmbiguousName(field->type);
     }
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
-        std::shared_ptr<SymbolTable> st = visitClassInstanceCreationExp(classexp);
+        auto st = visitClassInstanceCreationExp(classexp);
         if (st) {
             auto field = st->getField(n->field->id->name);
             if (!field || field->isStatic) {
@@ -241,6 +220,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
+    if (n->primary) {
+        ExpType primaryType = GetExpType(n->primary);
+        if (GetExpType(n->primary) == ExpType::Integer) {
+            std::cerr << "Error: Invalid method invocation on Integer types" << std::endl;
+            error = true;
+            return;
+        }
+    }
     std::shared_ptr<Method> method;
     std::vector<argumentExp> arguments;
     for (auto& arg : n->arguments) {
@@ -255,7 +242,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
                 error = true;
                 return;
             }
-            // n->primary->accept(this);
         }
         if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) {
             std::shared_ptr<SymbolTable> st = visitClassInstanceCreationExp(classExp);
@@ -267,6 +253,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
                     error = true;
                     return;
                 }
+            }
+        }
+        if (auto parexp = std::dynamic_pointer_cast<ParExp>(n->primary)) {
+            auto st = visitParExp(parexp);
+            if (!st) {
+                std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
+                error = true;
+                return;
+            }
+            auto methods = st->getMethod(n->primaryMethodName->id->name);
+            method = getClosestMatchMethod(methods, arguments);
+            if (!method) {
+                std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
+                error = true;
+                return;
             }
         }
     }
@@ -606,6 +607,13 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
     }
     else
     {
+       std::map<DataType, ExpType> d2e = {
+            {DataType::INT, ExpType::Integer},
+            {DataType::SHORT, ExpType::Short},
+            {DataType::CHAR, ExpType::Char},
+            {DataType::BOOLEAN, ExpType::Boolean},
+            {DataType::BYTE, ExpType::Byte},
+        };
         if (d2e.contains(n->type->type)) 
             castType = d2e[n->type->type];
         else {
@@ -640,7 +648,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ParExp> n) {
-    currentExpType = GetExpType(n->exp);
+    visitParExp(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
@@ -852,6 +860,80 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitClassInstanceCreationExp(
     currentObjectTypeName = cname;
 
     return error ? nullptr : st;
+}
+
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitIdentifierExp(std::shared_ptr<IdentifierExp> n) {
+    const std::string key {n->id->name};
+    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized, staticMethod);
+    if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
+        std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
+        error = true;
+        return nullptr;
+    }
+    SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
+    return ambiguousName.symbolTable;
+}
+
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitCastExp(std::shared_ptr<CastExp> n) {
+    std::shared_ptr<SymbolTable> st;
+    auto expType = GetExpType(n->exp);
+    
+    ExpType castType {ExpType::Undefined};
+    std::string castObjectTypeName;
+    DataType castArrayDataType;
+    if (auto type = std::dynamic_pointer_cast<ArrayType>(n->type)) {
+        castType = ExpType::Array;
+        if (auto dataType = std::dynamic_pointer_cast<IdentifierType>(type->dataType)){
+            castArrayDataType = DataType::OBJECT;
+            castObjectTypeName = dataType->id->name;
+            st = scope->getNameInScope(castObjectTypeName, dataType->simple);
+        }
+        else 
+            castArrayDataType = type->dataType->type;
+    }
+    else if (auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        castType = ExpType::Object;
+        castObjectTypeName = type->id->name;
+        st = scope->getNameInScope(castObjectTypeName, type->simple);
+    }
+    else
+    {
+       std::map<DataType, ExpType> d2e = {
+            {DataType::INT, ExpType::Integer},
+            {DataType::SHORT, ExpType::Short},
+            {DataType::CHAR, ExpType::Char},
+            {DataType::BOOLEAN, ExpType::Boolean},
+            {DataType::BYTE, ExpType::Byte},
+        };
+        if (d2e.contains(n->type->type)) 
+            castType = d2e[n->type->type];
+        else {
+            error = true;
+            std::cerr << "Error: Undefined casting " << std::endl;
+            return nullptr;
+        }
+    }
+    if(castType == ExpType::Object && castObjectTypeName == "String")
+        castType = ExpType::String; 
+    // casting rules here
+    if (!castingRules.contains({castType, expType})) {
+        error = true;
+        std::cerr << "Error: Undefined casting " << std::endl;
+        return nullptr;
+    }
+    
+    currentExpType = castType;
+    currentObjectTypeName = castObjectTypeName;
+    currentArrayDataType = castArrayDataType;
+
+    return st;
+}
+
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitParExp(std::shared_ptr<ParExp> n) {
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) return visitIdentifierExp(ie);
+    if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) return visitCastExp(ce);
+    currentExpType = GetExpType(n->exp);
+    return nullptr;
 }
 
 
