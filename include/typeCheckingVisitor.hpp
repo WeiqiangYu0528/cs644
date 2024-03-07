@@ -228,4 +228,7 @@ class TypeCheckingVisitor : public Visitor {
         bool isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument);
 
         std::shared_ptr<SymbolTable> visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
+        std::shared_ptr<SymbolTable> visitCastExp(std::shared_ptr<CastExp> n);
+        std::shared_ptr<SymbolTable> visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
+        std::shared_ptr<SymbolTable> visitParExp(std::shared_ptr<ParExp> n);
 };
