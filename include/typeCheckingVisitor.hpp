@@ -229,11 +229,10 @@ class TypeCheckingVisitor : public Visitor {
         std::shared_ptr<Constructor> getClosestMatchConstructor(std::vector<std::shared_ptr<Constructor>>& constructors, std::vector<argumentExp>& arguments);
         bool isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument);
 
-        std::shared_ptr<SymbolTable> visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
-
         bool checkIsSubclassByName(std::string o1, std::string o2);
-        std::shared_ptr<SymbolTable> visitCastExp(std::shared_ptr<CastExp> n);
-        std::shared_ptr<SymbolTable> visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
-        std::shared_ptr<SymbolTable> visitParExp(std::shared_ptr<ParExp> n);
-        std::shared_ptr<SymbolTable> visitThisExp(std::shared_ptr<ThisExp> n);
+        AmbiguousName visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
+        AmbiguousName visitCastExp(std::shared_ptr<CastExp> n);
+        AmbiguousName visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
+        AmbiguousName visitParExp(std::shared_ptr<ParExp> n);
+        AmbiguousName visitThisExp(std::shared_ptr<ThisExp> n);
 };
