@@ -15,6 +15,13 @@ std::string expTypeString[] =
     "Any"
 };
 
+std::map<DataType, ExpType> d2e = {
+    {DataType::INT, ExpType::Integer},
+    {DataType::SHORT, ExpType::Short},
+    {DataType::CHAR, ExpType::Char},
+    {DataType::BOOLEAN, ExpType::Boolean},
+    {DataType::BYTE, ExpType::Byte},
+};
 
 TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false), staticMethod(false) {
     // for testing only
@@ -590,7 +597,53 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
-    visitCastExp(n);
+    auto expType = GetExpType(n->exp);
+    
+    ExpType castType {ExpType::Undefined};
+    std::string castObjectTypeName;
+    DataType castArrayDataType;
+    if (auto type = std::dynamic_pointer_cast<ArrayType>(n->type)) {
+        castType = ExpType::Array;
+        if (auto dataType = std::dynamic_pointer_cast<IdentifierType>(type->dataType)){
+            castArrayDataType = DataType::OBJECT;
+            castObjectTypeName = dataType->id->name;
+        }
+        else 
+            castArrayDataType = type->dataType->type;
+    }
+    else if (auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)) {
+        castType = ExpType::Object;
+        castObjectTypeName = type->id->name;
+    }
+    else
+    {
+       std::map<DataType, ExpType> d2e = {
+            {DataType::INT, ExpType::Integer},
+            {DataType::SHORT, ExpType::Short},
+            {DataType::CHAR, ExpType::Char},
+            {DataType::BOOLEAN, ExpType::Boolean},
+            {DataType::BYTE, ExpType::Byte},
+        };
+        if (d2e.contains(n->type->type)) 
+            castType = d2e[n->type->type];
+        else {
+            error = true;
+            std::cerr << "Error: Undefined casting " << std::endl;
+            return;
+        }
+    }
+    if(castType == ExpType::Object && castObjectTypeName == "String")
+        castType = ExpType::String; 
+    // casting rules here
+    if (!castingRules.contains({castType, expType})) {
+        error = true;
+        std::cerr << "Error: Undefined casting " << std::endl;
+        return;
+    }
+    
+    currentExpType = castType;
+    currentObjectTypeName = castObjectTypeName;
+    currentArrayDataType = castArrayDataType;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
@@ -631,11 +684,27 @@ void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
-    // not implemented
+    // not finished yet
+    Visitor::visit(n);
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
-        
-    }
-    currentExpType = ExpType::Any;
+        auto ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, initialized, staticMethod);
+        SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
+        if (currentArrayDataType == DataType::OBJECT) {
+            currentExpType = ExpType::Object;
+            if (currentObjectTypeName == "String")
+                currentExpType = ExpType::String;
+        }   
+        else if (d2e.contains(currentArrayDataType)) 
+            currentExpType = d2e[currentArrayDataType];
+        else {
+            error = true;
+            std::cerr << "Error: Undefined Conversion from DataType to ExpType" << std::endl;
+            return;
+        }
+    } 
+    else {
+        currentExpType = ExpType::Any;
+    }    
 }
 
 
@@ -689,7 +758,7 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
             return;
         // Null can be assigned to any reference type
         else if (right_type == ExpType::Null) return;
-        else if(right_type == ExpType::Object && left_obj_name == right_obj_name)
+        else if(right_type == ExpType::Object && checkIsSubclassByName(left_obj_name, right_obj_name))
                 return;
         else {
             error = true;
@@ -700,7 +769,7 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
     else if (left_type == ExpType::Array) {
         if (right_type == ExpType::Array) {
             if (left_array_type == DataType::OBJECT && right_array_type == DataType::OBJECT) {
-              if (left_obj_name == "Object" || left_obj_name == right_obj_name) 
+              if (left_obj_name == "Object" || checkIsSubclassByName(left_obj_name, right_obj_name)) 
                 return;
             }
             else if (left_array_type == right_array_type)
@@ -875,4 +944,25 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitParExp(std::shared_ptr<Pa
     if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) return visitCastExp(ce);
     currentExpType = GetExpType(n->exp);
     return nullptr;
+}
+
+
+bool TypeCheckingVisitor::checkIsSubclassByName(std::string o1, std::string o2) {
+    if(o1 == o2) return true;
+
+    auto getTable = [&](const std::string& o) {
+        return scope->packageMembers.contains(o) ? scope->packageMembers[o] :
+            scope->onDemandImported.contains(o) ? scope->onDemandImported[o] :
+            scope->singleImported.contains(o) ? scope->singleImported[o] : nullptr;
+    };
+    auto inSupers = [](const std::shared_ptr<SymbolTable> table, const std::vector<std::shared_ptr<SymbolTable>>& supers) {
+        return std::find(supers.begin(), supers.end(), table) != supers.end();
+    };
+
+    auto o1Table = getTable(o1);
+    auto o2Table = getTable(o2);
+    // auto o1Supers = o1Table->getScope()->supers;
+    auto o2Supers = o2Table->getScope()->supers;
+    
+    return inSupers(o1Table, o2Supers);
 }
