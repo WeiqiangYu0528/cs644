@@ -772,6 +772,8 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
     if(left_type == ExpType::Object) {
         if (left_obj_name == "Object" && (right_type == ExpType::Object || right_type == ExpType::Array || right_type == ExpType::String || right_type == ExpType::Null))
             return;
+        if ((left_obj_name == "java.lang.Cloneable" || left_obj_name == "java.io.Serializable" || left_obj_name == "Cloneable" || left_obj_name == "Serializable") && right_type == ExpType::Array)
+            return;
         // Null can be assigned to any reference type
         else if (right_type == ExpType::Null) return;
         else if(right_type == ExpType::Object && checkIsSubclassByName(left_obj_name, right_obj_name))
