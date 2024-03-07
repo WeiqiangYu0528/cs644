@@ -149,6 +149,7 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
             {ExpType::Object, ExpType::Object},
+            {ExpType::Object, ExpType::Null},            
             {ExpType::String, ExpType::Object},            
             {ExpType::Array, ExpType::Array},
         };      
@@ -228,4 +229,6 @@ class TypeCheckingVisitor : public Visitor {
         bool isTypeCompatible(std::shared_ptr<Type> dataType, argumentExp& argument);
 
         std::shared_ptr<SymbolTable> visitClassInstanceCreationExp(std::shared_ptr<ClassInstanceCreationExp> n);
+
+        bool checkIsSubclassByName(std::string o1, std::string o2);
 };
