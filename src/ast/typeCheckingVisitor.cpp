@@ -346,7 +346,17 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     if (casted_right_exp) {
         visit(casted_right_exp);
     }
-    auto left_type = GetExpType(n->left);
+    ExpType left_type;
+    auto left_assign = std::dynamic_pointer_cast<IdentifierExp>(n->left);
+    if (left_assign) {
+        bool init{initialized};
+        initialized = false;
+        left_type = GetExpType(n->left);
+        initialized = init;
+    }
+    else {
+        left_type = GetExpType(n->left);
+    }
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
         if (left_obj_name == "String")
