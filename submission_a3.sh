@@ -10,6 +10,7 @@ OUTPUT_ZIP="a3_submission.zip"
 INCLUDE_DIR="include"
 SRC_DIR="src"
 MAKEFILE="Makefile"
+TESTS_DIR="type-checking-tests"
 LOG="a3.log"
 
 # Zip the directories and file
