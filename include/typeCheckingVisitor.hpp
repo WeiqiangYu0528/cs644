@@ -234,4 +234,5 @@ class TypeCheckingVisitor : public Visitor {
         std::shared_ptr<SymbolTable> visitCastExp(std::shared_ptr<CastExp> n);
         std::shared_ptr<SymbolTable> visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
         std::shared_ptr<SymbolTable> visitParExp(std::shared_ptr<ParExp> n);
+        std::shared_ptr<SymbolTable> visitThisExp(std::shared_ptr<ThisExp> n);
 };

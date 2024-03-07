@@ -175,59 +175,29 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
-    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
-        if (staticMethod) {
-            std::cerr << "Error: Cannot use this in a static method" << std::endl;
-            error = true;
-            return;
-        }
-        bool init{initialized};
-        initialized = false;
-        n->field->accept(this);
-        initialized = init;
-    } 
-    else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) {
-        auto st = visitParExp(parExp);
-        if (!st) {
-            std::cerr << "Error: Invalid field access" << std::endl;
-            error = true;
-            return;
-        }
-        auto field = st->getField(n->field->id->name);
-        if (!field || field->isStatic) {
-            std::cerr << "Error: Invalid field access" << std::endl;
-            error = true;
-            return;
-        }
-        SetCurrentExpTypebyAmbiguousName(field->type);
+    std::shared_ptr<SymbolTable> st;
+    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) st = visitThisExp(thisExp);
+    else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) st = visitParExp(parExp);
+    else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) st = visitClassInstanceCreationExp(classexp);
+    if (!st) {
+        std::cerr << "Error: Invalid field access" << std::endl;
+        error = true;
+        return;
     }
-    else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
-        auto st = visitClassInstanceCreationExp(classexp);
-        if (st) {
-            auto field = st->getField(n->field->id->name);
-            if (!field || field->isStatic) {
-                std::cerr << "Error: Invalid field access" << std::endl;
-                error = true;
-                return;
-            }
-            SetCurrentExpTypebyAmbiguousName(field->type);
-        }
+    auto field = st->getField(n->field->id->name);
+    if (!field || field->isStatic) {
+        std::cerr << "Error: Invalid field access" << std::endl;
+        error = true;
+        return;
     }
-    else {
-        Visitor::visit(n);
-        currentExpType = ExpType::Any;
-    }
+    SetCurrentExpTypebyAmbiguousName(field->type);
+    // else {
+    //     Visitor::visit(n);
+    //     currentExpType = ExpType::Any;
+    // }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
-    if (n->primary) {
-        ExpType primaryType = GetExpType(n->primary);
-        if (GetExpType(n->primary) == ExpType::Integer) {
-            std::cerr << "Error: Invalid method invocation on Integer types" << std::endl;
-            error = true;
-            return;
-        }
-    }
     std::shared_ptr<Method> method;
     std::vector<argumentExp> arguments;
     for (auto& arg : n->arguments) {
@@ -236,39 +206,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     }
     //primary method invocation
     if (n->primary) {
-        if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
-            if (staticMethod) {
-                std::cerr << "Error: Cannot use this in a static method" << std::endl;
-                error = true;
-                return;
-            }
+        std::shared_ptr<SymbolTable> st;
+        if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) st = visitThisExp(thisExp);
+        else if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) st = visitClassInstanceCreationExp(classExp);
+        else if (auto parexp = std::dynamic_pointer_cast<ParExp>(n->primary)) st = visitParExp(parexp);
+        if (!st) {
+            std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
+            error = true;
+            return;
         }
-        if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) {
-            std::shared_ptr<SymbolTable> st = visitClassInstanceCreationExp(classExp);
-            if (st) {
-                auto methods = st->getMethod(n->primaryMethodName->id->name);
-                method = getClosestMatchMethod(methods, arguments);
-                if (!method) {
-                    std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
-                    error = true;
-                    return;
-                }
-            }
-        }
-        if (auto parexp = std::dynamic_pointer_cast<ParExp>(n->primary)) {
-            auto st = visitParExp(parexp);
-            if (!st) {
-                std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
-                error = true;
-                return;
-            }
-            auto methods = st->getMethod(n->primaryMethodName->id->name);
-            method = getClosestMatchMethod(methods, arguments);
-            if (!method) {
-                std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
-                error = true;
-                return;
-            }
+        auto methods = st->getMethod(n->primaryMethodName->id->name);
+        method = getClosestMatchMethod(methods, arguments);
+        if (!method) {
+            std::cerr << "Error: Invalid method name " << n->primaryMethodName->id->name << std::endl;
+            error = true;
+            return;
         }
     }
     //normal method invocation
@@ -593,7 +545,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ThisExp> n) {
-    currentExpType = ExpType::Any;
+    visitThisExp(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
@@ -946,6 +898,14 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitParExp(std::shared_ptr<Pa
     return nullptr;
 }
 
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitThisExp(std::shared_ptr<ThisExp> n) {
+    if (staticMethod) {
+        std::cerr << "Error: Cannot use this in a static method" << std::endl;
+        error = true;
+        return nullptr;
+    }
+    return scope->current;
+}
 
 bool TypeCheckingVisitor::checkIsSubclassByName(std::string o1, std::string o2) {
     if(o1 == o2) return true;
