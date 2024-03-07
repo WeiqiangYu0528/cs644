@@ -237,4 +237,9 @@ class TypeCheckingVisitor : public Visitor {
         AmbiguousName visitIdentifierExp(std::shared_ptr<IdentifierExp> n);
         AmbiguousName visitParExp(std::shared_ptr<ParExp> n);
         AmbiguousName visitThisExp(std::shared_ptr<ThisExp> n);
+        AmbiguousName visitFieldAccessExp(std::shared_ptr<FieldAccessExp> n);
+        AmbiguousName visitMethodInvocation(std::shared_ptr<MethodInvocation> n);
+        AmbiguousName visitStringLiteralExp(std::shared_ptr<StringLiteralExp> n);
+        AmbiguousName visitNewArrayExp(std::shared_ptr<NewArrayExp> n);
+        AmbiguousName visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n);
 };
