@@ -152,6 +152,7 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Object, ExpType::Null},            
             {ExpType::String, ExpType::Object},            
             {ExpType::Array, ExpType::Array},
+            {ExpType::Array, ExpType::Object},
         };      
 
     public:
