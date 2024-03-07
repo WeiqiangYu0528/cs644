@@ -253,20 +253,9 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     //if any modifiers are protected
     std::string fieldName = n->field->id->name;
     AmbiguousName ambigField = scope->reclassifyAmbiguousName(fieldName, n->field->simple, initialized);
-
-    std::unordered_map<AmbiguousNamesType, std::string> x;
-    x[AmbiguousNamesType::EXPRESSION]="EXPR";
-    x[AmbiguousNamesType::TYPE]="TYPE";
-    x[AmbiguousNamesType::PACKAGE]="PACKAGE";
-    x[AmbiguousNamesType::ERROR]="ERROR";
-    x[AmbiguousNamesType::UNINITIALIZED]="UNINITIALIZED";
-    std::cout << x[ambigField.type] << std::endl;
-
-    std::cout << int(ambigField.getDataType()) << std::endl;
-
+    //not sure how to get this
     auto fieldTable = ambigField.symbolTable;
     if(fieldTable != nullptr) {
-        std::cout << "fieldtable valid" << std::endl;
         auto field = fieldTable->getField(fieldName);
         bool isProtected = false;
         for (auto mod : field->modifiers) {
@@ -288,7 +277,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
                 }
             }
         }
-    } else std::cout << "fieldtable invalid" << std::endl;
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
