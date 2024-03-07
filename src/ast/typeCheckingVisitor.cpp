@@ -1,3 +1,5 @@
+#include <queue>
+#include <cassert>
 #include "typeCheckingVisitor.hpp"
 
 std::string expTypeString[] =
@@ -174,6 +176,18 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
 }
 
+bool superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<SymbolTable>& end) {
+    std::queue<std::shared_ptr<SymbolTable>> queue;
+    queue.push(start);
+    while (!(queue.empty())) {
+        auto top = queue.front();
+        queue.pop();
+        if (top.get() == end.get()) return true;
+        for (auto superTable : top->getScope()->supers) queue.push(superTable);
+    }
+    return false;
+}
+
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
         if (staticMethod) {
@@ -201,6 +215,25 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
                 return;
             }
             SetCurrentExpTypebyAmbiguousName(field->type);
+            //2.5
+            bool isProtected = false;
+            for (auto& modifier : field->modifiers) {
+                if (modifier == Modifiers::PROTECTED) {
+                    isProtected = true;
+                    break;
+                }
+            }
+            if (isProtected) {
+                //currentPackageName is currently broken! (as of this PR)
+                if (ambiguousName.symbolTable->getPackage() != currentPackageName) {
+                    bool isSubtype = superBFS(scope->current, ambiguousName.symbolTable);
+                    if (!isSubtype) {
+                        std::cerr << "Error: Invalid protected field access" << std::endl;
+                        error = true;
+                        return;
+                    }
+                }
+            }
         }
         if (auto ce = std::dynamic_pointer_cast<CastExp>(parExp->exp)) {
             if (auto ie = std::dynamic_pointer_cast<IdentifierType>(ce->type)) {
@@ -212,6 +245,27 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
                     return;
                 }
                 SetCurrentExpTypebyAmbiguousName(field->type);
+                //2.5
+                bool isProtected = false;
+                for (auto& modifier : field->modifiers) {
+                    if (modifier == Modifiers::PROTECTED) {
+                        isProtected = true;
+                        break;
+                    }
+                }
+                if (isProtected) {
+                    //currentPackageName is currently broken! (as of this PR)
+                    if (st->getPackage() != currentPackageName) {
+                        bool isSubtype = superBFS(scope->current, st);
+                        if (!isSubtype) {
+                            std::cerr << "Error: Invalid protected field access" << std::endl;
+                            error = true;
+                            return;
+                        }
+                    }
+                }
+                
+
             }
         }
     }
@@ -225,6 +279,26 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
                 return;
             }
             SetCurrentExpTypebyAmbiguousName(field->type);
+            //2.5
+            bool isProtected = false;
+            for (auto& modifier : field->modifiers) {
+                if (modifier == Modifiers::PROTECTED) {
+                    isProtected = true;
+                    break;
+                }
+            }
+            if (isProtected) {
+                //currentPackageName is currently broken! (as of this PR)
+                if (st->getPackage() != currentPackageName) {
+                    bool isSubtype = superBFS(scope->current, st);
+                    if (!isSubtype) {
+                        std::cerr << "Error: Invalid protected field access" << std::endl;
+                        error = true;
+                        return;
+                    }
+                }
+            }
+
         }
     }
     else {
