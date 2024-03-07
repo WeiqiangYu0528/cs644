@@ -179,6 +179,11 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) st = visitThisExp(thisExp);
     else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) st = visitParExp(parExp);
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) st = visitClassInstanceCreationExp(classexp);
+    else {
+        Visitor::visit(n);
+        currentExpType = ExpType::Any;
+        return;
+    }
     if (!st) {
         std::cerr << "Error: Invalid field access" << std::endl;
         error = true;
@@ -191,10 +196,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
         return;
     }
     SetCurrentExpTypebyAmbiguousName(field->type);
-    // else {
-    //     Visitor::visit(n);
-    //     currentExpType = ExpType::Any;
-    // }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
