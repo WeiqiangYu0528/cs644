@@ -943,6 +943,8 @@ std::shared_ptr<SymbolTable> TypeCheckingVisitor::visitParExp(std::shared_ptr<Pa
     if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) return visitIdentifierExp(ie);
     if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) return visitCastExp(ce);
     currentExpType = GetExpType(n->exp);
+    if (currentExpType == ExpType::String)
+        return scope->onDemandImported["String"];
     return nullptr;
 }
 

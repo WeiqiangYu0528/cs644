@@ -3,7 +3,8 @@ public class J1_evalMethodInvocationFromParExp {
     
     public J1_evalMethodInvocationFromParExp() {}
 
-    public static int test() {
-	return new Integer(("12"+"3").toString()).intValue();
+    public static void test() {
+	("12"+"3").toString();
+    //return new Integer(("12"+"3").toString()).intValue();
     }
 }
