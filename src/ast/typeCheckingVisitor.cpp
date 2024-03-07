@@ -1,3 +1,5 @@
+#include <queue>
+#include <cassert>
 #include "typeCheckingVisitor.hpp"
 
 std::string expTypeString[] =
@@ -175,6 +177,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
 }
 
+bool superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<SymbolTable>& end) {
+    std::queue<std::shared_ptr<SymbolTable>> queue;
+    queue.push(start);
+    while (!(queue.empty())) {
+        auto top = queue.front();
+        queue.pop();
+        if (top.get() == end.get()) 
+            return true;
+        for (std::shared_ptr<SymbolTable> superTable : top->getScope()->supers) {
+            queue.push(superTable);
+        }
+    }
+    return false;
+}
+
 void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
         if (staticMethod) {
@@ -230,6 +247,48 @@ void TypeCheckingVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
         Visitor::visit(n);
         currentExpType = ExpType::Any;
     }
+
+    // 2.5
+
+    //if any modifiers are protected
+    std::string fieldName = n->field->id->name;
+    AmbiguousName ambigField = scope->reclassifyAmbiguousName(fieldName, n->field->simple, initialized);
+
+    std::unordered_map<AmbiguousNamesType, std::string> x;
+    x[AmbiguousNamesType::EXPRESSION]="EXPR";
+    x[AmbiguousNamesType::TYPE]="TYPE";
+    x[AmbiguousNamesType::PACKAGE]="PACKAGE";
+    x[AmbiguousNamesType::ERROR]="ERROR";
+    x[AmbiguousNamesType::UNINITIALIZED]="UNINITIALIZED";
+    std::cout << x[ambigField.type] << std::endl;
+
+    std::cout << int(ambigField.getDataType()) << std::endl;
+
+    auto fieldTable = ambigField.symbolTable;
+    if(fieldTable != nullptr) {
+        std::cout << "fieldtable valid" << std::endl;
+        auto field = fieldTable->getField(fieldName);
+        bool isProtected = false;
+        for (auto mod : field->modifiers) {
+            if (mod == Modifiers::PROTECTED) {
+                isProtected = true;
+                break;
+            }
+        }
+        if (isProtected) {
+            //if packages mismatch
+            if (currentPackageName != fieldTable->getPackage()) {
+                //if access isnt subtype of fields type:
+                bool isSubtype = superBFS(scope->current, fieldTable);
+                if (isSubtype == false) {
+                    //throw error
+                    std::cerr << "Error: Accessing protected field outside of package and outside of subtype" << std::endl;
+                    error = true;
+                    return;
+                }
+            }
+        }
+    } else std::cout << "fieldtable invalid" << std::endl;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
