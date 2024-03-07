@@ -76,7 +76,8 @@ class TypeCheckingVisitor : public Visitor {
             {{ExpRuleType::StringPlus, ExpType::Null, ExpType::String}, ExpType::String},                                               
             {{ExpRuleType::StringPlus, ExpType::Array, ExpType::String}, ExpType::String}, 
             {{ExpRuleType::StringPlus, ExpType::Object, ExpType::String}, ExpType::String},                                                           
-            {{ExpRuleType::StringPlus, ExpType::String, ExpType::String}, ExpType::String},                                                           
+            {{ExpRuleType::StringPlus, ExpType::String, ExpType::String}, ExpType::String},
+            {{ExpRuleType::StringPlus, ExpType::String, ExpType::Boolean}, ExpType::String},                                                                       
 
 
             // int < int
@@ -149,6 +150,7 @@ class TypeCheckingVisitor : public Visitor {
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
             {ExpType::Object, ExpType::Object},
+            {ExpType::Object, ExpType::String},            
             {ExpType::Object, ExpType::Null},            
             {ExpType::String, ExpType::Object},            
             {ExpType::Array, ExpType::Array},

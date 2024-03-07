@@ -607,6 +607,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<CastExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<NewArrayExp> n) {
+    auto indexType = GetExpType(n->exp);
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (!s.contains(indexType)) {
+        error = true;
+        std::cerr << "Error: Array index must have numeric type" << std::endl;
+        return;
+    }
+
     currentExpType = ExpType::Array;
 
     if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)){
@@ -646,6 +654,14 @@ void TypeCheckingVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
     // not finished yet
     Visitor::visit(n);
+    auto indexType = GetExpType(n->index);
+    std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
+    if (!s.contains(indexType)) {
+        error = true;
+        std::cerr << "Error: Array index must have numeric type" << std::endl;
+        return;
+    }
+    
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
         auto ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, initialized, staticMethod);
         SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
@@ -715,6 +731,8 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(ExpType left_type, ExpType
 
     if(left_type == ExpType::Object) {
         if (left_obj_name == "Object" && (right_type == ExpType::Object || right_type == ExpType::Array || right_type == ExpType::String || right_type == ExpType::Null))
+            return;
+        if ((left_obj_name == "java.lang.Cloneable" || left_obj_name == "java.io.Serializable" || left_obj_name == "Cloneable" || left_obj_name == "Serializable") && right_type == ExpType::Array)
             return;
         // Null can be assigned to any reference type
         else if (right_type == ExpType::Null) return;
