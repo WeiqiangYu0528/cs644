@@ -10,7 +10,6 @@ enum class ScopeType {
     LOCALVARIABLE = 0,
     STATIC,
     FIELDINITIALIZER,
-    ASSIGNABLE,
     ASSIGNMENT
 };
 
@@ -36,7 +35,6 @@ class SymbolTable {
 
     bool staticScope;
     bool fieldInitializerScope;
-    bool assignable;
     bool assignmentScope;
 
     public:
@@ -68,7 +66,7 @@ class SymbolTable {
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> isimtable;
 
         bool imtablesPopulated = false;
-        SymbolTable() : staticScope(false), fieldInitializerScope(false), assignable(false), assignmentScope(false), imtablesPopulated(false) {}
+        SymbolTable() : staticScope(false), fieldInitializerScope(false), assignmentScope(false), imtablesPopulated(false) {}
 
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();

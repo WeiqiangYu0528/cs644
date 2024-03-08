@@ -36,7 +36,7 @@ AmbiguousName Scope::reclassifySimpleAmbiguousName(const std::string& name) {
     if (current->getVar(name)) return reclassifyAmbiguousNameByLocal(name);
     if (current->getField(name)) {
         bool error{false};
-        if (!current->getScopeType(ScopeType::ASSIGNABLE) && current->getScopeType(ScopeType::FIELDINITIALIZER) && !current->isFieldDeclared(name)) error = true;
+        if (!current->getScopeType(ScopeType::ASSIGNMENT) && current->getScopeType(ScopeType::FIELDINITIALIZER) && !current->isFieldDeclared(name)) error = true;
         else if (current->getScopeType(ScopeType::STATIC) && !current->getField(name)->isStatic) error = true;
         return error ? AmbiguousName(AmbiguousNamesType::ERROR, nullptr) : reclassifyAmbiguousNameByField(name, current, false);
     }

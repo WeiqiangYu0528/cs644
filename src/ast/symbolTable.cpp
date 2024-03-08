@@ -55,9 +55,6 @@ void SymbolTable::beginScope(ScopeType st) {
         case ScopeType::FIELDINITIALIZER:
             fieldInitializerScope = true;
             break;
-        case ScopeType::ASSIGNABLE:
-            assignable = true;
-            break;
         case ScopeType::ASSIGNMENT:
             assignmentScope = true;
             break;
@@ -78,9 +75,6 @@ void SymbolTable::endScope(ScopeType st) {
             break;
         case ScopeType::FIELDINITIALIZER:
             fieldInitializerScope = false;
-            break;
-        case ScopeType::ASSIGNABLE:
-            assignable = false;
             break;
         case ScopeType::ASSIGNMENT:
             assignmentScope = false;
@@ -147,8 +141,6 @@ bool SymbolTable::getScopeType(ScopeType st) const {
             return staticScope;
         case ScopeType::FIELDINITIALIZER:
             return fieldInitializerScope;
-        case ScopeType::ASSIGNABLE:
-            return assignable;
         case ScopeType::ASSIGNMENT:
             return assignmentScope;
         default:

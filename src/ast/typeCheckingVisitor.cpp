@@ -193,12 +193,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     if (casted_right_exp) {
         visit(casted_right_exp);
     }
-    scope->current->beginScope(ScopeType::ASSIGNMENT);
     if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
-        if (ie->simple) scope->current->beginScope(ScopeType::ASSIGNABLE);
+        scope->current->beginScope(ScopeType::ASSIGNMENT);
     }
     ExpType left_type = GetExpType(n->left);
-    scope->current->endScope(ScopeType::ASSIGNABLE);
     scope->current->endScope(ScopeType::ASSIGNMENT);
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
