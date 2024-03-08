@@ -39,10 +39,6 @@ class TypeCheckingVisitor : public Visitor {
     private:
         std::shared_ptr<Scope> scope;
         bool error;
-        // used to determine a scope for field initialization
-        bool initialized;
-        // used to determine a scope for static method
-        bool staticMethod;
 
         ExpType currentExpType {ExpType::Undefined};
         std::string currentObjectTypeName;

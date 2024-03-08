@@ -76,9 +76,7 @@ void Visitor::visit(std::shared_ptr<NewArrayExp> n) {
     n->exp->accept(this);
     n->type->accept(this); 
 }
-// void Visitor::visit(std::shared_ptr<CompoundType> n) { 
-//     std::cout << "Visiting CompoundType" << std::endl;
-// }
+
 void Visitor::visit(std::shared_ptr<NegExp> n) {
     n->exp->accept(this);
 }

@@ -584,11 +584,15 @@ ArrayAccess:
     ;
 
 ArrayCreationExpression:
-    NEW BasicType DimExprs Dims {$$ = std::make_shared<NewArrayExp>($3, $2);}
-    | NEW BasicType DimExprs {$$ = std::make_shared<NewArrayExp>($3, $2);}
-    | NEW ClassOrInterfaceType DimExprs Dims {$$ = std::make_shared<NewArrayExp>($3, $2);}
-    | NEW ClassOrInterfaceType DimExprs {$$ = std::make_shared<NewArrayExp>($3, $2);}
-    ;  
+    NEW BasicType DimExprs {
+        std::shared_ptr<ArrayType> at = std::make_shared<ArrayType>($2);
+        $$ = std::make_shared<NewArrayExp>($3, at);
+    }
+    | NEW ClassOrInterfaceType DimExprs {
+        std::shared_ptr<ArrayType> at = std::make_shared<ArrayType>($2);
+        $$ = std::make_shared<NewArrayExp>($3, at);
+    }
+    ;
 
 ParExpression:
     LEFT_PAREN Expression RIGHT_PAREN {$$ = $2;}

@@ -15,16 +15,16 @@ void ContextVisitor::visit(std::shared_ptr<FormalParameter> n) {
 }
 
 void ContextVisitor::visit(std::shared_ptr<Constructor> n) {
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
     symbolTable->putConstuctor(n);
 }
 
 void ContextVisitor::visit(std::shared_ptr<Method> n) {
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
     symbolTable->putMethod(n->methodName->name, n);
 }
 
@@ -40,34 +40,34 @@ void ContextVisitor::visit(std::shared_ptr<Field> n) {
 }
 
 void ContextVisitor::visit(std::shared_ptr<BlockStatement> n) {
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void ContextVisitor::visit(std::shared_ptr<IfStatement> n) {
     n->exp->accept(this);
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     n->statement1->accept(this);
-    symbolTable->endScope();
-    symbolTable->beginScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     if (n->statement2) 
     {
         n->statement2->accept(this);
     }
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void ContextVisitor::visit(std::shared_ptr<WhileStatement> n) {
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void ContextVisitor::visit(std::shared_ptr<ForStatement> n) {
-    symbolTable->beginScope();
+    symbolTable->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    symbolTable->endScope();
+    symbolTable->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void ContextVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {

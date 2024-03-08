@@ -44,16 +44,48 @@ std::shared_ptr<AstNode> SymbolTable::getVar(const std::string& key) const {
     return ltable.contains(key) ? ltable.at(key) : nullptr;
 }
 
-void SymbolTable::beginScope() {
-    stack_t.push("#");
+void SymbolTable::beginScope(ScopeType st) {
+    switch (st) {
+        case ScopeType::LOCALVARIABLE:
+            stack_t.push("#");
+            break;
+        case ScopeType::STATIC:
+            staticScope = true;
+            break;
+        case ScopeType::FIELDINITIALIZER:
+            fieldInitializerScope = true;
+            break;
+        case ScopeType::ASSIGNABLE:
+            assignable = true;
+            break;
+        case ScopeType::ASSIGNMENT:
+            assignmentScope = true;
+            break;
+    }
 }
 
-void SymbolTable::endScope() {
-    while (stack_t.top() != "#") {
-        ltable.erase(stack_t.top());
-        stack_t.pop();
+void SymbolTable::endScope(ScopeType st) {
+    switch(st) {
+        case ScopeType::LOCALVARIABLE:
+            while (stack_t.top() != "#") {
+                ltable.erase(stack_t.top());
+                stack_t.pop();
+            }
+            stack_t.pop();
+            break;
+        case ScopeType::STATIC:
+            staticScope = false;
+            break;
+        case ScopeType::FIELDINITIALIZER:
+            fieldInitializerScope = false;
+            break;
+        case ScopeType::ASSIGNABLE:
+            assignable = false;
+            break;
+        case ScopeType::ASSIGNMENT:
+            assignmentScope = false;
+            break;
     }
-    stack_t.pop();
 }
 
 void SymbolTable::setAst(std::shared_ptr<Program> a) {
@@ -109,3 +141,17 @@ bool SymbolTable::isFieldDeclared(const std::string& key) const {
     return fieldDecls.contains(key);
 }
 
+bool SymbolTable::getScopeType(ScopeType st) const {
+    switch(st) {
+        case ScopeType::STATIC:
+            return staticScope;
+        case ScopeType::FIELDINITIALIZER:
+            return fieldInitializerScope;
+        case ScopeType::ASSIGNABLE:
+            return assignable;
+        case ScopeType::ASSIGNMENT:
+            return assignmentScope;
+        default:
+            return false;
+    }
+}

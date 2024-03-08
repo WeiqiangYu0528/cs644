@@ -227,8 +227,8 @@ class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAcce
 class NewArrayExp: public Exp, public std::enable_shared_from_this<NewArrayExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::shared_ptr<Type> type;
-        NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
+        std::shared_ptr<ArrayType> type;
+        NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<ArrayType> t);
         void accept(Visitor* v) override;
 };
 
@@ -512,6 +512,7 @@ class FormalParameter : public AstNode, public std::enable_shared_from_this<Form
 class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
         bool isStatic;
+        bool isFinal;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> fieldName;
         std::shared_ptr<Exp> initializer;

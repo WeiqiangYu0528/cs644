@@ -32,11 +32,13 @@ bool Scope::isNameValidInScope(const std::string& name) const {
     return false;
 }
 
-AmbiguousName Scope::reclassifySimpleAmbiguousName(const std::string& name, bool initialized, bool staticScope) {
+AmbiguousName Scope::reclassifySimpleAmbiguousName(const std::string& name) {
     if (current->getVar(name)) return reclassifyAmbiguousNameByLocal(name);
     if (current->getField(name)) {
-        if ((initialized && !current->isFieldDeclared(name)) || (staticScope && !current->getField(name)->isStatic)) return AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
-        return reclassifyAmbiguousNameByField(name, current, false);
+        bool error{false};
+        if (!current->getScopeType(ScopeType::ASSIGNABLE) && current->getScopeType(ScopeType::FIELDINITIALIZER) && !current->isFieldDeclared(name)) error = true;
+        else if (current->getScopeType(ScopeType::STATIC) && !current->getField(name)->isStatic) error = true;
+        return error ? AmbiguousName(AmbiguousNamesType::ERROR, nullptr) : reclassifyAmbiguousNameByField(name, current, false);
     }
     if (name == current->getClassOrInterfaceDecl()->id->name) return AmbiguousName(AmbiguousNamesType::TYPE, current);
     //try any single-type-import (A.B.C.D)
@@ -52,14 +54,14 @@ AmbiguousName Scope::reclassifySimpleAmbiguousName(const std::string& name, bool
     return AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
 }
 
-AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, bool initialized, bool staticScope) {
+AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name) {
     std::istringstream qualifiedName(name);
     std::string segment;
     AmbiguousName ambiguousName;
     while (std::getline(qualifiedName, segment, '.')) {
         if (ambiguousName.type == AmbiguousNamesType::ERROR) break;
         if (ambiguousName.type == AmbiguousNamesType::UNINITIALIZED) {
-            ambiguousName = reclassifySimpleAmbiguousName(segment, initialized, staticScope);
+            ambiguousName = reclassifySimpleAmbiguousName(segment);
         }
         else {
             switch (ambiguousName.type) {
@@ -74,7 +76,7 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
                         }
                     }
                     else if (ambiguousName.getDataType() == DataType::ARRAY) {
-                        if (segment == "length") {
+                        if (segment == "length" && !current->getScopeType(ScopeType::ASSIGNMENT)) {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
                             ambiguousName.typeNode = std::make_shared<IntType>();
                         }
@@ -118,9 +120,9 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, b
     return ambiguousName;
 }
 
-AmbiguousName Scope::reclassifyAmbiguousName(const std::string& name, bool simple, bool initialized, bool staticScope) {
-    if (simple) return reclassifySimpleAmbiguousName(name, initialized, staticScope);
-    return reclassifyQualifiedAmbiguousName(name, initialized, staticScope);
+AmbiguousName Scope::reclassifyAmbiguousName(const std::string& name, bool simple) {
+    if (simple) return reclassifySimpleAmbiguousName(name);
+    return reclassifyQualifiedAmbiguousName(name);
 }
 
 AmbiguousName Scope::reclassifyAmbiguousNameByLocal(const std::string& name) {

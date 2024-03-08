@@ -6,6 +6,14 @@
 #include "ast.hpp"
 class Scope;
 
+enum class ScopeType {
+    LOCALVARIABLE = 0,
+    STATIC,
+    FIELDINITIALIZER,
+    ASSIGNABLE,
+    ASSIGNMENT
+};
+
 class SymbolTable {
     // program AST
     std::shared_ptr<Program> ast;
@@ -26,6 +34,11 @@ class SymbolTable {
     std::stack<std::string> stack_t;
     std::shared_ptr<Scope> scope;
 
+    bool staticScope;
+    bool fieldInitializerScope;
+    bool assignable;
+    bool assignmentScope;
+
     public:
         void putField(const std::string& key, const std::shared_ptr<Field> value);
         std::shared_ptr<Field> getField(const std::string& key) const;
@@ -45,8 +58,9 @@ class SymbolTable {
         std::shared_ptr<Scope> getScope() const;
         void setFieldDecl(const std::string& key);
         bool isFieldDeclared(const std::string& key) const;
-        void beginScope();
-        void endScope();
+        void beginScope(ScopeType st);
+        void endScope(ScopeType st);
+        bool getScopeType(ScopeType st) const;
         
         //inherited from superclass
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> iscmtable;
@@ -54,7 +68,7 @@ class SymbolTable {
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> isimtable;
 
         bool imtablesPopulated = false;
-        SymbolTable() : imtablesPopulated(false) {}
+        SymbolTable() : staticScope(false), fieldInitializerScope(false), assignable(false), assignmentScope(false), imtablesPopulated(false) {}
 
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();

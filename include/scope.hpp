@@ -23,9 +23,9 @@ class Scope {
         std::shared_ptr<SymbolTable> getQualifiedNameInScope(const std::string& name) const;
         std::shared_ptr<SymbolTable> getUnqualifiedNameInScope(const std::string& name) const;
         bool isNameValidInScope(const std::string& name) const;
-        AmbiguousName reclassifySimpleAmbiguousName(const std::string& name, bool initialized, bool staticScope);
-        AmbiguousName reclassifyQualifiedAmbiguousName(const std::string& name, bool initialized, bool staticScope);
-        AmbiguousName reclassifyAmbiguousName(const std::string& name, bool simple, bool initialized = false, bool staticScope = false);
+        AmbiguousName reclassifySimpleAmbiguousName(const std::string& name);
+        AmbiguousName reclassifyQualifiedAmbiguousName(const std::string& name);
+        AmbiguousName reclassifyAmbiguousName(const std::string& name, bool simple);
         AmbiguousName reclassifyAmbiguousNameByLocal(const std::string& name);
         AmbiguousName reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> s, bool staticField);
 };

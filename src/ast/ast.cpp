@@ -139,20 +139,12 @@ void FieldAccessExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-NewArrayExp::NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t) : exp(e), type(t) {
+NewArrayExp::NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<ArrayType> t) : exp(e), type(t) {
 }
 
 void NewArrayExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
-
-// CompoundType::CompoundType(std::shared_ptr<Type> t1, std::shared_ptr<IdentifierType> t2) : Type(DataType::OBJECT), type(t1), subType(t2) {
-//     std::cout << "CompoundType constructor" << std::endl;
-// }
-
-// void CompoundType::accept(Visitor* v) {
-//     v->visit(shared_from_this());
-// }
 
 NegExp::NegExp(std::shared_ptr<Exp> e) : exp(e) {
 }
@@ -374,7 +366,7 @@ MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt)
 }
 
 Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
-: MemberDecl(mt, m), isStatic(false), type(t), fieldName(fn), initializer(i) {
+: MemberDecl(mt, m), isStatic(false), isFinal(false), type(t), fieldName(fn), initializer(i) {
 }
 
 void Field::accept(Visitor* v) {
@@ -386,14 +378,16 @@ void Field::setModifiers(std::vector<Modifiers>& m) {
     for (Modifiers modifier : m) {
         if (modifier == Modifiers::STATIC) {
             isStatic = true;
-            break;
         }
+        else if (modifier == Modifiers::FINAL) {
+            isFinal = true;
+        } 
     }
 }
 
 Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
-: MemberDecl(mt, m), isStatic(false), type(t), methodName(mn), formalParameters(fp), block(b) {
+: MemberDecl(mt, m), isStatic(false), isPublic(false), isFinal(false), isAbstract(false), type(t), methodName(mn), formalParameters(fp), block(b) {
 }
 
 void Method::accept(Visitor* v) {

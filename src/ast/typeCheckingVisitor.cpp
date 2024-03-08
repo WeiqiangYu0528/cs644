@@ -23,7 +23,7 @@ std::map<DataType, ExpType> d2e = {
     {DataType::BYTE, ExpType::Byte},
 };
 
-TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false), initialized(false), staticMethod(false) {
+TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false) {
     // for testing only
     std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
 }
@@ -100,40 +100,40 @@ void TypeCheckingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatemen
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
-    scope->current->beginScope();
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Method> n) {
-    scope->current->beginScope();
-    if (n->isStatic) staticMethod = true;
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
+    if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
     Visitor::visit(n);
-    staticMethod = false;
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::STATIC);
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Field> n) {
     if (n->initializer) {
         // initialized scope
-        initialized = true;
-        if (n->isStatic) staticMethod = true;
+        scope->current->beginScope(ScopeType::FIELDINITIALIZER);
+        if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
         n->initializer->accept(this);
-        staticMethod = false;
-        initialized = false;
+        scope->current->endScope(ScopeType::STATIC);
+        scope->current->endScope(ScopeType::FIELDINITIALIZER);
     }
     scope->current->setFieldDecl(n->fieldName->name);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<BlockStatement> n) {
-    scope->current->beginScope();
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
     // n->exp->accept(this);
-    scope->current->beginScope();
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
     n->statement1->accept(this);
     auto type = GetExpType(n->exp);
     if(type != ExpType::Any && type != ExpType::Boolean) {
@@ -141,17 +141,17 @@ void TypeCheckingVisitor::visit(std::shared_ptr<IfStatement> n) {
         error = true;
         return;
     }        
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
     if (n->statement2) 
     {
-        scope->current->beginScope();
+        scope->current->beginScope(ScopeType::LOCALVARIABLE);
         n->statement2->accept(this);
-        scope->current->endScope();
+        scope->current->endScope(ScopeType::LOCALVARIABLE);
     }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
-    scope->current->beginScope();
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);
     auto type = GetExpType(n->exp);
     if(type != ExpType::Any && type != ExpType::Boolean) {
@@ -159,17 +159,17 @@ void TypeCheckingVisitor::visit(std::shared_ptr<WhileStatement> n) {
         error = true;
         return;
     }
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<ForStatement> n) {
-    scope->current->beginScope();
+    scope->current->beginScope(ScopeType::LOCALVARIABLE);
     Visitor::visit(n);    
     if (GetExpType(n->exp) == ExpType::Null) {
         error = true;
         std::cerr << "Error: For condition must be of type boolean" << std::endl;
     }
-    scope->current->endScope();
+    scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<IdentifierExp> n) {
@@ -193,17 +193,13 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
     if (casted_right_exp) {
         visit(casted_right_exp);
     }
-    ExpType left_type;
-    auto left_assign = std::dynamic_pointer_cast<IdentifierExp>(n->left);
-    if (left_assign) {
-        bool init{initialized};
-        initialized = false;
-        left_type = GetExpType(n->left);
-        initialized = init;
+    scope->current->beginScope(ScopeType::ASSIGNMENT);
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
+        if (ie->simple) scope->current->beginScope(ScopeType::ASSIGNABLE);
     }
-    else {
-        left_type = GetExpType(n->left);
-    }
+    ExpType left_type = GetExpType(n->left);
+    scope->current->endScope(ScopeType::ASSIGNABLE);
+    scope->current->endScope(ScopeType::ASSIGNMENT);
     if (left_type == ExpType::Object) {
         left_obj_name = currentObjectTypeName;
         if (left_obj_name == "String")
@@ -256,8 +252,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
-    currentExpType = ExpType::String;
-    currentObjectTypeName = "String";
+    visitStringLiteralExp(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
@@ -268,7 +263,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
     if(currentExpType == ExpType::Undefined) {
         std::cerr << "Error: Invalid PlusExp Type " << std::endl;
         error = true;
-    }    
+    }
+    if (currentExpType == ExpType::String) currentObjectTypeName = "String";
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MinusExp> n) {
@@ -479,6 +475,8 @@ ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpT
     if (lhs_type == ExpType::Undefined || rhs_type == ExpType::Undefined) {
         return ExpType::Undefined;
     }
+    if (exp == ExpRuleType::StringPlus && (lhs_type == ExpType::String || rhs_type == ExpType::String)) 
+        return ExpType::String;
     if (typeOperationRules.contains({exp, lhs_type, rhs_type}))
         return typeOperationRules[{exp, lhs_type, rhs_type}];
     else if(typeOperationRules.contains({exp, rhs_type, lhs_type}))
@@ -644,7 +642,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
 
 AmbiguousName TypeCheckingVisitor::visitIdentifierExp(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
-    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, initialized, staticMethod);
+    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple);
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
         error = true;
@@ -731,7 +729,7 @@ AmbiguousName TypeCheckingVisitor::visitParExp(std::shared_ptr<ParExp> n) {
 }
 
 AmbiguousName TypeCheckingVisitor::visitThisExp(std::shared_ptr<ThisExp> n) {
-    if (staticMethod) {
+    if (scope->current->getScopeType(ScopeType::STATIC)) {
         std::cerr << "Error: Cannot use this in a static method" << std::endl;
         error = true;
         return AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
@@ -820,7 +818,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
         methodName = n->ambiguousMethodName->id->name;
         if (n->ambiguousName) {
             //complex method invocation a.b.c()
-            ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, initialized, staticMethod);
+            ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple);
             if (ambiguousName.type == AmbiguousNamesType::TYPE) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
                 method = getClosestMatchMethod(methods, arguments);
@@ -872,7 +870,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
         }
         else {
             //simple method invocation, e.g. a()
-            if (staticMethod) {
+            if (scope->current->getScopeType(ScopeType::STATIC)) {
                 std::cerr << "Error: Cannot call non-static method in a static method" << std::endl;
                 error = true;
                 ambiguousName.type = AmbiguousNamesType::ERROR;
@@ -926,16 +924,13 @@ AmbiguousName TypeCheckingVisitor::visitNewArrayExp(std::shared_ptr<NewArrayExp>
     }
 
     currentExpType = ExpType::Array;
-
-    if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type)){
-        currentArrayDataType = DataType::OBJECT;
+    currentArrayDataType = n->type->dataType->type;
+    if(auto type = std::dynamic_pointer_cast<IdentifierType>(n->type->dataType)){
         currentObjectTypeName = type->id->name;
     }
-    else
-        currentArrayDataType = n->type->type;
-    
+
     ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
-    ambiguousName.typeNode = std::make_shared<ArrayType>(n->type);
+    ambiguousName.typeNode = n->type;
 }
 
 AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n) {
@@ -951,7 +946,7 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     }
     
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
-        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, initialized, staticMethod);
+        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
         SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
         if (currentArrayDataType == DataType::OBJECT) {
             currentExpType = ExpType::Object;
