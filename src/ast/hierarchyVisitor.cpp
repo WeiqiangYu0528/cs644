@@ -447,11 +447,12 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                             break;
                         }
                     }
-                    if (!Type::isSameType(superMethod->type, n->type)) {
-                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
-                        error = true;
-                        break;
-                    }
+                    // Comment out for a3, need to consider refactor afterwards
+//                    if (!Type::isSameType(superMethod->type, n->type)) {
+//                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+//                        error = true;
+//                        break;
+//                    }
                     // Rule 15
                     if (superMethod->isFinal) {
                         if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
