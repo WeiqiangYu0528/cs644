@@ -387,6 +387,33 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
 }
 
 void HierarchyVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
+    // For interface declaration, check if the toString method is aligned with the toString method in Object.java
+    for (auto methodDecl : n->methods) {
+        if (methodDecl && methodDecl->methodName->name == "toString") {
+            if (methodDecl->type->type != DataType::OBJECT) {
+                std::cerr << "Error: Method toString in interface " << n->id->name << " must return type Object" << std::endl;
+                error = true;
+                return;
+            }
+        }
+    }
+
+    // Interface can not override final method from Object.java
+    for (auto methodDecl : n->methods) {
+        if (methodDecl && methodDecl->methodName->name == "getClass") {
+            std::cerr << "Error: Interface " << n->id->name << " can not override finalize method from Object" << std::endl;
+            error = true;
+            return;
+        }
+    }
+    // Public method cna not override protected method from Object.java
+    for (auto methodDecl : n->methods) {
+        if (methodDecl && methodDecl->methodName->name == "clone") {
+            std::cerr << "Error: Interface " << n->id->name << " can not override protected method from Object" << std::endl;
+            error = true;
+            return;
+        }
+    }
     //Rule #3: Interfaces must not be repeated in an interface's extends clause
     //Rule #5: Interface must not extend a class
     std::unordered_set<std::shared_ptr<SymbolTable>, SharedPtrHash, SharedPtrEqual> newExtendedInterfaces;
@@ -448,17 +475,17 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                         }
                     }
                     // Comment out for a3, need to consider refactor afterwards
-//                    if (!Type::isSameType(superMethod->type, n->type)) {
-//                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
-//                        error = true;
-//                        break;
-//                    }
+                    if (!Type::isSameType(superMethod->type, n->type)) {
+                        std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
+                        error = true;
+                        break;
+                    }
                     // Rule 15
                     if (superMethod->isFinal) {
-                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
-                        {
-                            continue;
-                        }
+//                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
+//                        {
+//                            continue;
+//                        }
                         std::cerr << "Error: Method " << key << " can not override final method" << std::endl;
                         error = true;
                         break;
@@ -466,7 +493,8 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     // Rule 14
                     if (superMethod->isPublic && !n->isPublic)
                     {
-                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
+                        if (!((symbolTableHere->getPackage() == "java.lang" && entry.first == "Object") ||
+                            (symbolTableHere->getPackage() == "java.lang" && entry.first == "Comparable")))
                         {
                             continue;
                         }
@@ -477,7 +505,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     if (!superMethod->isStatic && n->isStatic)
                     {
                         // This is a hack, I do not want to check all symbol tables but just Object.java table
-                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "object"))
+                        if (!(symbolTableHere->getPackage() == "java.lang" && entry.first == "Object"))
                         {
                             continue;
                         }
@@ -501,6 +529,23 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                     std::cerr << "Error: Return type of " << key << " in supermethod and current method is not the same." << std::endl;
                     error = true;
                     break;
+                }
+                if (superMethod->isFinal) {
+                    /* A final method may not be overridden or hidden,
+                     * but another method with the same name may be
+                     * defined. */
+                    bool isSameParameters = true;
+                    for (int i = 0; i < superMethod->formalParameters.size(); i++) {
+                        if (superMethod->formalParameters[i]->type->type != n->formalParameters[i]->type->type) {
+                            isSameParameters = false;
+                            break;
+                        }
+                    }
+                    if (isSameParameters) {
+                        std::cerr << "Error: Method " << key << " can not override final method in super class" << std::endl;
+                        error = true;
+                        break;
+                    }
                 }
                 if (superMethod->isPublic && !n->isPublic)
                 {

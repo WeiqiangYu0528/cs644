@@ -1,4 +1,5 @@
 .vscode/
+.idea/
 build/
 joosc
 src/lexer/lex.yy.cpp
