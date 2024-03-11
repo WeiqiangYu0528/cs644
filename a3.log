@@ -1,0 +1,288 @@
+b59e374 - Bing Chen, 59 seconds ago : fix more bugs
+9150591 - Bing Chen, 17 minutes ago : Array index must have numeric type
+ac20244 - Bing Chen, 56 minutes ago : add Symboltable for StringLiteral in ParExp
+8245419 - Bing Chen, 56 minutes ago : add Symboltable for StringLiteral in ParExp
+91f4cba - Bing Chen, 80 minutes ago : fix bugs
+22b9af0 - Weiqiang Yu, 82 minutes ago : Merge remote-tracking branch 'origin/type-checking' into test
+318f514 - Weiqiang Yu, 83 minutes ago : solve forward problem
+c4c1c1e - Bing Chen, 2 hours ago : Merge branch 'type-checking' of git.uwaterloo.ca:cs444_assignment/a1 into type-checking
+3147028 - Bing Chen, 2 hours ago : add checkIsSubclassByName
+a1fe219 - Weiqiang Yu, 2 hours ago : Merge remote-tracking branch 'origin/type-checking' into test
+ff4f6b6 - Weiqiang Yu, 2 hours ago : wrap primary functions
+6dda94d - Aosen Xiong, 3 hours ago : Fixes primitive receiver invocation
+f58c705 - Bing Chen, 4 hours ago : Merge branch 'type-checking' of git.uwaterloo.ca:cs444_assignment/a1 into type-checking
+a811219 - Bing Chen, 4 hours ago : fix lib bugs again
+34f4dbf - Aosen Xiong, 4 hours ago : Add submit script for a3
+721b3dc - Aosen Xiong, 4 hours ago : Fixes crash case
+113cc62 - Bing Chen, 4 hours ago : Merge branch
+694decb - Bing Chen, 4 hours ago : add ArrayAccessExp
+6cadd50 - Weiqiang Yu, 4 hours ago :  fix conflict
+e6d6714 - Weiqiang Yu, 4 hours ago : update constructor logic
+9e1c8d8 - Bing Chen, 5 hours ago : checking for minus on Strings
+a6bc6af - Bing Chen, 5 hours ago : fix bugs in PlusExp of String
+8fe84c2 - Bing Chen, 5 hours ago : add basic instanceofexp logic
+c440433 - Bing Chen, 5 hours ago : fix a bug in ClassInstanceCreationExp
+e7ace2e - Aosen, 6 hours ago : Fixes type check between arguments
+524b612 - Aosen, 8 hours ago : Fixes bug in zero argument constructor check
+08ce969 - Bing Chen, 8 hours ago : fix casting string bug
+a397912 - Aosen, 9 hours ago : For condition can not be null check
+ca39b46 - Aosen, 9 hours ago : Two more test cases
+a9e2508 - Aosen, 10 hours ago : Add hack in hierarchy checking to avoid fail
+ee20c54 - Aosen Xiong, 10 hours ago : Null can be assigned to any reference type
+e02d729 - Aosen Xiong, 22 hours ago : Merge branch 'type-checking' of https://git.uwaterloo.ca/cs444_assignment/a1 into type-checking
+a6726e0 - Aosen Xiong, 22 hours ago : Add type checking rule 2.7
+df25344 - Weiqiang Yu, 22 hours ago : fix some static issue
+2cde6aa - Weiqiang Yu, 23 hours ago : fix bug
+c2fb7d2 - Bing Chen, 24 hours ago : fix ExpType::Any bugs
+c73b1c1 - Weiqiang Yu, 24 hours ago : add method invocation return type
+462720e - Weiqiang Yu, 25 hours ago : Merge remote-tracking branch 'origin/type-checking' into test
+1a1992d - Weiqiang Yu, 25 hours ago : debug
+91e6c54 - Bing Chen, 25 hours ago : add string literal object name
+370fdaf - Weiqiang Yu, 25 hours ago : update method logic
+b753e60 - Bing Chen, 25 hours ago : fix exptype bugs again
+e7ba6cd - Weiqiang Yu, 28 hours ago : modify method logic
+30f791e - Bing Chen, 30 hours ago : fix casting bugs
+e3022ac - Bing Chen, 30 hours ago : Merge branch 'type-checking-cast' into 'type-checking'
+b7b7f8d - Bing Chen, 30 hours ago : Type checking cast
+5c5b74d - Aosen Xiong, 31 hours ago : Merge branch 'typechecking-aosen' into 'type-checking'
+3d454ed - Aosen Xiong, 32 hours ago : Merge branch 'typechecking-2.8' into 'type-checking'
+7da48f3 - Bing Chen, 33 hours ago : add rules for checking condition clause in If & While
+42229b2 - Aosen Xiong, 33 hours ago : Merge branch 'type-checking' into typechecking-2.8
+aeeb007 - Aosen Xiong, 33 hours ago : Add type checking rule 2.8
+4c3f3e4 - Bing Chen, 33 hours ago : fix more assignment bugs
+f119843 - Bing Chen, 34 hours ago : fix equality checking
+81c3942 - Bing Chen, 34 hours ago : fix multiple definition
+232c3f4 - Bing Chen, 35 hours ago : refactor assigment checking logic, add a rule to check 'int <- null'
+4806c3a - Weiqiang Yu, 2 days ago : Merge branch 'a3-test' into 'type-checking'
+fc36f7d - Weiqiang Yu, 2 days ago : change field to exp
+994660e - Aosen Xiong, 2 days ago : Add hack and only check object table
+178c654 - Daniel Ephrat, 2 days ago : Merge branch 'type-checking-modifysupers' into 'type-checking'
+ad8e70d - Weiqiang Yu, 2 days ago : object not call static field
+3101a98 - Weiqiang Yu, 2 days ago : fix seg fault
+6646b6f - Bing Chen, 2 days ago : fix type checking  bugs
+0e8972a - Bing Chen, 2 days ago : fix type checking  bugs
+e12c59f - Weiqiang Yu, 2 days ago : update get method
+d5f7aa7 - Daniel Ephrat, 2 days ago : removed comment
+359eec2 - Daniel Ephrat, 2 days ago : rule 9, tidied up, removed bug
+557accd - Daniel Ephrat, 2 days ago : fixed rule 9
+1acb7c4 - Daniel Ephrat, 2 days ago : updated stuff
+9faa3e2 - Weiqiang Yu, 3 days ago : Merge branch 'context-rule1415' into 'type-checking'
+67e8994 - Aosen Xiong, 3 days ago : Add setmodifier in method in parser
+d17c04e - Aosen Xiong, 3 days ago : Address comment
+2dfa554 - Aosen Xiong, 3 days ago : Merge to type checking
+1fadbf8 - Aosen Xiong, 4 days ago : Fix last error
+8ed8a04 - Aosen Xiong, 4 days ago : Fix interface type
+f351d2e - Weiqiang Yu, 4 days ago : update interface method logic
+823a4b3 - Aosen Xiong, 4 days ago : Stick to the right version
+4f42636 - Aosen Xiong, 4 days ago : Helper method for class and refactor code
+24f7d4b - Aosen Xiong, 4 days ago : Fix static method override
+de75d83 - Weiqiang Yu, 4 days ago : add object as default extend class
+1e86a76 - Daniel Ephrat, 4 days ago : Merge branch 'context-rule1415-daniel' into 'context-rule1415'
+cfddce2 - Daniel Ephrat, 4 days ago : no repeated interface in extended or implemented list, made it work for qualified names as well
+3bd63a3 - Aosen Xiong, 4 days ago : Simplify the code by calling helper method and fix tests/a2-tests/Je_14_Interface_DeclaresToString_ThrowsConflict
+1a5762b - Aosen Xiong, 4 days ago : Visit method at the end of interface
+7295a4b - Aosen Xiong, 4 days ago : Fix J1_public_method_protected_override1 and J1_final_method_override1
+f4b9842 - Aosen Xiong, 4 days ago : Fix J1_4_AbstractMethod_InheritAbstractFromObject
+6380837 - Aosen Xiong, 4 days ago : Remove duplicate rule
+bd1edaf - Daniel Ephrat, 4 days ago : fixed local test case
+b57b3e6 - Weiqiang Yu, 4 days ago : Merge branch 'type-checking-add-rule9' into 'type-checking'
+c32008f - Aosen Xiong, 4 days ago : Adapted to D's code
+bb6f8fd - Daniel Ephrat, 4 days ago : tidied up rule 9 code, fixed some buggy test cases
+277ed30 - Daniel Ephrat, 4 days ago : solved rule 9
+4e53d99 - Daniel Ephrat, 4 days ago : rule 9
+85ca9fb - Daniel Ephrat, 4 days ago : Merge branch 'type-checking' into 'type-checking-add-rule9'
+f5420bf - Daniel Ephrat, 4 days ago : tidied up rule 9 code, fixed some buggy test cases
+4e82491 - Aosen Xiong, 4 days ago : Add rule bug fix
+d8c7c8f - Daniel Ephrat, 4 days ago : solved rule 9
+16fb9ed - Daniel Ephrat, 4 days ago : rule 9
+117cdc0 - Bing Chen, 5 days ago : Merge branch 'type-checking-assignment' into 'type-checking'
+1e3df14 - Bing Chen, 8 days ago : checking for String
+6eaf70f - Bing Chen, 8 days ago : restore makefile
+b772ecf - Bing Chen, 8 days ago : add more rules for assignment type checking
+1b8c266 - Bing Chen, 8 days ago : Merge branch 'type-checking' of git.uwaterloo.ca:cs444_assignment/a1 into type-checking-assignment
+df5f716 - Weiqiang Yu, 8 days ago : add qualified name
+660af0a - Bing Chen, 8 days ago : add assignment checking
+25f87c3 - Weiqiang Yu, 8 days ago : add basic type for expression
+0279012 - Aosen Xiong, 10 days ago : Use Supers to restrict Rule 11 and 12
+1e969ad - Daniel Ephrat, 12 days ago : Added supers to scope, populate it in main just before the acyclic hierarchy check
+aa4d902 - Weiqiang Yu, 11 days ago : array type
+963e997 - Weiqiang Yu, 11 days ago : remove unnecessary changes
+6d77e36 - Weiqiang Yu, 11 days ago : Merge remote-tracking branch 'origin/type-checking'
+e3d38ac - Weiqiang Yu, 11 days ago : add ambiguous resolution logic
+26f5829 - Daniel Ephrat, 11 days ago : Merge branch 'add-super-nodes-scope' into 'type-checking'
+3a976a0 - Aosen Xiong, 12 days ago : Adding rule 10-13 but the scope needed adjusted only to superclass not whole table
+22e2160 - Aosen Xiong, 12 days ago : Do not check library files on method level
+260a0af - Aosen Xiong, 12 days ago : Remove member variable adding
+ad5736d - Aosen Xiong, 12 days ago : Add rule 14 and rule 15 at the moment
+a289ba4 - Bing Chen, 12 days ago : fix incorrect values for string and char in the lexer
+716ec82 - Bing Chen, 12 days ago : fix incorrect values for string and char in the lexer
+069a892 - Daniel Ephrat, 12 days ago : Added supers to scope, populate it in main just before the acyclic hierarchy check
+a4e01bc - Weiqiang Yu, 13 days ago : a3
+50b4058 - Bing Chen, 2 weeks ago : Merge branch 'a3-tests' into 'context'
+f77ac6f - Daniel Ephrat, 2 weeks ago : Merge branch 'a2-fixed-hierarchy' into 'context'
+13ec849 - Daniel Ephrat, 2 weeks ago : Generalized method overload checker, added hierarchy rule 8
+e6c9daa - Daniel Ephrat, 2 weeks ago : Merge branch 'a2-fixed-hierarchy' into 'context'
+bc1b346 - Daniel Ephrat, 2 weeks ago : Added hierarchy rule 7
+c31a84c - Daniel Ephrat, 2 weeks ago : Merge branch 'a2-fixed-hierarchy' into 'context'
+12d637c - Daniel Ephrat, 2 weeks ago : fixed rule 6, added tests
+a71fa7c - Daniel Ephrat, 2 weeks ago : JSL 3.0
+a6e9e9a - Bing Chen, 2 weeks ago : update makefile
+8f6895e - Daniel Ephrat, 2 weeks ago : A3-tests
+50ac90a - Weiqiang Yu, 2 weeks ago : update API
+c15c99b - Weiqiang Yu, 3 weeks ago : Merge remote-tracking branch 'origin/context'
+ec6d383 - Weiqiang Yu, 3 weeks ago : add failure test for environment context
+7512bb6 - Bing Chen, 3 weeks ago : add some type-linking test cases
+8750ad5 - Bing Chen, 3 weeks ago : update symboltable api
+1511d4a - Weiqiang Yu, 3 weeks ago : fix parser error
+ca1e99e - Bing Chen, 3 weeks ago : Merge branch 'context' of git.uwaterloo.ca:cs444_assignment/a1 into context
+1883da9 - Bing Chen, 3 weeks ago : solve conflicts
+0810887 - Weiqiang Yu, 3 weeks ago : solve more conflicts
+cc8ff1e - Weiqiang Yu, 3 weeks ago : solve conflict
+bbadc95 - Bing Chen, 3 weeks ago : fix a bug
+6f655d3 - Bing Chen, 3 weeks ago : Merge branch 'hierarchy-daniel' into context
+015b6d2 - Bing Chen, 3 weeks ago : Merge branch 'context-bing' into 'context'
+93907c9 - Bing Chen, 3 weeks ago : Context bing
+14d4f67 - Weiqiang Yu, 3 weeks ago : solve more error cases
+b1941d2 - Daniel Ephrat, 3 weeks ago : Hierarchy rule 5, interface can't extend class. Also added folder to fill with hierarchy tests
+0db44e0 - Daniel Ephrat, 3 weeks ago : Hierarchy rule 4: Class can't extend final class
+d1dde31 - Daniel Ephrat, 3 weeks ago : Hierarchy rule 3: interface can't appear twice in the same implements/extends clause
+7482129 - Daniel Ephrat, 3 weeks ago : Added hierarchy rule #2, classes can't implement classes
+7f9f061 - Daniel Ephrat, 3 weeks ago : hierarchyVisitor first rule
+00561cc - Daniel Ephrat, 3 weeks ago : main.cpp now runs hierarchyVisitor on each ast
+5013380 - Daniel Ephrat, 3 weeks ago : hierarchyVisitor hpp
+a1cdf3f - Daniel Ephrat, 3 weeks ago : hierarchyVisitor cpp
+60ef766 - Weiqiang Yu, 3 weeks ago : solve import on-demand issue
+0bb7b03 - Bing Chen, 3 weeks ago : check for self import
+2f98c1e - Bing Chen, 3 weeks ago : Check for ImportStatements conflict with java.lang.*
+44d1d44 - Bing Chen, 3 weeks ago : add argparser for test script
+a2e9f22 - Bing Chen, 3 weeks ago : add error reason for A2 testing script
+7789b85 - Weiqiang Yu, 3 weeks ago : Merge remote-tracking branch 'origin/context'
+b47c2bc - Weiqiang Yu, 3 weeks ago : fix type error
+8ad4a0e - Aosen Xiong, 3 weeks ago : Add a2 submission script
+ddf479a - Weiqiang Yu, 3 weeks ago : Merge remote-tracking branch 'origin/context'
+c8974c7 - Weiqiang Yu, 3 weeks ago : add more type linking logic
+758a51c - Bing Chen, 3 weeks ago : add JSL files for A2 testing script
+80cdb93 - Weiqiang Yu, 3 weeks ago : Merge remote-tracking branch 'origin/context'
+e73beed - Weiqiang Yu, 3 weeks ago : Merge branch 'a2-test-script' into 'context'
+115bc19 - Bing Chen, 3 weeks ago : A2 test script
+df4cf01 - Weiqiang Yu, 3 weeks ago : update symbol table & add some basic type checking logic
+9a0d40f - Aosen Xiong, 3 weeks ago : Fixes typo in import program
+039e0c9 - Weiqiang Yu, 3 weeks ago : add context visitor
+48a8797 - Weiqiang Yu, 3 weeks ago : Merge branch 'ast-exp' into 'main'
+526805c - Weiqiang Yu, 3 weeks ago : combine everything
+a8014be - Aosen Xiong, 3 weeks ago : add types
+8f852bf - Aosen Xiong, 3 weeks ago : Add more
+eefd38e - Aosen Xiong, 3 weeks ago : Add 55076= before new creation class
+47742e9 - Aosen Xiong, 3 weeks ago : fix conflicts
+5964c92 - Aosen Xiong, 3 weeks ago : code refactor
+6850990 - Aosen Xiong, 3 weeks ago : Add type decleration
+65c32fa - Aosen Xiong, 3 weeks ago : fix conflict
+d867c53 - Aosen Xiong, 3 weeks ago : add statment
+6cac629 - Weiqiang Yu, 3 weeks ago : add interface
+20b8c93 - Weiqiang Yu, 3 weeks ago : Merge branch 'ast-classdecl' into 'ast-exp'
+94b098e - Weiqiang Yu, 3 weeks ago : merge to ast-exp
+aadc05f - Daniel Ephrat, 3 weeks ago : Split MemberDecl into Constructor, Method, Field
+931fc05 - Daniel Ephrat, 3 weeks ago : Tidied up AST for class declaration
+d0ab2f1 - Weiqiang Yu, 3 weeks ago : add import & package
+8c5bbec - Bing Chen, 3 weeks ago : fix a typo
+1e0d611 - Weiqiang Yu, 3 weeks ago : solve conflict
+593434a - Weiqiang Yu, 3 weeks ago : code refactoring
+85d11ba - Bing Chen, 3 weeks ago : Merge branch 'ast-exp-2' into 'ast-exp'
+022379f - Bing Chen, 3 weeks ago : add more exps to ast, add basic types
+2b01b39 - Daniel Ephrat, 3 weeks ago : Completed ClassDecl AST
+7ded5bb - Weiqiang Yu, 3 weeks ago : Merge remote-tracking branch 'origin/main'
+4c9a462 - Daniel Ephrat, 3 weeks ago : Merge branch 'a2-tests' into 'main'
+3285f52 - Daniel Ephrat, 3 weeks ago : a2 public tests
+11f66d6 - Daniel Ephrat, 3 weeks ago : More updates
+c3d26da - Daniel Ephrat, 3 weeks ago : Added ClassDecl, ClassBody, and parts of MemberDecl
+6f30bbe - Weiqiang Yu, 4 weeks ago : remove notAName attr and refactor the code
+92df13f - Weiqiang Yu, 4 weeks ago : update visitor pattern & fix integer bug
+d98c66a - Weiqiang Yu, 4 weeks ago : add more expression & types
+cf7976d - Weiqiang Yu, 4 weeks ago : ast(exp) & visitor
+dbfc051 - Aosen Xiong, 4 weeks ago : Merge branch 'fix-casting-error' into 'main'
+6b5d664 - Bing Chen, 4 weeks ago : Fix casting error
+d12f7db - Daniel Ephrat, 4 weeks ago : JSL 2.0
+2b54e22 - Bing Chen, 5 weeks ago : Merge branch 'string_literal' into 'main'
+443d1f7 - Weiqiang Yu, 5 weeks ago : fix String literal & add test script
+e141874 - Aosen Xiong, 5 weeks ago : Merge branch 'merge-all-expressions' into 'main'
+79017fd - Aosen Xiong, 5 weeks ago : Submission scripts
+0fef51e - Weiqiang Yu, 5 weeks ago : fix multi-arr
+4e718b8 - Weiqiang Yu, 5 weeks ago : fix octal issue
+a3686ff - Daniel Ephrat, 5 weeks ago : negative test cases
+ffb1a38 - Weiqiang Yu, 5 weeks ago : add octal escape
+6e541a1 - Aosen Xiong, 5 weeks ago : Fixes javadoc
+43d8978 - Aosen Xiong, 5 weeks ago : Omit array initializer
+ec2ffef - Weiqiang Yu, 5 weeks ago : fix string/multiple_decl/keywords/minusint
+4140226 - Aosen Xiong, 5 weeks ago : forbid extends base type and array type
+32db3af - Aosen Xiong, 5 weeks ago : Forbid implement array type
+22e2b92 - Bing Chen, 5 weeks ago : fix conflicts and errors
+7b77e97 - Bing Chen, 5 weeks ago : fix indentation format error
+c5a3274 - Bing Chen, 5 weeks ago : refactor syntax code
+71771b7 - Bing Chen, 5 weeks ago : add ExpressionStatement
+d95945c - Weiqiang Yu, 5 weeks ago : modify reference type logic
+4948d66 - Bing Chen, 5 weeks ago : merge all expression syntax
+5277366 - Daniel Ephrat, 5 weeks ago : More additions to expressions
+fd938b0 - Daniel Ephrat, 5 weeks ago : Expression parser update
+f973c57 - Daniel Ephrat, 5 weeks ago : Expressions draft
+c34a6a7 - Aosen Xiong, 5 weeks ago : Merge branch 'int_checking' into 'main'
+cf8914f - Weiqiang Yu, 5 weeks ago : add checking for int literals
+d83f29d - Aosen Xiong, 5 weeks ago : Merge branch 'test-case-script' into 'main'
+8001f10 - Aosen Xiong, 5 weeks ago : Add all valid test and automation script for validation
+3fe4375 - Bing Chen, 5 weeks ago : Merge branch 'type_literal' into 'main'
+b64c4cc - Weiqiang Yu, 5 weeks ago : add type and literal logic
+bb0b17b - Aosen Xiong, 5 weeks ago : Merge branch 'disable-CI' into 'main'
+13689ef - Aosen Xiong, 5 weeks ago : Disable CI for now
+4fd1236 - Aosen Xiong, 5 weeks ago : Merge branch 'return-expression' into 'main'
+7a225f5 - Aosen Xiong, 5 weeks ago : Use separate expression for the moment.
+f2fdac5 - Aosen Xiong, 5 weeks ago : Add some expression to return and add rule for iteral
+d93041d - Bing Chen, 5 weeks ago : restore the mistakenly deleted token 'null'
+0f07c11 - Bing Chen, 5 weeks ago : Merge branch 'super-this-call-check' into 'main'
+f78d65c - Bing Chen, 5 weeks ago : remove QualifiedIdentifierList, add super & this call check, add static...
+d6c6eaa - Aosen Xiong, 5 weeks ago : Merge branch 'fix-lexer-bug' into 'main'
+f513dfc - Aosen Xiong, 5 weeks ago : Merge branch 'fix-small-bug-class-structure' into 'main'
+a4e94d5 - Aosen Xiong, 5 weeks ago : Remove duplicate rule in lexer
+ae8e44d - Aosen Xiong, 5 weeks ago : Fix a small bug in class structure
+a273969 - Daniel Ephrat, 5 weeks ago : Merge branch 'lexer-daniel-2' into 'main'
+842465e - Daniel Ephrat, 5 weeks ago : Tokens for operations, types, and literals
+1643048 - Bing Chen, 5 weeks ago : Merge branch 'void_and_constructor' into 'main'
+0f3cc2b - Aosen Xiong, 5 weeks ago : Merge branch 'add-support-syntax' into 'main'
+d9610d9 - Weiqiang Yu, 5 weeks ago : fix void constructor issue
+4566b2c - Aosen Xiong, 5 weeks ago : Add supported-syntax test case for class structure, method and field access
+2ec8718 - Aosen Xiong, 5 weeks ago : Merge branch 'support-class-structure' into 'main'
+b2df8df - Weiqiang Yu, 5 weeks ago : remove extra non-terminal
+b1d6379 - Weiqiang Yu, 5 weeks ago : remove extra indent
+417560a - Weiqiang Yu, 5 weeks ago : add weeder for filename check
+1948bbe - Weiqiang Yu, 5 weeks ago : solve conflict
+f5d720a - Weiqiang Yu, 5 weeks ago : Merge branch 'bison_variant' into 'main'
+1a7e86e - Aosen Xiong, 5 weeks ago : Add back rules
+9dc6e4a - Bing Chen, 5 weeks ago : change parser value_type from string to variant
+cfbb5df - Aosen Xiong, 5 weeks ago : Merge remote-tracking branch 'origin/main' into support-class-structure
+6132ebb - Weiqiang Yu, 5 weeks ago : fix interface modifier
+61ae231 - Aosen Xiong, 5 weeks ago : Add build-CI to make sure every PR builds
+4768990 - Aosen Xiong, 5 weeks ago : Merge branch 'control-flow' into 'main'
+0784b70 - Weiqiang Yu, 5 weeks ago : remove for varcontrol
+4d2144a - Aosen Xiong, 5 weeks ago : Merge branch 'fix-comment-line-number-bug' into 'main'
+05dbc8e - Aosen Xiong, 5 weeks ago : Fixes conflicts in parser
+71cd744 - Weiqiang Yu, 5 weeks ago : update-test
+11f1bd7 - Weiqiang Yu, 5 weeks ago : integrate control flow
+7f64556 - Aosen Xiong, 5 weeks ago : Reformat a little bit
+dcb64db - Aosen Xiong, 5 weeks ago : Add support for return statement in method body
+9732e1f - Aosen Xiong, 5 weeks ago : Handle Interface and import statement
+3a6384f - Aosen Xiong, 5 weeks ago : fix error line number bug
+d7b4d96 - Weiqiang Yu, 5 weeks ago : Merge branch 'modifiers' into 'main'
+88f91a5 - Aosen Xiong, 5 weeks ago : Merge branch 'java-comment-aosen' into 'main'
+9e3e605 - Aosen Xiong, 5 weeks ago : Add missing line in comment handle
+d8e1ac5 - Weiqiang Yu, 5 weeks ago : add weeder logic for modifiers
+e27a3a3 - Aosen Xiong, 5 weeks ago : add lexer part for handle java comment and javadoc comment
+6e74c9b - Daniel Ephrat, 5 weeks ago : Merge branch 'public-tests' into 'main'
+d7f840b - Daniel Ephrat, 6 weeks ago : Added a folder for public tests
+3d93a7f - Aosen Xiong, 6 weeks ago : Merge branch 'lexer-aosen' into 'main'
+db83cd1 - Aosen Xiong, 6 weeks ago : add keyword for class structure &  method and field access
+4571a59 - Aosen Xiong, 6 weeks ago : add generated file to gitignore to prevent wrongly push
+cd4d5d0 - Aosen Xiong, 6 weeks ago : Merge branch 'weiqiangyu' into 'main'
+42347bf - Weiqiang Yu, 6 weeks ago : add modifier logic
+32384f7 - Bing Chen, 6 weeks ago : fix a small bug
+8aab2b9 - Bing Chen, 6 weeks ago : refactor the code and implement some java syntax
+dd417e2 - Bing Chen, 7 weeks ago : change the header file locations, add file reading code, and include test cases
+e275ab9 - Bing Chen, 7 weeks ago : initialize the basic development framework, using Bison and Flex to generate the most minimal parser
+40f6b86 - Aosen Xiong, 7 weeks ago : Initial commit

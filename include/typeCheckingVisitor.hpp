@@ -2,6 +2,7 @@
 #include <memory>
 #include <set>
 #include <map>
+#include <typeinfo>
 #include "scope.hpp"
 #include "visitor.hpp"
 
@@ -22,7 +23,7 @@ enum class ExpType {
 extern std::string expTypeString[];
 
 enum class ExpRuleType {
-    ArithmeticOrBitwise,
+    Arithmetic,
     Comparison,
     Equality,
     StringPlus,
@@ -33,6 +34,17 @@ struct argumentExp {
     ExpType expType = ExpType::Undefined;
     std::string objectName;
     DataType arrayType;
+
+    argumentExp& operator=(const argumentExp& other) {
+        expType = other.expType;
+        objectName = other.objectName;
+        arrayType = other.arrayType;
+
+        if (expType == ExpType::Object && objectName == "String") {
+            expType = ExpType::String;
+        }
+        return *this;
+    }
 };
 
 class TypeCheckingVisitor : public Visitor {
@@ -40,29 +52,27 @@ class TypeCheckingVisitor : public Visitor {
         std::shared_ptr<Scope> scope;
         bool error;
 
-        ExpType currentExpType {ExpType::Undefined};
-        std::string currentObjectTypeName;
-        DataType currentArrayDataType;
+        argumentExp currentExpInfo;
 
         std::map<std::tuple<ExpRuleType, ExpType, ExpType>, ExpType> typeOperationRules = 
         {   // int + int
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Integer}, ExpType::Integer},
+            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Integer}, ExpType::Integer},
             // int + char
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Char}, ExpType::Integer},
+            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Char}, ExpType::Integer},
             // int + short
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Short}, ExpType::Integer},    
+            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Short}, ExpType::Integer},    
             // int + byte
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Integer, ExpType::Byte}, ExpType::Integer},    
+            {{ExpRuleType::Arithmetic, ExpType::Integer, ExpType::Byte}, ExpType::Integer},    
             // short + short           
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Short}, ExpType::Short},
+            {{ExpRuleType::Arithmetic, ExpType::Short, ExpType::Short}, ExpType::Short},
             // short + char
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Char}, ExpType::Short},
+            {{ExpRuleType::Arithmetic, ExpType::Short, ExpType::Char}, ExpType::Short},
             // short + byte
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Short, ExpType::Byte}, ExpType::Short},
+            {{ExpRuleType::Arithmetic, ExpType::Short, ExpType::Byte}, ExpType::Short},
             // byte + byte
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
+            {{ExpRuleType::Arithmetic, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
             // char + char
-            {{ExpRuleType::ArithmeticOrBitwise, ExpType::Char, ExpType::Char}, ExpType::Char},
+            {{ExpRuleType::Arithmetic, ExpType::Char, ExpType::Char}, ExpType::Char},
                         
 
             {{ExpRuleType::StringPlus, ExpType::Integer, ExpType::String}, ExpType::String},    
@@ -145,10 +155,10 @@ class TypeCheckingVisitor : public Visitor {
                         
             {ExpType::Boolean, ExpType::Boolean},
             {ExpType::String, ExpType::String},
+            {ExpType::String, ExpType::Object},               
             {ExpType::Object, ExpType::Object},
             {ExpType::Object, ExpType::String},            
-            {ExpType::Object, ExpType::Null},            
-            {ExpType::String, ExpType::Object},            
+            {ExpType::Object, ExpType::Null},                     
             {ExpType::Array, ExpType::Array},
             {ExpType::Array, ExpType::Object},
         };      
@@ -174,10 +184,10 @@ class TypeCheckingVisitor : public Visitor {
         std::string currentPackageName;
         std::string currentClassName;
 
-        ExpType GetExpType(std::shared_ptr<Exp> n) {
-            currentExpType = ExpType::Undefined;
-            n->accept(this);
-            return currentExpType;
+        argumentExp GetExpInfo(std::shared_ptr<Exp> n) {
+            currentExpInfo.expType = ExpType::Undefined;
+            n->accept(this);  
+            return currentExpInfo;
         }
 
         ExpType CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type);
@@ -220,8 +230,7 @@ class TypeCheckingVisitor : public Visitor {
         void visit(std::shared_ptr<ArrayAccessExp> n) override;
 
         void SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode);
-        void AssignmentTypeCheckingLogic(ExpType left_type, ExpType right_type, std::string left_obj_name, 
-            std::string right_obj_name, DataType left_array_type, DataType right_array_type);
+        void AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type);
 
         std::shared_ptr<Method> getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments);
         std::shared_ptr<Constructor> getClosestMatchConstructor(std::vector<std::shared_ptr<Constructor>>& constructors, std::vector<argumentExp>& arguments);
@@ -238,4 +247,7 @@ class TypeCheckingVisitor : public Visitor {
         AmbiguousName visitStringLiteralExp(std::shared_ptr<StringLiteralExp> n);
         AmbiguousName visitNewArrayExp(std::shared_ptr<NewArrayExp> n);
         AmbiguousName visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n);
+        
+        template<typename BinOpExp>
+        void visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleType rule_type1 = ExpRuleType::Undefined, ExpRuleType rule_type2 = ExpRuleType::Undefined);
 };
