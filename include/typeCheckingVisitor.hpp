@@ -17,7 +17,8 @@ enum class ExpType {
     String,
     Null,
     Undefined,
-    Any
+    Any,
+    Void
 };
 
 extern std::string expTypeString[];
@@ -52,7 +53,7 @@ class TypeCheckingVisitor : public Visitor {
         std::shared_ptr<Scope> scope;
         bool error;
 
-        argumentExp currentExpInfo;
+        argumentExp currentExpInfo, methodTypeInfo;
 
         std::map<std::tuple<ExpRuleType, ExpType, ExpType>, ExpType> typeOperationRules = 
         {   // int + int
@@ -83,7 +84,7 @@ class TypeCheckingVisitor : public Visitor {
             {{ExpRuleType::StringPlus, ExpType::Array, ExpType::String}, ExpType::String}, 
             {{ExpRuleType::StringPlus, ExpType::Object, ExpType::String}, ExpType::String},                                                           
             {{ExpRuleType::StringPlus, ExpType::String, ExpType::String}, ExpType::String},
-            {{ExpRuleType::StringPlus, ExpType::String, ExpType::Boolean}, ExpType::String},                                                                       
+            {{ExpRuleType::StringPlus, ExpType::Boolean, ExpType::String}, ExpType::String},                                                                       
 
 
             // int < int
@@ -187,6 +188,9 @@ class TypeCheckingVisitor : public Visitor {
         argumentExp GetExpInfo(std::shared_ptr<Exp> n) {
             currentExpInfo.expType = ExpType::Undefined;
             n->accept(this);  
+            if (currentExpInfo.expType == ExpType::Object && currentExpInfo.objectName == "String") {
+                currentExpInfo.expType = ExpType::String;
+            }            
             return currentExpInfo;
         }
 
@@ -227,7 +231,8 @@ class TypeCheckingVisitor : public Visitor {
         void visit(std::shared_ptr<ParExp> n) override;
         void visit(std::shared_ptr<InstanceOfExp> n) override;
 
-        void visit(std::shared_ptr<ArrayAccessExp> n) override;
+        void visit(std::shared_ptr<ArrayAccessExp> n) override;   
+        void visit(std::shared_ptr<ReturnStatement> n) override;      
 
         void SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode);
         void AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type);
@@ -250,4 +255,7 @@ class TypeCheckingVisitor : public Visitor {
         
         template<typename BinOpExp>
         void visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleType rule_type1 = ExpRuleType::Undefined, ExpRuleType rule_type2 = ExpRuleType::Undefined);
+        
+        std::shared_ptr<SymbolTable> getSymbolTableByClassName(std::string name);
+        bool checkIsSameSymbolTable(std::string o1, std::string o2);
 };

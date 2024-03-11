@@ -71,6 +71,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatemen
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
     scope->current->beginScope(ScopeType::LOCALVARIABLE);
+    methodTypeInfo.expType = ExpType::Undefined;
     Visitor::visit(n);
     scope->current->endScope(ScopeType::LOCALVARIABLE);
 }
@@ -78,6 +79,8 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<Method> n) {
     scope->current->beginScope(ScopeType::LOCALVARIABLE);
     if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
+    SetCurrentExpTypebyAmbiguousName(n->type);
+    methodTypeInfo = currentExpInfo;
     Visitor::visit(n);
     scope->current->endScope(ScopeType::STATIC);
     scope->current->endScope(ScopeType::LOCALVARIABLE);
@@ -88,7 +91,10 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Field> n) {
         // initialized scope
         scope->current->beginScope(ScopeType::FIELDINITIALIZER);
         if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
-        n->initializer->accept(this);
+        SetCurrentExpTypebyAmbiguousName(n->type);
+        auto decl_type = currentExpInfo;
+        auto init_type = GetExpInfo(n->initializer);
+        AssignmentTypeCheckingLogic(decl_type, init_type);
         scope->current->endScope(ScopeType::STATIC);
         scope->current->endScope(ScopeType::FIELDINITIALIZER);
     }
@@ -261,11 +267,6 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
 void TypeCheckingVisitor::visit(std::shared_ptr<AndExp> n) {
     error = true;
     std::cerr << "Error: Bitwise operations not allowed" << std::endl;
-    // currentExpType = CalcExpType(ExpRuleType::ArithmeticOrBitwise, GetExpType(n->exp1), GetExpType(n->exp2));
-    // if(currentExpType == ExpType::Undefined) {
-    //     std::cerr << "Error: Invalid AndExp Type " << std::endl;
-    //     error = true;
-    // }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<XorExp> n) {
@@ -333,13 +334,20 @@ void TypeCheckingVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
     visitArrayAccessExp(n);
 }
 
+void TypeCheckingVisitor::visit(std::shared_ptr<ReturnStatement> n) {
+    if(n->exp) {
+        auto ret = GetExpInfo(n->exp);
+        // if (methodTypeInfo.expType != ExpType::Void)
+        AssignmentTypeCheckingLogic(methodTypeInfo, ret);
+        currentExpInfo = ret;
+    }
+}
+
 ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpType rhs_type) {
     if (lhs_type == ExpType::Any || rhs_type == ExpType::Any) return ExpType::Any;
     if (lhs_type == ExpType::Undefined || rhs_type == ExpType::Undefined) {
         return ExpType::Undefined;
     }
-    if (exp == ExpRuleType::StringPlus && (lhs_type == ExpType::String || rhs_type == ExpType::String)) 
-        return ExpType::String;
     if (typeOperationRules.contains({exp, lhs_type, rhs_type}))
         return typeOperationRules[{exp, lhs_type, rhs_type}];
     else if(typeOperationRules.contains({exp, rhs_type, lhs_type}))
@@ -359,6 +367,8 @@ void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type>
         currentExpInfo.expType =  ExpType::Short;
     else if (typeNode->type == DataType::BOOLEAN)        
         currentExpInfo.expType =  ExpType::Boolean;
+    else if (typeNode->type == DataType::VOID)        
+        currentExpInfo.expType =  ExpType::Void;        
     else if (typeNode->type == DataType::OBJECT) {
         currentExpInfo.objectName = std::dynamic_pointer_cast<IdentifierType>(typeNode)->id->name;
         if (currentExpInfo.objectName == "String") currentExpInfo.expType = ExpType::String;
@@ -380,15 +390,13 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(argumentExp& left_type, ar
     if(left_type.expType == ExpType::Any || right_type.expType == ExpType::Any) return;
 
     if(left_type.expType  == ExpType::Object) {
-        if (left_type.objectName == "Object" && (right_type.expType == ExpType::Object 
+        if (checkIsSameSymbolTable("java.lang.Object", left_type.objectName) && (right_type.expType == ExpType::Object 
                                                     || right_type.expType == ExpType::Array 
                                                     || right_type.expType == ExpType::String 
                                                     || right_type.expType == ExpType::Null))
             return;
-        if ((left_type.objectName == "java.lang.Cloneable" 
-            || left_type.objectName == "java.io.Serializable" 
-            || left_type.objectName == "Cloneable" 
-            || left_type.objectName == "Serializable") && right_type.expType == ExpType::Array)
+        if ((checkIsSameSymbolTable("java.lang.Cloneable", left_type.objectName) 
+            || checkIsSameSymbolTable("java.io.Serializable", left_type.objectName)) && right_type.expType == ExpType::Array)
             return;
         // Null can be assigned to any reference type
         else if (right_type.expType == ExpType::Null) return;
@@ -403,7 +411,7 @@ void TypeCheckingVisitor::AssignmentTypeCheckingLogic(argumentExp& left_type, ar
     else if (left_type.expType == ExpType::Array) {
         if (right_type.expType == ExpType::Array) {
             if (left_type.arrayType == DataType::OBJECT && right_type.arrayType == DataType::OBJECT) {
-              if (left_type.objectName == "Object" || checkIsSubclassByName(left_type.objectName, right_type.objectName)) 
+              if (checkIsSameSymbolTable("java.lang.Object", left_type.objectName) || checkIsSubclassByName(left_type.objectName, right_type.objectName)) 
                 return;
             }
             else if (left_type.arrayType == right_type.arrayType)
@@ -570,6 +578,14 @@ AmbiguousName TypeCheckingVisitor::visitCastExp(std::shared_ptr<CastExp> n) {
         std::cerr << "Error: Undefined casting " << std::endl;
         ambiguousName.type = AmbiguousNamesType::ERROR;
         return ambiguousName;
+    }
+    if (castType == ExpType::Object || castType == ExpType::String) {
+        if (!checkIsSubclassByName(expInfo.objectName, castObjectTypeName) && !checkIsSubclassByName(castObjectTypeName, expInfo.objectName)) {
+            error = true;
+            std::cerr << "Error: Cast to incompatible type" << std::endl;
+            ambiguousName.type = AmbiguousNamesType::ERROR;
+            return ambiguousName;            
+        }
     }
     
     currentExpInfo = argumentExp {castType, castObjectTypeName, castArrayDataType};
@@ -830,8 +846,6 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
 }
 
 bool TypeCheckingVisitor::checkIsSubclassByName(std::string o1, std::string o2) {
-    if(o1 == o2) return true;
-
     auto getTable = [&](const std::string& o) {
         return scope->packageMembers.contains(o) ? scope->packageMembers[o] :
             scope->onDemandImported.contains(o) ? scope->onDemandImported[o] :
@@ -841,8 +855,11 @@ bool TypeCheckingVisitor::checkIsSubclassByName(std::string o1, std::string o2) 
         return std::find(supers.begin(), supers.end(), table) != supers.end();
     };
 
+    auto objTable = getSymbolTableByClassName("java.lang.Object");
     auto o1Table = getTable(o1);
     auto o2Table = getTable(o2);
+    if(o2Table == objTable) return true;
+    if(o1Table == o2Table) return true;
     // auto o1Supers = o1Table->getScope()->supers;
     auto o2Supers = o2Table->getScope()->supers;
     
@@ -871,4 +888,17 @@ void TypeCheckingVisitor::visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleT
             std::cerr << "Error: Invalid " << typeid(BinOpExp).name() << " Type" << std::endl;
         }
     }
+}
+
+std::shared_ptr<SymbolTable> TypeCheckingVisitor::getSymbolTableByClassName(std::string name) {
+    auto ret = scope->getNameInScope(name, true);
+    if (ret == nullptr) ret = scope->getNameInScope(name, false);
+    return ret;
+}
+
+bool TypeCheckingVisitor::checkIsSameSymbolTable(std::string o1, std::string o2) {
+    auto left = getSymbolTableByClassName(o1);
+    auto right = getSymbolTableByClassName(o2);
+    if(left == right && left == nullptr) return false;
+    return (left == right);
 }
