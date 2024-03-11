@@ -10,6 +10,7 @@
 #include "typeCheckingVisitor.hpp"
 #include "typeLinkingVisitor.hpp"
 #include "hierarchyVisitor.hpp"
+#include "cfgVisitor.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
@@ -371,6 +372,18 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            CFGVisitor cfgvisitor;
+            program->accept(&cfgvisitor);
+            std::vector<ControlFlowGraph> cfgs = std::move(cfgvisitor.cfgs);
+            std::cout << cfgs.size() << std::endl;
+            break;
+        }
+    }
+
     if (error)
         return 42;
     else

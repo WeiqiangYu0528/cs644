@@ -1,4 +1,5 @@
 #pragma once
+#include "visitor.hpp"
 #include "cfg.hpp"
 
 class CFGVisitor : public Visitor {
@@ -10,7 +11,6 @@ class CFGVisitor : public Visitor {
         std::vector<ControlFlowGraph> cfgs;
         CFGVisitor();
         void visit(std::shared_ptr<BlockStatement> n) override;
-        void visit(std::shared_ptr<BlockStatements> n) override;
         void visit(std::shared_ptr<SemicolonStatement> n) override;
         void visit(std::shared_ptr<IfStatement> n) override;
         void visit(std::shared_ptr<WhileStatement> n) override;
