@@ -1,6 +1,6 @@
 
 
-public class A{
+publilc class A{
     public A() {
     }
     public void test(Object o) {

@@ -235,7 +235,7 @@ class TypeCheckingVisitor : public Visitor {
         void visit(std::shared_ptr<ReturnStatement> n) override;      
 
         void SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode);
-        void AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type);
+        AmbiguousName AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type);
 
         std::shared_ptr<Method> getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments);
         std::shared_ptr<Constructor> getClosestMatchConstructor(std::vector<std::shared_ptr<Constructor>>& constructors, std::vector<argumentExp>& arguments);
@@ -252,6 +252,7 @@ class TypeCheckingVisitor : public Visitor {
         AmbiguousName visitStringLiteralExp(std::shared_ptr<StringLiteralExp> n);
         AmbiguousName visitNewArrayExp(std::shared_ptr<NewArrayExp> n);
         AmbiguousName visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n);
+        AmbiguousName visitAssignment(std::shared_ptr<Assignment> n);
         
         template<typename BinOpExp>
         void visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleType rule_type1 = ExpRuleType::Undefined, ExpRuleType rule_type2 = ExpRuleType::Undefined);

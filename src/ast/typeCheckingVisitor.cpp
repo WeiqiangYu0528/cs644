@@ -161,22 +161,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<MethodInvocation> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Assignment> n) {
-
-    auto right_exp = n->right;
-    auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
-    if (casted_right_exp) {
-        visit(casted_right_exp);
-    }
-    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
-        scope->current->beginScope(ScopeType::ASSIGNMENT);
-    }
-    auto left_type = GetExpInfo(n->left);
-    scope->current->endScope(ScopeType::ASSIGNMENT);
-        
-    auto right_type = GetExpInfo(n->right);
-    
-    AssignmentTypeCheckingLogic(left_type, right_type);
-    currentExpInfo = left_type;
+    visitAssignment(n);
 }
 
 bool TypeCheckingVisitor::isError() const {
@@ -386,46 +371,70 @@ void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type>
         currentExpInfo.expType = ExpType::Undefined;
 }
 
-void TypeCheckingVisitor::AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type) {
-    if(left_type.expType == ExpType::Any || right_type.expType == ExpType::Any) return;
+AmbiguousName TypeCheckingVisitor::AssignmentTypeCheckingLogic(argumentExp& left_type, argumentExp& right_type) {
+    AmbiguousName ambiguousName;
+    if(left_type.expType == ExpType::Any || right_type.expType == ExpType::Any) return ambiguousName;
 
     if(left_type.expType  == ExpType::Object) {
         if (checkIsSameSymbolTable("java.lang.Object", left_type.objectName) && (right_type.expType == ExpType::Object 
                                                     || right_type.expType == ExpType::Array 
                                                     || right_type.expType == ExpType::String 
-                                                    || right_type.expType == ExpType::Null))
-            return;
-        if ((checkIsSameSymbolTable("java.lang.Cloneable", left_type.objectName) 
+                                                    || right_type.expType == ExpType::Null)) {
+            std::string obj{"Object"};
+            ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->getNameInScope(obj, true));
+            ambiguousName.typeNode = std::make_shared<IdentifierType>(std::make_shared<Identifier>(obj), true);
+            return ambiguousName;
+        }
+        if ((checkIsSameSymbolTable("java.lang.Cloneable", left_type.objectName)
             || checkIsSameSymbolTable("java.io.Serializable", left_type.objectName)) && right_type.expType == ExpType::Array)
-            return;
+            return ambiguousName;
         // Null can be assigned to any reference type
-        else if (right_type.expType == ExpType::Null) return;
-        else if(right_type.expType == ExpType::Object && checkIsSubclassByName(left_type.objectName, right_type.objectName))
-                return;
+        else if (right_type.expType == ExpType::Null) return ambiguousName;
+        else if(right_type.expType == ExpType::Object && checkIsSubclassByName(left_type.objectName, right_type.objectName)) {
+            bool simple = std::find(left_type.objectName.begin(), left_type.objectName.end(), '.') == left_type.objectName.end();
+            ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->getNameInScope(left_type.objectName, simple));
+            ambiguousName.typeNode = std::make_shared<IdentifierType>(std::make_shared<Identifier>(left_type.objectName), simple);
+            return ambiguousName;
+        }
         else {
             error = true;
             std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Object" << std::endl;
-            return;
+            ambiguousName.type = AmbiguousNamesType::ERROR;
+            return ambiguousName;
         }
     }
     else if (left_type.expType == ExpType::Array) {
         if (right_type.expType == ExpType::Array) {
             if (left_type.arrayType == DataType::OBJECT && right_type.arrayType == DataType::OBJECT) {
               if (checkIsSameSymbolTable("java.lang.Object", left_type.objectName) || checkIsSubclassByName(left_type.objectName, right_type.objectName)) 
-                return;
+              {
+                bool simple = std::find(left_type.objectName.begin(), left_type.objectName.end(), '.') == left_type.objectName.end();
+                ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->getNameInScope(left_type.objectName, simple));
+                ambiguousName.typeNode = std::make_shared<ArrayType>(std::make_shared<IdentifierType>(std::make_shared<Identifier>(left_type.objectName), simple));
+                return ambiguousName;
+              }
             }
-            else if (left_type.arrayType == right_type.arrayType)
-                 return;
+            else if (left_type.arrayType == right_type.arrayType) {
+                ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
+                if (left_type.arrayType == DataType::INT) {
+                    ambiguousName.typeNode = std::make_shared<ArrayType>(std::make_shared<IntType>());
+                }
+                return ambiguousName;
+            }
         }
-        else if (right_type.expType == ExpType::Null) return;
+        else if (right_type.expType == ExpType::Null) return ambiguousName;
         error = true;
         std::cerr << "Error: Invalid Assignment Type: Invalid Assignment to Array" << std::endl;
-        return;
+        ambiguousName.type = AmbiguousNamesType::ERROR;
+        return ambiguousName;
     }
     else if (!assginmentRules.contains({left_type.expType, right_type.expType})) {
         error = true;
-        std::cerr << "Error: Invalid Assignment Type: " << expTypeString[(int)left_type.expType] << " <=== " << expTypeString[(int)right_type.expType] << std::endl;              
+        std::cerr << "Error: Invalid Assignment Type: " << expTypeString[(int)left_type.expType] << " <=== " << expTypeString[(int)right_type.expType] << std::endl; 
+        ambiguousName.type = AmbiguousNamesType::ERROR;
+
     }
+    return ambiguousName;
 }
 
 std::shared_ptr<Method> TypeCheckingVisitor::getClosestMatchMethod(std::vector<std::shared_ptr<Method>>& methods, std::vector<argumentExp>& arguments) {
@@ -597,6 +606,8 @@ AmbiguousName TypeCheckingVisitor::visitParExp(std::shared_ptr<ParExp> n) {
     if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) return visitIdentifierExp(ie);
     if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) return visitCastExp(ce);
     if (auto me = std::dynamic_pointer_cast<MethodInvocation>(n->exp)) return visitMethodInvocation(me);
+    if (auto cice = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) return visitClassInstanceCreationExp(cice);
+    if (auto as = std::dynamic_pointer_cast<Assignment>(n->exp)) return visitAssignment(as);
     currentExpInfo = GetExpInfo(n->exp);
     if (currentExpInfo.expType == ExpType::String)
         return AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->onDemandImported["String"]);
@@ -845,6 +856,26 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     return ambiguousName;
 }
 
+AmbiguousName TypeCheckingVisitor::visitAssignment(std::shared_ptr<Assignment> n) {
+    AmbiguousName ambiguousName;
+    auto right_exp = n->right;
+    auto casted_right_exp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(right_exp);
+    if (casted_right_exp) {
+        visit(casted_right_exp);
+    }
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
+        scope->current->beginScope(ScopeType::ASSIGNMENT);
+    }
+    auto left_type = GetExpInfo(n->left);
+    scope->current->endScope(ScopeType::ASSIGNMENT);
+        
+    auto right_type = GetExpInfo(n->right);
+    
+    ambiguousName = AssignmentTypeCheckingLogic(left_type, right_type);
+    currentExpInfo = left_type;
+    return ambiguousName;
+}
+
 bool TypeCheckingVisitor::checkIsSubclassByName(std::string o1, std::string o2) {
     auto getTable = [&](const std::string& o) {
         return scope->packageMembers.contains(o) ? scope->packageMembers[o] :
@@ -886,6 +917,9 @@ void TypeCheckingVisitor::visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleT
         if (currentExpInfo.expType == ExpType::Undefined) {
             error = true;
             std::cerr << "Error: Invalid " << typeid(BinOpExp).name() << " Type" << std::endl;
+        }
+        if (currentExpInfo.expType == ExpType::String) {
+            currentExpInfo.objectName = "String";
         }
     }
 }
