@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include "visitor.hpp"
 #include "cfg.hpp"
 
@@ -20,4 +21,6 @@ class CFGVisitor : public Visitor {
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
         void visit(std::shared_ptr<Constructor> n) override;
         void visit(std::shared_ptr<Method> n) override;
+        void createBasicBlock();
+        void printCFG(const ControlFlowGraph& cfg);
 };

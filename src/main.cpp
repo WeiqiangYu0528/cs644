@@ -380,6 +380,10 @@ int main(int argc, char* argv[])
             program->accept(&cfgvisitor);
             std::vector<ControlFlowGraph> cfgs = std::move(cfgvisitor.cfgs);
             std::cout << cfgs.size() << std::endl;
+            for (size_t i = 0; i < cfgs.size(); ++i) {
+                std::cout << "CFG " << i << std::endl;
+                cfgvisitor.printCFG(cfgs[i]);
+            }
             break;
         }
     }
