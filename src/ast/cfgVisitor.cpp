@@ -6,7 +6,7 @@ CFGVisitor::CFGVisitor() {
 }
 
 void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
-    ControlFlowGraph cfg;
+    cfg = ControlFlowGraph();
     block = cfg.start;
     from = std::vector<std::shared_ptr<BasicBlock>>{block};
     Visitor::visit(n);
@@ -15,7 +15,7 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
 
 void CFGVisitor::visit(std::shared_ptr<Method> n) {
     if (!n->isAbstract) {
-        ControlFlowGraph cfg;
+        cfg = ControlFlowGraph();
         block = cfg.start;
         from = std::vector<std::shared_ptr<BasicBlock>>{block};
         Visitor::visit(n);
@@ -91,6 +91,7 @@ void CFGVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
 void CFGVisitor::createBasicBlock() {
     block = std::make_shared<BasicBlock>();
     cfg.addEdge(from, block);
+    cfg.blocks.push_back(block);
     from = std::vector<std::shared_ptr<BasicBlock>>{block};
 }
 

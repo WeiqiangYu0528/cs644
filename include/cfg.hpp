@@ -12,6 +12,8 @@ class BasicBlock {
 class ControlFlowGraph {
     public:
         std::shared_ptr<BasicBlock> start;
+        std::vector<std::shared_ptr<BasicBlock>> blocks;
         ControlFlowGraph();
         void addEdge(std::vector<std::shared_ptr<BasicBlock>>& from, std::shared_ptr<BasicBlock> to);
+        bool checkReachability();
 };

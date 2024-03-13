@@ -378,11 +378,14 @@ int main(int argc, char* argv[])
         for (std::shared_ptr<Program> program : asts) {
             CFGVisitor cfgvisitor;
             program->accept(&cfgvisitor);
-            std::vector<ControlFlowGraph> cfgs = std::move(cfgvisitor.cfgs);
-            std::cout << cfgs.size() << std::endl;
+            std::vector<ControlFlowGraph> cfgs = cfgvisitor.cfgs;
             for (size_t i = 0; i < cfgs.size(); ++i) {
-                std::cout << "CFG " << i << std::endl;
-                cfgvisitor.printCFG(cfgs[i]);
+                // cfgvisitor.printCFG(cfgs[i]);
+                if (!cfgs[i].checkReachability()) {
+                    std::cerr << "Error: Fails to satisfy reachability dataflow analysis" << std::endl;
+                    error = true;
+                    break;
+                }
             }
             break;
         }
