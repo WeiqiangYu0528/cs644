@@ -2,13 +2,26 @@
 #include <unordered_set>
 #include "cfgVisitor.hpp"
 
-CFGVisitor::CFGVisitor() {
+CFGVisitor::CFGVisitor(std::shared_ptr<Scope> s) : scope(s), isInsideIf(false), isInsideReturn(false) {
 }
 
 std::shared_ptr<BasicBlock> CFGVisitor::newBlock() {
     auto newBlock = std::make_shared<BasicBlock>();
     cfg.blocks.push_back(newBlock);
     return newBlock;
+}
+
+void CFGVisitor::createNewNode(const std::string& name) {
+    if (!isInsideIf) {
+        auto newNode = std::make_shared<Node>(name);
+        cfg.nodes.push_back(newNode);
+        if (!isInsideReturn) cfg.addLink(currentNode, newNode);
+        else isInsideReturn = false;
+        currentNode = newNode;
+    } else {
+        isInsideIf = false;
+        currentNode->name = name;
+    }
 }
 
 void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
@@ -20,11 +33,15 @@ void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<BlockStatement> n) {
+    beginScope();
     Visitor::visit(n);
+    endScope();
 }
 
 void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
+    beginScope();
     Visitor::visit(n);
+    endScope();
 }
 
 void CFGVisitor::visit(std::shared_ptr<Method> n) {
@@ -32,9 +49,24 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
     if (!n->isAbstract) {
         cfg = ControlFlowGraph();
         currentBlock = cfg.start;
+        currentNode = cfg.startNode;
         currentMethodReturnType = n->type->type;
+        isInsideIf = false;
+        isInsideReturn = false;
+        beginScope();
         Visitor::visit(n);
+        endScope();
+        if (isInsideIf) {
+            createNewNode("End");
+            cfg.endNode = currentNode;
+            isInsideIf = false;
+        }
+        else if (currentMethodReturnType == DataType::VOID && !isInsideReturn) {
+            cfg.addLink(currentNode, cfg.endNode);
+        }
+        cfg.nodes.push_back(cfg.endNode);
         // cfg.Print();
+        // cfg.PrintNodes();
         if(!cfg.checkReachability()) {
             std::cerr << "Error: checkReachability()" << std::endl;
             exit(42);
@@ -43,19 +75,40 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
             std::cerr << "Error: checkMissingReturn()" << std::endl;
             exit(42);
         }
+        if (!cfg.checkDeadAssignments()) {
+            std::cerr << "Warning: Dead assignment found" << std::endl;
+            exit(43);
+        }
+        cfgs.push_back(cfg);
     }
 }
 
 void CFGVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
+    createNewNode("LocalVariableDeclarationStatement");
+    const std::string key {n->id->name};
+    stack_t.push(key);
+    ltable.insert(key);
+    uninitLocal.insert(key);
+    if (n->exp) {
+        Visitor::visit(n);
+        uninitLocal.erase(key);
+        currentNode->def = n->id->name;
+        currentNode->init = true;
+    }
     addStatement(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<SemicolonStatement> n) {
+    createNewNode("SemicolonStatement");
     addStatement(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<IfStatement> n) {
+    createNewNode("IfCondition");
+    n->exp->accept(this);
     addStatement(n);
+    auto ifNode = currentNode;
+
     auto thenBlock = newBlock();
     std::shared_ptr<BasicBlock> elseBlock = nullptr;
     auto continueBlock = newBlock();
@@ -68,20 +121,34 @@ void CFGVisitor::visit(std::shared_ptr<IfStatement> n) {
     else {
         cfg.addEdge(currentBlock, continueBlock);
     }
-    
+
     currentBlock = thenBlock;
+    currentNode = ifNode;
+    beginScope();
     n->statement1->accept(this);
+    endScope();
+    createNewNode("IfEnd");
+    auto continueNode = currentNode;
     cfg.addEdge(currentBlock, continueBlock);    
 
     if (elseBlock) {
+        currentNode = ifNode;
         currentBlock = elseBlock;
+        beginScope();
         n->statement2->accept(this);
-        cfg.addEdge(currentBlock, continueBlock);       
+        endScope();
+        cfg.addEdge(currentBlock, continueBlock);
+        cfg.addLink(currentNode, continueNode);     
+    } else {
+        cfg.addLink(ifNode, continueNode);
     }
     currentBlock = continueBlock;
+    currentNode = continueNode;
+    isInsideIf = true;
 }
 
 void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
+    beginScope();
     auto conditionBlock = newBlock();
     cfg.addEdge(currentBlock, conditionBlock);
 
@@ -92,21 +159,33 @@ void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
             exit(42);
         }
     }
-    n->exp->accept(this);    
+    createNewNode("WhileCondition");
+    auto whileNode = currentNode;
+    n->exp->accept(this);
     auto bodyBlock = newBlock();
     cfg.addEdge(conditionBlock, bodyBlock);
 
     currentBlock = bodyBlock;
     n->statement->accept(this);
+    if (isInsideIf) {
+        isInsideIf = false;
+        cfg.addLink(cfg.removeLastLink(), whileNode);
+        cfg.addLink(cfg.removeLastLink(), whileNode);
+        cfg.nodes.erase(std::remove(cfg.nodes.begin(), cfg.nodes.end(), currentNode));
+    } else {
+        cfg.addLink(currentNode, whileNode);
+    }
     cfg.addEdge(currentBlock, conditionBlock);
-
     auto afterLoopBlock = newBlock();
     cfg.addEdge(conditionBlock, afterLoopBlock);
 
     currentBlock = afterLoopBlock;
+    currentNode = whileNode;
+    endScope();
 }
 
 void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
+    beginScope();
     auto initBlock = newBlock();
     cfg.addEdge(currentBlock, initBlock);
     currentBlock = initBlock;
@@ -117,6 +196,9 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
     auto conditionBlock = newBlock();
     cfg.addEdge(currentBlock, conditionBlock);
     currentBlock = conditionBlock;
+
+    createNewNode("ForCondition");
+    auto forNode = currentNode;
     if (n->exp) {
         n->exp->accept(this);
     }
@@ -135,22 +217,89 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
     cfg.addEdge(currentBlock, updateBlock);
 
     currentBlock = updateBlock;
+    createNewNode("ForUpdate");
     if (n->expStmt2) {
         n->expStmt2->accept(this);
     }
     cfg.addEdge(currentBlock, conditionBlock);
+    cfg.addLink(currentNode, forNode);
 
     auto afterLoopBlock = newBlock();
     cfg.addEdge(conditionBlock, afterLoopBlock);
     currentBlock = afterLoopBlock;
+    currentNode = forNode;
+    endScope();
 }
 
-
 void CFGVisitor::visit(std::shared_ptr<ReturnStatement> n) {
+    createNewNode("ReturnStatement");
+    Visitor::visit(n);
     addStatement(n);
+    cfg.addLink(currentNode, cfg.endNode);
+    isInsideReturn = true;
 }
 
 void CFGVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
+    createNewNode("ExpressionStatement");
+    Visitor::visit(n);
     addStatement(n);
 }
 
+void CFGVisitor::visit(std::shared_ptr<FormalParameter> n) {
+    const std::string key {n->variableName->name};
+    stack_t.push(key);
+    ltable.insert(key);
+}
+
+void CFGVisitor::beginScope() {
+    stack_t.push("#");
+}
+
+void CFGVisitor::endScope() {
+    while (stack_t.top() != "#") {
+        std::string& var{stack_t.top()};
+        if (uninitLocal.contains(var)) {
+            std::cerr << "Error: local variable " << var << " not initialized" << std::endl;
+            exit(42);
+        }
+        ltable.erase(var);
+        stack_t.pop();
+    }
+    stack_t.pop();
+}
+
+ void CFGVisitor::visit(std::shared_ptr<IdentifierExp> n) {
+    std::string& var{n->id->name};
+    if (ltable.contains(var)) {
+        currentNode->use.insert(var);
+    } 
+    auto it = std::find(var.begin(), var.end(), '.');
+    if (it != var.end()) {
+        std::string temp{var.begin(), it};
+        if (ltable.contains(temp)) {
+            currentNode->use.insert(temp);
+        }
+    }
+    if (uninitLocal.contains(n->id->name)) {
+        std::cerr << "Error: use of uninitialized local variable " << n->id->name << std::endl;
+        exit(42);
+    }
+ }
+
+void CFGVisitor::visit(std::shared_ptr<Assignment> n) {
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->left)) {
+        if (ltable.contains(ie->id->name)) {
+            currentNode->def = ie->id->name;
+        }
+        if (uninitLocal.contains(ie->id->name)) {
+            uninitLocal.erase(ie->id->name);
+        }
+        n->right->accept(this);
+    } else {
+        Visitor::visit(n);
+    }
+}
+
+void CFGVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
+    n->exp1->accept(this);
+}
