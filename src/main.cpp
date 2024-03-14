@@ -376,18 +376,23 @@ int main(int argc, char* argv[])
 
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
-            CFGVisitor cfgvisitor;
+            CFGVisitor cfgvisitor(program->scope);
             program->accept(&cfgvisitor);
             std::vector<ControlFlowGraph> cfgs = cfgvisitor.cfgs;
-            for (size_t i = 0; i < cfgs.size(); ++i) {
-                // cfgvisitor.printCFG(cfgs[i]);
-                if (!cfgs[i].checkReachability()) {
-                    std::cerr << "Error: Fails to satisfy reachability dataflow analysis" << std::endl;
-                    error = true;
-                    break;
-                }
+            if (cfgvisitor.isError()) {
+                std::cerr << "Error: Control Flow Graph failed" << std::endl;
+                error = true;
+                break;
             }
-            break;
+            // for (size_t i = 0; i < cfgs.size(); ++i) {
+            //     // cfgvisitor.printCFG(cfgs[i]);
+            //     if (!cfgs[i].checkReachability()) {
+            //         std::cerr << "Error: Fails to satisfy reachability dataflow analysis" << std::endl;
+            //         error = true;
+            //         break;
+            //     }
+            // }
+            // break;
         }
     }
 
