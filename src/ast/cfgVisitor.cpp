@@ -5,128 +5,152 @@
 CFGVisitor::CFGVisitor() {
 }
 
-void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
-    cfg = ControlFlowGraph();
-    block = cfg.start;
-    from = std::vector<std::shared_ptr<BasicBlock>>{block};
-    Visitor::visit(n);
-    cfgs.push_back(cfg);
+std::shared_ptr<BasicBlock> CFGVisitor::newBlock() {
+    auto newBlock = std::make_shared<BasicBlock>();
+    cfg.blocks.push_back(newBlock);
+    return newBlock;
 }
 
-void CFGVisitor::visit(std::shared_ptr<Method> n) {
-    if (!n->isAbstract) {
-        cfg = ControlFlowGraph();
-        block = cfg.start;
-        from = std::vector<std::shared_ptr<BasicBlock>>{block};
-        Visitor::visit(n);
-        cfgs.push_back(cfg);
+void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
+     if (!currentBlock) {
+        currentBlock = std::make_shared<BasicBlock>();
+        cfg.blocks.push_back(currentBlock);
     }
+    currentBlock->statements.push_back(stmt);
 }
 
 void CFGVisitor::visit(std::shared_ptr<BlockStatement> n) {
-    createBasicBlock();
-    std::shared_ptr<BasicBlock> bb = block;
-    n->blockStatements->accept(this);
-    from = std::vector<std::shared_ptr<BasicBlock>>{bb};
-    // build a new basic block after block stmt
-    createBasicBlock();
+    Visitor::visit(n);
+}
+
+void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
+    Visitor::visit(n);
+}
+
+void CFGVisitor::visit(std::shared_ptr<Method> n) {
+    if (!n->block) return;
+    if (!n->isAbstract) {
+        cfg = ControlFlowGraph();
+        currentBlock = cfg.start;
+        currentMethodReturnType = n->type->type;
+        Visitor::visit(n);
+        cfg.Print();
+        if(!cfg.checkReachability()) {
+            std::cerr << "Error: checkReachability()" << std::endl;
+            exit(42);
+        }
+        if(n->type->type != DataType::VOID && !cfg.checkMissingReturn()) {
+            std::cerr << "Error: checkMissingReturn()" << std::endl;
+            exit(42);
+        }
+    }
 }
 
 void CFGVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
-    block->statements.push_back(n);
+    addStatement(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<SemicolonStatement> n) {
-    block->statements.push_back(n);
+    addStatement(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<IfStatement> n) {
-    std::vector<std::shared_ptr<BasicBlock>> temp = from;
-    createBasicBlock();
-    std::shared_ptr<BasicBlock> ib = block;
-    n->statement1->accept(this);
+    addStatement(n);
+    auto thenBlock = newBlock();
+    std::shared_ptr<BasicBlock> elseBlock = nullptr;
+    auto continueBlock = newBlock();
+    cfg.addEdge(currentBlock, thenBlock);
+
     if (n->statement2) {
-        from = temp;
-        createBasicBlock();
-        std::shared_ptr<BasicBlock> eb = block;
-        n->statement2->accept(this);
-        from = std::vector<std::shared_ptr<BasicBlock>>{ib, eb};
-    } else {
-        from = std::vector<std::shared_ptr<BasicBlock>>{ib};
+        elseBlock = newBlock();
+        cfg.addEdge(currentBlock, elseBlock);
     }
-    // build a new basic block after if stmt
-    createBasicBlock();
+    else {
+        cfg.addEdge(currentBlock, continueBlock);
+    }
+    
+    currentBlock = thenBlock;
+    n->statement1->accept(this);
+    cfg.addEdge(currentBlock, continueBlock);    
+
+    if (elseBlock) {
+        currentBlock = elseBlock;
+        n->statement2->accept(this);
+        cfg.addEdge(currentBlock, continueBlock);       
+    }
+    currentBlock = continueBlock;
 }
 
 void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
-    createBasicBlock();
-    std::shared_ptr<BasicBlock> bb = block;
-    bb->statements.push_back(n);
+    auto conditionBlock = newBlock();
+    cfg.addEdge(currentBlock, conditionBlock);
+
+    currentBlock = conditionBlock;
+    if (auto f = std::dynamic_pointer_cast<BoolLiteralExp>(n->exp)) {
+        if (!f->value) {
+            std::cerr << "Error: While loop condition is always false" << std::endl;
+            exit(42);
+        }
+    }
+    n->exp->accept(this);    
+    auto bodyBlock = newBlock();
+    cfg.addEdge(conditionBlock, bodyBlock);
+
+    currentBlock = bodyBlock;
     n->statement->accept(this);
-    from = std::vector<std::shared_ptr<BasicBlock>>{bb};
-    // add edge to itself
-    cfg.addEdge(from, bb);
-    // build a new basic block after while stmt
-    createBasicBlock();
+    cfg.addEdge(currentBlock, conditionBlock);
+
+    auto afterLoopBlock = newBlock();
+    cfg.addEdge(conditionBlock, afterLoopBlock);
+
+    currentBlock = afterLoopBlock;
 }
 
 void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
-    createBasicBlock();
-    std::shared_ptr<BasicBlock> bb = block;
-    bb->statements.push_back(n);
-    n->stmt2->accept(this);
-    from = std::vector<std::shared_ptr<BasicBlock>>{bb};
-    cfg.addEdge(from, bb);
-    createBasicBlock();
+    auto initBlock = newBlock();
+    cfg.addEdge(currentBlock, initBlock);
+    currentBlock = initBlock;
+    if (n->stmt1) {
+        n->stmt1->accept(this);
+    }
+
+    auto conditionBlock = newBlock();
+    cfg.addEdge(currentBlock, conditionBlock);
+    currentBlock = conditionBlock;
+    if (n->exp) {
+        n->exp->accept(this);
+    }
+
+    auto bodyBlock = newBlock();
+    cfg.addEdge(conditionBlock, bodyBlock);
+
+
+    auto updateBlock = newBlock();
+    currentBlock = bodyBlock;
+
+    if(n->stmt2) {
+        n->stmt2->accept(this);
+    }
+
+    cfg.addEdge(currentBlock, updateBlock);
+
+    currentBlock = updateBlock;
+    if (n->expStmt2) {
+        n->expStmt2->accept(this);
+    }
+    cfg.addEdge(currentBlock, conditionBlock);
+
+    auto afterLoopBlock = newBlock();
+    cfg.addEdge(conditionBlock, afterLoopBlock);
+    currentBlock = afterLoopBlock;
 }
 
+
 void CFGVisitor::visit(std::shared_ptr<ReturnStatement> n) {
-    block->statements.push_back(n);
+    addStatement(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
-    block->statements.push_back(n);
+    addStatement(n);
 }
 
-void CFGVisitor::createBasicBlock() {
-    block = std::make_shared<BasicBlock>();
-    cfg.addEdge(from, block);
-    cfg.blocks.push_back(block);
-    from = std::vector<std::shared_ptr<BasicBlock>>{block};
-}
-
-void CFGVisitor::printCFG(const ControlFlowGraph& cfg) {
-    std::function<void(std::shared_ptr<BasicBlock>, int)> visitBlock;
-
-    visitBlock = [&](std::shared_ptr<BasicBlock> block, int depth) {
-        if (!block) return;
-
-        // Indentation for readability based on depth
-        std::string indent(depth * 2, ' ');
-        
-        std::cout << indent << "BasicBlock: " << block.get() << "\n";
-
-        // Iterate over statements in the block
-        for (const auto& stmt : block->statements) {
-            // Assuming toString() is a method that returns a string representation of the statement
-            std::cout << indent << "  Stmt: " << stmt->getStmtName() << "\n";
-        }
-
-        // Print successors
-        if (!block->succ.empty()) {
-            std::cout << indent << "  Successors: ";
-            for (const auto& succ : block->succ) {
-                std::cout << succ.get() << " ";
-            }
-            std::cout << "\n";
-        }
-
-        // Recursively visit successors with increased depth for indentation
-        for (const auto& succ : block->succ) {
-            if (succ.get() != block.get())
-                visitBlock(succ, depth + 1);
-        }
-    };
-
-    visitBlock(cfg.start, 0); // Start with depth 0
-}

@@ -6,10 +6,11 @@
 class CFGVisitor : public Visitor {
     private:
         ControlFlowGraph cfg;
-        std::shared_ptr<BasicBlock> block;
-        std::vector<std::shared_ptr<BasicBlock>> from;
+        DataType currentMethodReturnType;
+        std::shared_ptr<BasicBlock> currentBlock;
+        void addStatement(std::shared_ptr<Statement> stmt);
+        std::shared_ptr<BasicBlock> newBlock();
     public:
-        std::vector<ControlFlowGraph> cfgs;
         CFGVisitor();
         void visit(std::shared_ptr<BlockStatement> n) override;
         void visit(std::shared_ptr<SemicolonStatement> n) override;
@@ -21,6 +22,4 @@ class CFGVisitor : public Visitor {
         void visit(std::shared_ptr<LocalVariableDeclarationStatement> n) override;
         void visit(std::shared_ptr<Constructor> n) override;
         void visit(std::shared_ptr<Method> n) override;
-        void createBasicBlock();
-        void printCFG(const ControlFlowGraph& cfg);
 };
