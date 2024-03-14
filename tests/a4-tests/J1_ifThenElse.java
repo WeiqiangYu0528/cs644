@@ -17,7 +17,7 @@ public class J1_ifThenElse {
 	    return 7;
     }
 
-    // public static void main(String[] args) {
-	// System.out.println(J1_ifThenElse.test());
-    // }
+    public static void main(String[] args) {
+	System.out.println(J1_ifThenElse.test());
+    }
 }
