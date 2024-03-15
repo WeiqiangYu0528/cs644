@@ -10,6 +10,7 @@
 #include "typeCheckingVisitor.hpp"
 #include "typeLinkingVisitor.hpp"
 #include "hierarchyVisitor.hpp"
+#include "cfgVisitor.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
@@ -371,6 +372,27 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
+            CFGVisitor cfgvisitor;
+            program->accept(&cfgvisitor);
+            // std::vector<ControlFlowGraph> cfgs = cfgvisitor.cfgs;
+            // for (size_t i = 0; i < cfgs.size(); ++i) {
+            //     // cfgvisitor.printCFG(cfgs[i]);
+            //     if (!cfgs[i].checkReachability()) {
+            //         std::cerr << "Error: Fails to satisfy reachability dataflow analysis" << std::endl;
+            //         error = true;
+            //         break;
+            //     }
+            // }
+            // if (program->scope->current->getClassOrInterfaceDecl()->id->name == "String")
+            // break;
+        }
+    }
+
     if (error)
         return 42;
     else

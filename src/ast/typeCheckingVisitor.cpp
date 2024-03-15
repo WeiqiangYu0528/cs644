@@ -24,8 +24,6 @@ std::map<DataType, ExpType> d2e = {
 };
 
 TypeCheckingVisitor::TypeCheckingVisitor(std::shared_ptr<Scope> s) : scope(s), error(false) {
-    // for testing only
-    std::cout << scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Program> n) {
