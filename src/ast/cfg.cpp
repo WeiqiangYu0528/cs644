@@ -145,10 +145,6 @@ bool ControlFlowGraph::checkPathForReturn(const std::shared_ptr<BasicBlock>& blo
     visited.push_back(block);
 
     if (isTerminalBlock(block)) {
-        return true;
-    }
-
-    if (block->outgoing.empty()) {
         return hasReturnInBlock(block);
     }
 

@@ -6,7 +6,8 @@ error_code = {
     'J1_' : 0,
     'J2_' : 0,
     'Jw_' : 43,
-    'Je_' : 42
+    'Je_' : 42,
+    None : 0,
 }
 
 def parse_arguments():

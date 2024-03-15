@@ -34,7 +34,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         currentBlock = cfg.start;
         currentMethodReturnType = n->type->type;
         Visitor::visit(n);
-        cfg.Print();
+        // cfg.Print();
         if(!cfg.checkReachability()) {
             std::cerr << "Error: checkReachability()" << std::endl;
             exit(42);
