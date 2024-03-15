@@ -8,7 +8,8 @@ class CFGVisitor : public Visitor {
         ControlFlowGraph cfg;
         DataType currentMethodReturnType;
         std::shared_ptr<BasicBlock> currentBlock;
-        void addStatement(std::shared_ptr<Statement> stmt);
+        std::shared_ptr<Node> node;
+        void addNode(std::shared_ptr<Node> node);
         std::shared_ptr<BasicBlock> newBlock();
     public:
         CFGVisitor();

@@ -4,9 +4,15 @@
 
 class Edge;
 
+struct Node {
+    std::shared_ptr<Statement> stmt;
+    std::vector<std::string> use;
+    std::string def;
+}
+
 class BasicBlock {
 public:
-    std::vector<std::shared_ptr<Statement>> statements;
+    std::vector<std::shared_ptr<Node>> nodes;
     std::vector<std::shared_ptr<Edge>> incoming;
     std::vector<std::shared_ptr<Edge>> outgoing;
     BasicBlock();

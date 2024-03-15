@@ -11,12 +11,12 @@ std::shared_ptr<BasicBlock> CFGVisitor::newBlock() {
     return newBlock;
 }
 
-void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
+void CFGVisitor::addNode(std::shared_ptr<Node> node) {
      if (!currentBlock) {
         currentBlock = std::make_shared<BasicBlock>();
         cfg.blocks.push_back(currentBlock);
     }
-    currentBlock->statements.push_back(stmt);
+    currentBlock->nodes.push_back(node);
 }
 
 void CFGVisitor::visit(std::shared_ptr<BlockStatement> n) {
@@ -47,15 +47,19 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
-    addStatement(n);
+    node = std::make_shared<Node>();
+    if (n->exp) {
+        node->def = n->id->name;
+    }
+    addNode(node);
 }
 
 void CFGVisitor::visit(std::shared_ptr<SemicolonStatement> n) {
-    addStatement(n);
+    addNode(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<IfStatement> n) {
-    addStatement(n);
+    addNode(n);
     auto thenBlock = newBlock();
     std::shared_ptr<BasicBlock> elseBlock = nullptr;
     auto continueBlock = newBlock();
@@ -145,12 +149,10 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
     currentBlock = afterLoopBlock;
 }
 
-
 void CFGVisitor::visit(std::shared_ptr<ReturnStatement> n) {
-    addStatement(n);
+    addNode(n);
 }
 
 void CFGVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
-    addStatement(n);
+    addNode(n);
 }
-

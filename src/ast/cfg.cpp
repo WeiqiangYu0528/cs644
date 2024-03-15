@@ -26,10 +26,10 @@ void ControlFlowGraph::Print() {
     for (auto& block : blocks) {
         std::ostringstream t;
         t << "BB: " << block.get();
-        if (!block->statements.empty()) {
+        if (!block->nodes.empty()) {
             t << "\\n"; 
-            for (const auto& stmt : block->statements) {
-                t << stmt->getStmtName() << "\\n";
+            for (const auto& node : block->nodes) {
+                t << node->stmt->getStmtName() << "\\n";
             }
         }
         dotGraph << "    \"" << block.get() << "\" [label=\"" << t.str() << "\"];" << std::endl;
@@ -77,10 +77,10 @@ bool ControlFlowGraph::checkReachability() {
             
             bool temp = out[block];
             bool returnStmt {false};
-            for (auto& stmt : block->statements) {
-                if (std::dynamic_pointer_cast<ReturnStatement>(stmt)) {
+            for (auto& node : block->nodes) {
+                if (std::dynamic_pointer_cast<ReturnStatement>(node->stmt)) {
                     returnStmt = true;
-                    if (stmt == block->statements.back()) out[block] = false;
+                    if (node == block->nodes.back()) out[block] = false;
                     else return false; 
                 }
             }
@@ -90,7 +90,7 @@ bool ControlFlowGraph::checkReachability() {
     }
 
     for (auto& block : blocks) {
-        if (!in[block] && !(block->outgoing.empty() && block->statements.empty())) return false;
+        if (!in[block] && !(block->outgoing.empty() && block->nodes.empty())) return false;
     }
 
     return true;
@@ -101,12 +101,12 @@ bool ControlFlowGraph::isTerminalBlock(const std::shared_ptr<BasicBlock>& block)
         if (block->outgoing.size() == 1) {
             auto current = block->outgoing[0]->to;
             while (1) {
-                if (current->outgoing.size() == 1 && current->statements.empty())
+                if (current->outgoing.size() == 1 && current->nodes.empty())
                     current = current->outgoing[0]->to;
                 else 
                     return false;
             }
-            return current->outgoing.empty() && current->statements.empty();
+            return current->outgoing.empty() && current->nodes.empty();
         }
     }
     return false;
@@ -116,7 +116,7 @@ void ControlFlowGraph::removeUnusedNodes() {
     auto blockIt = blocks.begin();
     while (blockIt != blocks.end()) {
         auto block = *blockIt;
-        if (block->outgoing.empty() && block->statements.empty()) {
+        if (block->outgoing.empty() && block->nodes.empty()) {
             for (auto& incomingEdge : block->incoming) {
                 auto sourceBlock = incomingEdge->from;
                 sourceBlock->outgoing.erase(
@@ -134,7 +134,7 @@ void ControlFlowGraph::removeUnusedNodes() {
     }
 }
 bool ControlFlowGraph::hasReturnInBlock(const std::shared_ptr<BasicBlock>& block) {
-    return !block->statements.empty() && std::dynamic_pointer_cast<ReturnStatement>(block->statements.back()) != nullptr;
+    return !block->nodes.empty() && std::dynamic_pointer_cast<ReturnStatement>(block->nodes.back()->stmt) != nullptr;
 }
 
 
