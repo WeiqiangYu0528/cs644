@@ -236,6 +236,10 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
     if (n->exp) {
         n->exp->accept(this);
     }
+    if (evaluateFalse(n->exp)) {
+        std::cerr << "Error: For loop condition is a constant" << std::endl;
+        exit(42);
+    }
 
     auto bodyBlock = newBlock();
     cfg.addEdge(conditionBlock, bodyBlock);
@@ -351,6 +355,9 @@ bool CFGVisitor::evaluateFalse(std::shared_ptr<AstNode> n) {
     }
     if (auto andexp = std::dynamic_pointer_cast<ConditionalAndExp>(n)) {
         if (evaluateFalse(andexp->exp1) || evaluateFalse(andexp->exp2)) return true;
+    }
+    if (auto equalexp = std::dynamic_pointer_cast<EqualExp>(n)) {
+        if (std::dynamic_pointer_cast<IntegerLiteralExp>(equalexp->exp1)) return true;
     }
     return false;
 }
