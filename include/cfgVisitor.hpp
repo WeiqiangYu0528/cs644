@@ -37,6 +37,7 @@ class CFGVisitor : public Visitor {
         void visit(std::shared_ptr<FormalParameter> n) override;
         void visit(std::shared_ptr<Assignment> n) override;
         void visit(std::shared_ptr<ConditionalOrExp> n) override;
+        bool evaluateFalse(std::shared_ptr<AstNode> n);
         void beginScope();
         void endScope();
 };

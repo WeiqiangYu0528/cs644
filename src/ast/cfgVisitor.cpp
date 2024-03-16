@@ -182,11 +182,9 @@ void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
     cfg.addEdge(currentBlock, conditionBlock);
 
     currentBlock = conditionBlock;
-    if (auto f = std::dynamic_pointer_cast<BoolLiteralExp>(n->exp)) {
-        if (!f->value) {
-            std::cerr << "Error: While loop condition is always false" << std::endl;
-            exit(42);
-        }
+    if (evaluateFalse(n->exp)) {
+        std::cerr << "Error: While loop condition is a constant" << std::endl;
+        exit(42);
     }
     createNewNode("WhileCondition");
     auto whileNode = currentNode;
@@ -333,4 +331,17 @@ void CFGVisitor::visit(std::shared_ptr<Assignment> n) {
 
 void CFGVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
     n->exp1->accept(this);
+}
+
+bool CFGVisitor::evaluateFalse(std::shared_ptr<AstNode> n) {
+    if (auto bexp = std::dynamic_pointer_cast<BoolLiteralExp>(n)) {
+        return bexp->value == false;
+    }
+    if (auto orexp = std::dynamic_pointer_cast<ConditionalOrExp>(n)) {
+        if (evaluateFalse(orexp->exp1) && evaluateFalse(orexp->exp2)) return true;
+    }
+    if (auto andexp = std::dynamic_pointer_cast<ConditionalAndExp>(n)) {
+        if (evaluateFalse(andexp->exp1) || evaluateFalse(andexp->exp2)) return true;
+    }
+    return false;
 }
