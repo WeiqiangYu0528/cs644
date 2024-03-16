@@ -66,7 +66,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         }
         cfg.nodes.push_back(cfg.endNode);
         cfg.mergeUnusedNodes();
-        // cfg.Print();
+        //cfg.Print();
         // cfg.PrintNodes();
         if(!cfg.checkReachability()) {
             std::cerr << "Error: checkReachability()" << std::endl;
@@ -163,20 +163,23 @@ void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
     createNewNode("WhileCondition");
     auto whileNode = currentNode;
     n->exp->accept(this);
-    auto bodyBlock = newBlock();
-    cfg.addEdge(conditionBlock, bodyBlock);
 
-    currentBlock = bodyBlock;
-    n->statement->accept(this);
-    if (isInsideIf) {
-        isInsideIf = false;
-        cfg.addLink(cfg.removeLastLink(), whileNode);
-        cfg.addLink(cfg.removeLastLink(), whileNode);
-        cfg.nodes.erase(std::remove(cfg.nodes.begin(), cfg.nodes.end(), currentNode));
-    } else {
-        cfg.addLink(currentNode, whileNode);
+    if(n->statement) {
+        auto bodyBlock = newBlock();
+        cfg.addEdge(conditionBlock, bodyBlock);
+        currentBlock = bodyBlock;
+        n->statement->accept(this);
+        if (isInsideIf) {
+            isInsideIf = false;
+            cfg.addLink(cfg.removeLastLink(), whileNode);
+            cfg.addLink(cfg.removeLastLink(), whileNode);
+            cfg.nodes.erase(std::remove(cfg.nodes.begin(), cfg.nodes.end(), currentNode));
+        } else {
+            cfg.addLink(currentNode, whileNode);
+        }
+        cfg.addEdge(currentBlock, conditionBlock);
     }
-    cfg.addEdge(currentBlock, conditionBlock);
+
     auto afterLoopBlock = newBlock();
     cfg.addEdge(conditionBlock, afterLoopBlock);
 

@@ -4,6 +4,8 @@
 #include <stack>
 #include <list>
 #include "cfg.hpp"
+#include <unordered_set>
+#include <queue>
 
 BasicBlock::BasicBlock() {
 }
@@ -71,50 +73,85 @@ void ControlFlowGraph::Print() {
     std::remove(dotFile.c_str());
 }
 
-
 bool ControlFlowGraph::checkReachability() {
-    std::unordered_map<std::shared_ptr<BasicBlock>, bool> in, out;
-    
-    for (auto& block : blocks) {
-        in[block] = false;
-        out[block] = false;
-    }
-    
-    bool changed = true;
-    while (changed) {
-        changed = false;
+    std::unordered_set<std::shared_ptr<BasicBlock>> visited;
+    std::queue<std::shared_ptr<BasicBlock>> queue;
 
-        for (auto& block : blocks) {
-            if (block == start) {
-                in[block] = true;
-            } else if (block->incoming.empty()) in[block] = false;
-            else 
-             {
-                for (auto& edge : block->incoming) {
-                    in[block] = in[block] || out[edge->from];
-                }
-            }
-            
-            bool temp = out[block];
-            bool returnStmt {false};
-            for (auto& stmt : block->statements) {
-                if (std::dynamic_pointer_cast<ReturnStatement>(stmt)) {
-                    returnStmt = true;
-                    if (stmt == block->statements.back()) out[block] = false;
-                    else return false; 
-                }
-            }
-            if (!returnStmt) out[block] = in[block];
-            if (out[block] != temp) changed = true;
+    queue.push(start);
+
+    while (!queue.empty()) {
+        auto currentBlock = queue.front();
+        queue.pop();
+
+        if (visited.find(currentBlock) != visited.end()) {
+            continue;
         }
-    }
+        if (!currentBlock->statements.empty()) {
+            for (size_t i = 0; i < currentBlock->statements.size(); ++i) {
+                auto stmt = currentBlock->statements[i];
+                if (std::dynamic_pointer_cast<ReturnStatement>(stmt) != nullptr && i != currentBlock->statements.size() - 1) {
+                    return false; 
+                }
+            }
+            if (std::dynamic_pointer_cast<ReturnStatement>(currentBlock->statements.back()) != nullptr) {
+                visited.insert(currentBlock);
+                continue;
+            }
+        }
+        for (const auto& edge : currentBlock->outgoing) {
+            if (visited.find(edge->to) == visited.end()) {
+                queue.push(edge->to);
+            }
+        }
 
-    for (auto& block : blocks) {
-        if (!in[block] && !(block->outgoing.empty() && block->statements.empty())) return false;
+        visited.insert(currentBlock);
     }
-
     return true;
 }
+
+// bool ControlFlowGraph::checkReachability() {
+//     std::unordered_map<std::shared_ptr<BasicBlock>, bool> in, out;
+    
+//     for (auto& block : blocks) {
+//         in[block] = false;
+//         out[block] = false;
+//     }
+    
+//     bool changed = true;
+//     while (changed) {
+//         changed = false;
+
+//         for (auto& block : blocks) {
+//             if (block == start) {
+//                 in[block] = true;
+//             } else if (block->incoming.empty()) in[block] = false;
+//             else 
+//              {
+//                 for (auto& edge : block->incoming) {
+//                     in[block] = in[block] || out[edge->from];
+//                 }
+//             }
+            
+//             bool temp = out[block];
+//             bool returnStmt {false};
+//             for (auto& stmt : block->statements) {
+//                 if (std::dynamic_pointer_cast<ReturnStatement>(stmt)) {
+//                     returnStmt = true;
+//                     if (stmt == block->statements.back()) out[block] = false;
+//                     else return false; 
+//                 }
+//             }
+//             if (!returnStmt) out[block] = in[block];
+//             if (out[block] != temp) changed = true;
+//         }
+//     }
+
+//     for (auto& block : blocks) {
+//         if (!in[block] && !(block->outgoing.empty() && block->statements.empty())) return false;
+//     }
+
+//     return true;
+// }
 
 bool ControlFlowGraph::isTerminalBlock(const std::shared_ptr<BasicBlock>& block) {
     
