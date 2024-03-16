@@ -12,6 +12,7 @@ class CFGVisitor : public Visitor {
         std::shared_ptr<Node> currentNode;
         bool isInsideIf;
         bool isInsideReturn;
+        bool loopIndefinite;
         void addStatement(std::shared_ptr<Statement> stmt);
         std::shared_ptr<BasicBlock> newBlock();
         void createNewNode(const std::string& name);
@@ -38,6 +39,7 @@ class CFGVisitor : public Visitor {
         void visit(std::shared_ptr<Assignment> n) override;
         void visit(std::shared_ptr<ConditionalOrExp> n) override;
         bool evaluateFalse(std::shared_ptr<AstNode> n);
+        bool evaluateTrue(std::shared_ptr<AstNode> n);
         void beginScope();
         void endScope();
 };

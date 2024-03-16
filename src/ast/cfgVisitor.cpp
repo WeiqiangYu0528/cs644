@@ -2,7 +2,7 @@
 #include <unordered_set>
 #include "cfgVisitor.hpp"
 
-CFGVisitor::CFGVisitor(std::shared_ptr<Scope> s) : scope(s), isInsideIf(false), isInsideReturn(false) {
+CFGVisitor::CFGVisitor(std::shared_ptr<Scope> s) : scope(s), isInsideIf(false), isInsideReturn(false), loopIndefinite(false) {
 }
 
 std::shared_ptr<BasicBlock> CFGVisitor::newBlock() {
@@ -44,6 +44,7 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
     currentNode = cfg.startNode;
     isInsideIf = false;
     isInsideReturn = false;
+    loopIndefinite = false;
     beginScope();
     Visitor::visit(n);
     endScope();
@@ -80,6 +81,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         currentMethodReturnType = n->type->type;
         isInsideIf = false;
         isInsideReturn = false;
+        loopIndefinite = false;
         beginScope();
         Visitor::visit(n);
         endScope();
@@ -186,6 +188,9 @@ void CFGVisitor::visit(std::shared_ptr<WhileStatement> n) {
         std::cerr << "Error: While loop condition is a constant" << std::endl;
         exit(42);
     }
+    if (evaluateTrue(n->exp)) {
+        loopIndefinite = true;
+    }
     createNewNode("WhileCondition");
     auto whileNode = currentNode;
     n->exp->accept(this);
@@ -261,6 +266,10 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<ReturnStatement> n) {
+    if (loopIndefinite) {
+        std::cerr << "Error: Indefinite loop detected" << std::endl;
+        exit(42);
+    }
     createNewNode("ReturnStatement");
     Visitor::visit(n);
     addStatement(n);
@@ -342,6 +351,19 @@ bool CFGVisitor::evaluateFalse(std::shared_ptr<AstNode> n) {
     }
     if (auto andexp = std::dynamic_pointer_cast<ConditionalAndExp>(n)) {
         if (evaluateFalse(andexp->exp1) || evaluateFalse(andexp->exp2)) return true;
+    }
+    return false;
+}
+
+bool CFGVisitor::evaluateTrue(std::shared_ptr<AstNode> n) {
+    if (auto bexp = std::dynamic_pointer_cast<BoolLiteralExp>(n)) {
+        return bexp->value == true;
+    }
+    if (auto orexp = std::dynamic_pointer_cast<ConditionalOrExp>(n)) {
+        if (evaluateTrue(orexp->exp1) || evaluateTrue(orexp->exp2)) return true;
+    }
+    if (auto andexp = std::dynamic_pointer_cast<ConditionalAndExp>(n)) {
+        if (evaluateTrue(andexp->exp1) && evaluateTrue(andexp->exp2)) return true;
     }
     return false;
 }
