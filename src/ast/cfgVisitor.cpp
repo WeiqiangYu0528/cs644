@@ -39,9 +39,36 @@ void CFGVisitor::visit(std::shared_ptr<BlockStatement> n) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
+    cfg = ControlFlowGraph();
+    currentBlock = cfg.start;
+    currentNode = cfg.startNode;
+    isInsideIf = false;
+    isInsideReturn = false;
     beginScope();
     Visitor::visit(n);
     endScope();
+    if (isInsideIf) {
+        cfg.addLink(cfg.removeLastLink(), cfg.endNode);
+        cfg.addLink(cfg.removeLastLink(), cfg.endNode);
+        cfg.nodes.erase(std::remove(cfg.nodes.begin(), cfg.nodes.end(), currentNode));
+        isInsideIf = false;
+    }
+    else if (currentMethodReturnType == DataType::VOID && !isInsideReturn) {
+        cfg.addLink(currentNode, cfg.endNode);
+    }
+    cfg.nodes.push_back(cfg.endNode);
+    cfg.mergeUnusedNodes();
+    //cfg.Print();
+    // cfg.PrintNodes();
+    if(!cfg.checkReachability()) {
+        std::cerr << "Error: checkReachability()" << std::endl;
+        exit(42);
+    }
+    if (!cfg.checkDeadAssignments()) {
+        std::cerr << "Warning: Dead assignment found" << std::endl;
+        exit(43);
+    }
+    cfgs.push_back(cfg);
 }
 
 void CFGVisitor::visit(std::shared_ptr<Method> n) {
@@ -66,7 +93,8 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
             cfg.addLink(currentNode, cfg.endNode);
         }
         cfg.nodes.push_back(cfg.endNode);
-        // cfg.Print();
+        cfg.mergeUnusedNodes();
+        //cfg.Print();
         // cfg.PrintNodes();
         if(!cfg.checkReachability()) {
             std::cerr << "Error: checkReachability()" << std::endl;
