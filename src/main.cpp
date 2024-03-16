@@ -361,17 +361,17 @@ int main(int argc, char* argv[])
         }
     }
 
-    // if (!error) {
-    //     for (std::shared_ptr<Program> program : asts) {
-    //         TypeCheckingVisitor tcvisitor(program->scope);
-    //         program->accept(&tcvisitor);
-    //         if (tcvisitor.isError()) {
-    //             std::cerr << "Error: Type Checking failed" << std::endl;
-    //             error = true;
-    //             break;
-    //         }
-    //     }
-    // }
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            TypeCheckingVisitor tcvisitor(program->scope);
+            program->accept(&tcvisitor);
+            if (tcvisitor.isError()) {
+                std::cerr << "Error: Type Checking failed" << std::endl;
+                error = true;
+                break;
+            }
+        }
+    }
 
 
     if (!error) {
@@ -379,7 +379,7 @@ int main(int argc, char* argv[])
             std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
             CFGVisitor cfgvisitor(program->scope);
             program->accept(&cfgvisitor);
-            // break;
+            //break;
         }
     }
 
