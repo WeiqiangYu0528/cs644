@@ -61,4 +61,5 @@ class ControlFlowGraph {
         void Print();
         void PrintNodes();
         void removeUnusedNodes();
+        void mergeUnusedNodes();
 };

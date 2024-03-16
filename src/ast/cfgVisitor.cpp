@@ -65,6 +65,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
             cfg.addLink(currentNode, cfg.endNode);
         }
         cfg.nodes.push_back(cfg.endNode);
+        cfg.mergeUnusedNodes();
         // cfg.Print();
         // cfg.PrintNodes();
         if(!cfg.checkReachability()) {

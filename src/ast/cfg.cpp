@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <stack>
+#include <list>
 #include "cfg.hpp"
 
 BasicBlock::BasicBlock() {
@@ -116,19 +117,7 @@ bool ControlFlowGraph::checkReachability() {
 }
 
 bool ControlFlowGraph::isTerminalBlock(const std::shared_ptr<BasicBlock>& block) {
-    if (hasReturnInBlock(block)) {
-        if (block->outgoing.size() == 1) {
-            auto current = block->outgoing[0]->to;
-            while (1) {
-                if (current->outgoing.size() == 1 && current->statements.empty())
-                    current = current->outgoing[0]->to;
-                else 
-                    return false;
-            }
-            return current->outgoing.empty() && current->statements.empty();
-        }
-    }
-    return false;
+    
 }
 
 void ControlFlowGraph::removeUnusedNodes() {
@@ -152,6 +141,51 @@ void ControlFlowGraph::removeUnusedNodes() {
         }
     }
 }
+
+void ControlFlowGraph::mergeUnusedNodes() {
+    bool merged = true;
+
+    while (merged) {
+        merged = false;
+        std::list<std::shared_ptr<BasicBlock>> blocksToRemove;
+
+        for (auto blockIt = blocks.begin(); blockIt != blocks.end(); ++blockIt) {
+            auto& block = *blockIt;
+
+            if (block->statements.empty() && block->outgoing.size() == 1) {
+                auto nextBlock = block->outgoing.front()->to;
+
+                if (nextBlock->statements.empty()) {
+
+                    for (auto& incomingEdge : block->incoming) {
+                        auto sourceBlock = incomingEdge->from;
+
+                        for (auto& outgoingEdge : sourceBlock->outgoing) {
+                            if (outgoingEdge->to == block) {
+                                outgoingEdge->to = nextBlock;
+                            }
+                        }
+                        nextBlock->incoming.push_back(incomingEdge);
+                    }
+
+                    block->incoming.clear();
+                    block->outgoing.clear();
+                    blocksToRemove.push_back(block);
+                    merged = true;
+                }
+            }
+        }
+
+        for (auto& toRemove : blocksToRemove) {
+            blocks.erase(std::remove(blocks.begin(), blocks.end(), toRemove), blocks.end());
+            edges.erase(
+                std::remove_if(edges.begin(), edges.end(),
+                    [&](const std::shared_ptr<Edge>& e) { return e->from == toRemove || e->to == toRemove; }),
+                edges.end());
+        }
+    }
+}
+
 bool ControlFlowGraph::hasReturnInBlock(const std::shared_ptr<BasicBlock>& block) {
     return !block->statements.empty() && std::dynamic_pointer_cast<ReturnStatement>(block->statements.back()) != nullptr;
 }
@@ -177,10 +211,27 @@ bool ControlFlowGraph::checkPathForReturn(const std::shared_ptr<BasicBlock>& blo
 }
 
 bool ControlFlowGraph::checkMissingReturn() {
-    std::vector<std::shared_ptr<BasicBlock>> visited;
-    return checkPathForReturn(start, visited);
-}
+    
+    for (const auto& block : blocks) {
+        
+        if (block->outgoing.empty()) {
+            if (block->statements.empty()) {
+                for (const auto& edge : block->incoming) {
+                    auto predBlock = edge->from;
+                    if (!hasReturnInBlock(predBlock)) {
+                        return false; 
+                    }
+                }
+            } else {
 
+                if (!hasReturnInBlock(block)) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
 std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> ControlFlowGraph::liveVariableAnalysis() {
     std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> liveAtEntry;
     std::vector<std::shared_ptr<Node>> worklist = nodes;
