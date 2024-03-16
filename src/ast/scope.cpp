@@ -1,3 +1,4 @@
+#include <queue>
 #include "scope.hpp"
 
 Scope::Scope(std::shared_ptr<SymbolTable> c, std::shared_ptr<PackageTrie> p) : current(c), pkgTrie(p){
@@ -136,7 +137,9 @@ AmbiguousName Scope::reclassifyAmbiguousNameByLocal(const std::string& name) {
 AmbiguousName Scope::reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> st, bool staticField) {
     auto field = st->getField(name);
     AmbiguousName ambiguousName = createAmbiguousName(field->type, st);
-    if (staticField != field->isStatic) ambiguousName.type = AmbiguousNamesType::ERROR;
+    if (staticField != field->isStatic || (field->isProtected && st->getPackage() != current->getPackage() 
+    && !superBFS(current, st, true)))
+        ambiguousName.type = AmbiguousNamesType::ERROR;
     return ambiguousName;
 }
 
@@ -149,4 +152,19 @@ AmbiguousName Scope::createAmbiguousName(std::shared_ptr<Type> typeNode, std::sh
         if (ambiguousName.symbolTable == nullptr) ambiguousName.type = AmbiguousNamesType::ERROR;
     }
     return ambiguousName;
+}
+
+bool Scope::superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<SymbolTable>& end, bool strictSubclass) {
+    std::queue<std::shared_ptr<SymbolTable>> queue;
+    if (strictSubclass && start.get() == end.get()) return false;
+    //otherwise, either strictSubclass == false, or strictSubclass == true and start.get() != end.get()
+    queue.push(start);
+    while (queue.empty() == false) {
+        auto top = queue.front();
+        queue.pop();
+        if (top.get() == end.get()) return true;
+        for (auto super : top->getScope()->supers)
+            queue.push(super);
+    }
+    return false;
 }

@@ -28,4 +28,6 @@ class Scope {
         AmbiguousName reclassifyAmbiguousName(const std::string& name, bool simple);
         AmbiguousName reclassifyAmbiguousNameByLocal(const std::string& name);
         AmbiguousName reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> s, bool staticField);
+
+        bool superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<SymbolTable>& end, bool strictSubclass = true);
 };

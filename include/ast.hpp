@@ -513,6 +513,7 @@ class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
         bool isStatic;
         bool isFinal;
+        bool isProtected;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> fieldName;
         std::shared_ptr<Exp> initializer;
