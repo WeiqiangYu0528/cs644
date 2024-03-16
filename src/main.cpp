@@ -361,17 +361,17 @@ int main(int argc, char* argv[])
         }
     }
 
-    // if (!error) {
-    //     for (std::shared_ptr<Program> program : asts) {
-    //         TypeCheckingVisitor tcvisitor(program->scope);
-    //         program->accept(&tcvisitor);
-    //         if (tcvisitor.isError()) {
-    //             std::cerr << "Error: Type Checking failed" << std::endl;
-    //             error = true;
-    //             break;
-    //         }
-    //     }
-    // }
+    if (!error) {
+        for (std::shared_ptr<Program> program : asts) {
+            TypeCheckingVisitor tcvisitor(program->scope);
+            program->accept(&tcvisitor);
+            if (tcvisitor.isError()) {
+                std::cerr << "Error: Type Checking failed" << std::endl;
+                error = true;
+                break;
+            }
+        }
+    }
 
 
     if (!error) {

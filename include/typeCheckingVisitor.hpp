@@ -73,7 +73,7 @@ class TypeCheckingVisitor : public Visitor {
             // byte + byte
             {{ExpRuleType::Arithmetic, ExpType::Byte, ExpType::Byte}, ExpType::Byte},                       
             // char + char
-            {{ExpRuleType::Arithmetic, ExpType::Char, ExpType::Char}, ExpType::Char},
+            {{ExpRuleType::Arithmetic, ExpType::Char, ExpType::Char}, ExpType::Integer},
                         
 
             {{ExpRuleType::StringPlus, ExpType::Integer, ExpType::String}, ExpType::String},    

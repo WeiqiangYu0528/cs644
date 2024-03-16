@@ -248,18 +248,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<AndExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;
+    //error = true;
+    //std::cerr << "Error: Bitwise operations not allowed" << std::endl;
+    visitBinaryOpExp<AndExp>(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<XorExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;    
+    // error = true;
+    // std::cerr << "Error: Bitwise operations not allowed" << std::endl;    
+    visitBinaryOpExp<XorExp>(n);    
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<OrExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;  
+    // error = true;
+    // std::cerr << "Error: Bitwise operations not allowed" << std::endl;  
+    visitBinaryOpExp<OrExp>(n);       
 }
 
 
@@ -900,7 +903,12 @@ template<typename BinOpExp>
 void TypeCheckingVisitor::visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleType rule_type1, ExpRuleType rule_type2) {
     auto t1 = GetExpInfo(n->exp1);
     auto t2 = GetExpInfo(n->exp2);
-    if (typeid(BinOpExp) == typeid(ConditionalAndExp) || typeid(BinOpExp) == typeid(ConditionalOrExp)) {
+    if (typeid(BinOpExp) == typeid(ConditionalAndExp) 
+        || typeid(BinOpExp) == typeid(ConditionalOrExp)
+        || typeid(BinOpExp) == typeid(AndExp)
+        || typeid(BinOpExp) == typeid(OrExp)
+        || typeid(BinOpExp) == typeid(XorExp)
+        ) {
         if (t1.expType == ExpType::Any || t2.expType == ExpType::Any) return;
         if (t1.expType != ExpType::Boolean || t2.expType != ExpType::Boolean) {
             error = true;
