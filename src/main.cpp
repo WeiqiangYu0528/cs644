@@ -379,7 +379,7 @@ int main(int argc, char* argv[])
             std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
             CFGVisitor cfgvisitor(program->scope);
             program->accept(&cfgvisitor);
-            // break;
+            //break;
         }
     }
 

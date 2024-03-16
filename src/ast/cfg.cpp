@@ -84,27 +84,31 @@ bool ControlFlowGraph::checkReachability() {
         queue.pop();
 
         if (visited.find(currentBlock) != visited.end()) {
-            continue;
+            continue; 
         }
+        visited.insert(currentBlock);
         if (!currentBlock->statements.empty()) {
             for (size_t i = 0; i < currentBlock->statements.size(); ++i) {
                 auto stmt = currentBlock->statements[i];
-                if (std::dynamic_pointer_cast<ReturnStatement>(stmt) != nullptr && i != currentBlock->statements.size() - 1) {
-                    return false; 
+                if (std::dynamic_pointer_cast<ReturnStatement>(stmt) != nullptr) {
+                    if (i != currentBlock->statements.size() - 1) {
+                        return false; 
+                    }
+                    goto NEXT_BLOCK;
                 }
-            }
-            if (std::dynamic_pointer_cast<ReturnStatement>(currentBlock->statements.back()) != nullptr) {
-                visited.insert(currentBlock);
-                continue;
             }
         }
         for (const auto& edge : currentBlock->outgoing) {
-            if (visited.find(edge->to) == visited.end()) {
-                queue.push(edge->to);
-            }
+            queue.push(edge->to);
         }
 
-        visited.insert(currentBlock);
+        NEXT_BLOCK:; 
+    }
+
+    for (const auto& block : blocks) {
+        if (block->outgoing.empty() && !block->statements.empty() && visited.find(block) == visited.end()) {
+            return false;
+        }
     }
     return true;
 }
