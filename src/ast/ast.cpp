@@ -366,7 +366,7 @@ MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt)
 }
 
 Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
-: MemberDecl(mt, m), isStatic(false), isFinal(false), type(t), fieldName(fn), initializer(i) {
+: MemberDecl(mt, m), isStatic(false), isFinal(false), isProtected(false), type(t), fieldName(fn), initializer(i) {
 }
 
 void Field::accept(Visitor* v) {
@@ -382,6 +382,9 @@ void Field::setModifiers(std::vector<Modifiers>& m) {
         else if (modifier == Modifiers::FINAL) {
             isFinal = true;
         } 
+        else if (modifier == Modifiers::PROTECTED) {
+            isProtected = true;
+        }
     }
 }
 
