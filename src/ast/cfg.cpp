@@ -86,9 +86,10 @@ bool ControlFlowGraph::checkReachability() {
         for (auto& block : blocks) {
             if (block == start) {
                 in[block] = true;
-            } else if (block->incoming.empty()) in[block] = false;
+            } 
+            else if (block->incoming.empty()) in[block] = false;
             else 
-             {
+            {
                 for (auto& edge : block->incoming) {
                     in[block] = in[block] || out[edge->from];
                 }
