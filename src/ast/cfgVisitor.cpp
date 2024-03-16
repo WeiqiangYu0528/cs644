@@ -20,6 +20,7 @@ void CFGVisitor::createNewNode(const std::string& name) {
         currentNode = newNode;
     } else {
         isInsideIf = false;
+        loopIndefinite = false;
         currentNode->name = name;
     }
 }
@@ -277,13 +278,13 @@ void CFGVisitor::visit(std::shared_ptr<ForStatement> n) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<ReturnStatement> n) {
+    createNewNode("ReturnStatement");
+    Visitor::visit(n);
+    addStatement(n);
     if (loopIndefinite) {
         std::cerr << "Error: Indefinite loop detected" << std::endl;
         exit(42);
     }
-    createNewNode("ReturnStatement");
-    Visitor::visit(n);
-    addStatement(n);
     cfg.addLink(currentNode, cfg.endNode);
     isInsideReturn = true;
 }
