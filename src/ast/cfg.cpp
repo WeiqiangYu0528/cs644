@@ -193,7 +193,6 @@ void ControlFlowGraph::mergeUnusedNodes() {
                 auto nextBlock = block->outgoing.front()->to;
 
                 if (nextBlock->statements.empty()) {
-
                     for (auto& incomingEdge : block->incoming) {
                         auto sourceBlock = incomingEdge->from;
 
@@ -205,19 +204,33 @@ void ControlFlowGraph::mergeUnusedNodes() {
                         nextBlock->incoming.push_back(incomingEdge);
                     }
 
-                    block->incoming.clear();
-                    block->outgoing.clear();
                     blocksToRemove.push_back(block);
                     merged = true;
                 }
             }
         }
-
         for (auto& toRemove : blocksToRemove) {
-            blocks.erase(std::remove(blocks.begin(), blocks.end(), toRemove), blocks.end());
+            auto removeEdges = [this, &toRemove](const std::shared_ptr<BasicBlock>& block, bool outgoing) {
+                auto& edgeList = outgoing ? block->outgoing : block->incoming;
+                edgeList.erase(
+                    std::remove_if(edgeList.begin(), edgeList.end(), 
+                                   [&toRemove, outgoing](const std::shared_ptr<Edge>& e) {
+                                       return outgoing ? e->to == toRemove : e->from == toRemove;
+                                   }), 
+                    edgeList.end());
+            };
+
+            for (auto& block : blocks) {
+                removeEdges(block, true); 
+                removeEdges(block, false);
+            }
+
+            blocks.erase(std::remove(blocks.begin(), blocks.end(), toRemove), blocks.end());        
             edges.erase(
                 std::remove_if(edges.begin(), edges.end(),
-                    [&](const std::shared_ptr<Edge>& e) { return e->from == toRemove || e->to == toRemove; }),
+                               [&toRemove](const std::shared_ptr<Edge>& e) {
+                                   return e->from == toRemove || e->to == toRemove;
+                               }),
                 edges.end());
         }
     }

@@ -94,7 +94,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         }
         cfg.nodes.push_back(cfg.endNode);
         cfg.mergeUnusedNodes();
-        //cfg.Print();
+        // cfg.Print();
         // cfg.PrintNodes();
         if(!cfg.checkReachability()) {
             std::cerr << "Error: checkReachability()" << std::endl;
