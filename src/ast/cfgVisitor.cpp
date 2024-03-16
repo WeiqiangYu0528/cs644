@@ -73,7 +73,14 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<Method> n) {
-    if (!n->block) return;
+    // TODO: FIX THIS, strong assumption！
+    if (!n->block && !n->isAbstract && !n->isStatic ) {
+        if(n->type->type != DataType::VOID) {
+            std::cerr << "Error: checkMissingReturn()" << std::endl;
+            exit(42);
+        }
+        return;
+    }
     if (!n->isAbstract) {
         cfg = ControlFlowGraph();
         currentBlock = cfg.start;
