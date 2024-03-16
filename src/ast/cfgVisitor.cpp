@@ -34,6 +34,7 @@ void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
 }
 
 void CFGVisitor::visit(std::shared_ptr<BlockStatement> n) {
+    if (isInsideReturn) exit(42);
     beginScope();
     Visitor::visit(n);
     endScope();
@@ -75,13 +76,14 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
 
 void CFGVisitor::visit(std::shared_ptr<Method> n) {
     // TODO: FIX THIS, strong assumption！
-    if (!n->block && !n->isAbstract && !n->isStatic ) {
+    if ((!n->block || n->block->blockStatements->statements.empty()) && !n->isAbstract && !n->isStatic ) {
         if(n->type->type != DataType::VOID) {
             std::cerr << "Error: checkMissingReturn()" << std::endl;
             exit(42);
         }
         return;
     }
+  
     if (!n->isAbstract) {
         cfg = ControlFlowGraph();
         currentBlock = cfg.start;
@@ -110,7 +112,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
             std::cerr << "Error: checkReachability()" << std::endl;
             exit(42);
         }
-        if(n->type->type != DataType::VOID && !cfg.checkMissingReturn()) {
+        if(n->type->type != DataType::VOID && !cfg.checkMissingReturn() && !loopIndefinite) {
             std::cerr << "Error: checkMissingReturn()" << std::endl;
             exit(42);
         }
