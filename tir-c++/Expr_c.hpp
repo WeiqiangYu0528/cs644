@@ -6,9 +6,9 @@
 class Expr_c : public Node_c, public Expr {
 public:
     CheckCanonicalIRVisitor checkCanonicalEnter(
-            CheckCanonicalIRVisitor& v) override;
+            std::shared_ptr<CheckCanonicalIRVisitor> v) override;
 
-    bool isCanonical(CheckCanonicalIRVisitor& v) const override;
+    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
 
     bool isConstant() const override;
 

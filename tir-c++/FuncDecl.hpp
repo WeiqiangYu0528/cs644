@@ -1,37 +1,36 @@
 #pragma once
+#include <memory>
 #include <string>
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.IRVisitor;
-// import joosc.ir.visit.InsnMapsBuilder;
+#include "Stmt.hpp"
 
 /** An IR function declaration */
 class FuncDecl : public Node_c {
 private:
     std::string name;
-    Stmt body;
+    std::shared_ptr<Stmt> body;
     int numParams;
 
 public:
-    FuncDecl(const std::string& name, int numParams, Stmt& body);
+    FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body);
 
     std::string name() const;
 
-    Stmt body() const;
+    std::shared_ptr<Stmt> body() const;
 
     int getNumParams() const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
         T result = v.unit();
         result = v.bind(result, v.visit(body));
         return result;
     }
 
-    InsnMapsBuilder buildInsnMapsEnter(InsnMapsBuilder& v) override;
+    InsnMapsBuilder buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
 
-    Node buildInsnMaps(InsnMapsBuilder& v) override;
+    Node buildInsnMaps(std::shared_ptr<InsnMapsBuilder> v) override;
 }

@@ -1,13 +1,7 @@
 #pragma once
+#include <memory>
 #include <vector>
 #include "Expr_c.hpp"
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.CheckCanonicalIRVisitor;
-// import joosc.ir.visit.IRVisitor;
-
-// import java.util.ArrayList;
-// import java.util.Arrays;
-// import java.util.List;
 
 /**
  * An intermediate representation for a function call
@@ -15,7 +9,7 @@
  */
 class Call : public Expr_c {
 protected:
-    Expr target;
+    std::shared_ptr<Expr> target;
     std::vector<Expr> args;
 
 public:
@@ -25,7 +19,7 @@ public:
      * @param args arguments of this function call
      */
     template<typename... Args>
-    Call(Expr& target, Args... args) : Call(target, std::vector<Expr>{args...}) {
+    Call(std::shared_ptr<Expr> target, Args... args) : Call(target, std::vector<std::shared_ptr<Expr>>{args...}) {
     }
     /**
      *
@@ -33,20 +27,20 @@ public:
      * @param numRets number of return values for this function call
      * @param args arguments of this function call
      */
-    Call(Expr& target, const std::vector<Expr>& args);
+    Call(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>> args);
 
-    Expr target() const;
+    std::shared_ptr<Expr> target() const;
 
-    std::vector<Expr> args() const;
+    std::vector<std::shared_ptr<Expr>> args() const;
 
     int getNumArgs() const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) override {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
         T result = v.unit();
         result = v.bind(result, v.visit(target));
         for (Expr arg : args)
@@ -54,5 +48,5 @@ public:
         return result;
     }
 
-    bool isCanonical(CheckCanonicalIRVisitor& v) const override;
+    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
 }

@@ -1,16 +1,16 @@
 #include "ESeq.hpp"
 
-ESeq::ESeq(Stmt& stmt, Expr& expr) : stmt(stmt), expr(expr) {
+ESeq::ESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr) : stmt(stmt), expr(expr) {
 }
 
-ESeq::ESeq(Stmt& stmt, Expr& expr, bool replaceParent) : stmt(stmt), expr(expr) {
+ESeq::ESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr, bool replaceParent) : stmt(stmt), expr(expr) {
 }
 
-Stmt ESeq::stmt() const {
+std::shared_ptr<Stmt> ESeq::stmt() const {
     return stmt;
 }
 
-Expr ESeq::expr() const {
+std::shared_ptr<Expr> ESeq::expr() const {
     return expr;
 }
 
@@ -18,9 +18,9 @@ std::string ESeq::label() const {
     return "ESEQ";
 }
 
-Node ESeq::visitChildren(IRVisitor& v) {
-    Stmt stmt = (Stmt) v.visit(this, this.stmt);
-    Expr expr = (Expr) v.visit(this, this.expr);
+std::shared_ptr<Node> ESeq::visitChildren(std::shared_ptr<IRVisitor> v) {
+    std::shared_ptr<Stmt> stmt = (Stmt) v.visit(this, this.stmt);
+    std::shared_ptr<Expr> expr = (Expr) v.visit(this, this.expr);
 
     if (expr != this.expr || stmt != this.stmt)
         return v.nodeFactory().IRESeq(stmt, expr);
@@ -28,6 +28,6 @@ Node ESeq::visitChildren(IRVisitor& v) {
     return this;
 }
 
-bool ESeq::isCanonical(CheckCanonicalIRVisitor& v) const {
+bool ESeq::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return false;
 }

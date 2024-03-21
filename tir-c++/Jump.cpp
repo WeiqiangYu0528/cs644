@@ -1,9 +1,9 @@
 #include "Jump.hpp"
 
-Jump::Jump(Expr& expr) : target(expr) {
+Jump::Jump(std::shared_ptr<Expr> expr) : target(expr) {
 }
 
-Expr Jump::target() const {
+std::shared_ptr<Expr> Jump::target() const {
     return target;
 }
 
@@ -11,10 +11,10 @@ std::string Jump::label() const {
     return "JUMP";
 }
 
-Node Jump::visitChildren(IRVisitor& v) {
-    Expr expr = (Expr) v.visit(this, target);
+std::shared_ptr<Node> Jump::visitChildren(std::shared_ptr<IRVisitor> v) {
+    std::shared_ptr<Expr> expr = (Expr) v.visit(this, target);
 
-    if (expr != target) return v.nodeFactory().IRJump(expr);
+    if (expr != target) return v->nodeFactory().IRJump(expr);
 
     return this;
 }

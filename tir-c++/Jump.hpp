@@ -1,29 +1,28 @@
 #pragma once;
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.IRVisitor;
+#include <memory>
 #include "Expr.hpp"
 /**
  * An intermediate representation for a transfer of control
  */
 class Jump : public Stmt {
 private:
-    Expr target;
+    std::shared_ptr<Expr> target;
 
 public:
     /**
      *
      * @param expr the destination of the jump
      */
-    Jump(Expr& expr);
+    Jump(std::shared_ptr<Expr> expr);
 
-    Expr target() const;
+    std::shared_ptr<Expr> target() const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
         T result = v.unit();
         result = v.bind(result, v.visit(target));
         return result;

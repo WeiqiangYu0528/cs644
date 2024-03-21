@@ -1,6 +1,6 @@
 #pragma once
+#include <memory>
 #include <string>
-// import joosc.ir.visit.InsnMapsBuilder;
 
 /**
  * An intermediate representation for naming a memory address
@@ -20,5 +20,5 @@ public:
 
     std::string label() const override;
 
-    InsnMapsBuilder buildInsnMapsEnter(InsnMapsBuilder& v) override;
+    std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
 }

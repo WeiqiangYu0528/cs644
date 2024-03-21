@@ -11,7 +11,7 @@ std::string Label::label() const {
     return "LABEL(" + name + ")";
 }
 
-InsnMapsBuilder Label::buildInsnMapsEnter(InsnMapsBuilder& v) {
-    v.addNameToCurrentIndex(name);
+std::shared_ptr<InsnMapsBuilder> Label::buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) {
+    v->addNameToCurrentIndex(name);
     return v;
 }

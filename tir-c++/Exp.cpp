@@ -1,9 +1,9 @@
 #include "Exp.hpp"
 
-Exp::Exp(Expr& expr) : expr(expr){
+Exp::Exp(std::shared_ptr<Expr> expr) : expr(expr){
 }
 
-Expr Exp::expr() const {
+std::shared_ptr<Expr> Exp::expr() const {
     return expr;
 }
 
@@ -11,8 +11,8 @@ std::string Exp::label() const {
     return "EXP";
 }
 
-Node Exp::visitChildren(IRVisitor& v) {
-    Expr expr = (Expr) v.visit(this, this.expr);
+std::shared_ptr<Node> Exp::visitChildren(std::shared_ptr<IRVisitor> v) {
+    std::shared_ptr<Expr> expr = (Expr) v.visit(this, this.expr);
 
     if (expr != this.expr) return v.nodeFactory().IRExp(expr);
 
@@ -20,7 +20,6 @@ Node Exp::visitChildren(IRVisitor& v) {
 }
 
 CheckCanonicalIRVisitor Exp::checkCanonicalEnter(
-        CheckCanonicalIRVisitor& v) {
-    return v.enterExp();
+        std::shared_ptr<CheckCanonicalIRVisitor> v) {
+    return v->enterExp();
 }
-

@@ -1,10 +1,8 @@
 // package joosc.ir.ast;
 #pragma once
+#include <memory>
 #include <string>
 #include "Expr.hpp"
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.CheckCanonicalIRVisitor;
-// import joosc.ir.visit.IRVisitor;
 
 /**
  * An intermediate representation for a conditional transfer of control
@@ -12,7 +10,7 @@
  */
 class CJump : public Stmt {
 private:
-    Expr cond;
+    std::shared_ptr<Expr> cond;
     std::string trueLabel, falseLabel;
 
 public:
@@ -22,7 +20,7 @@ public:
      * @param trueLabel the destination of the jump if {@code expr} evaluates
      *          to true
      */
-    CJump(Expr& cond, const std::string& trueLabel);
+    CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel);
     /**
      *
      * @param cond the condition for the jump
@@ -31,9 +29,9 @@ public:
      * @param falseLabel the destination of the jump if {@code expr} evaluates
      *          to false
      */
-    CJump(Expr& cond, std::string& trueLabel, std::string& falseLabel);
+    CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel, const std::string& falseLabel);
 
-    Expr cond() const;
+    std::shared_ptr<Expr> cond() const;
 
     std::string trueLabel() const;
 
@@ -43,14 +41,14 @@ public:
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) override {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
         T result = v.unit();
         result = v.bind(result, v.visit(cond));
         return result;
     }
 
-    bool isCanonical(CheckCanonicalIRVisitor& v) const override;
+    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
 }

@@ -1,7 +1,7 @@
 #pragma once
+#include <memory>
+#include <unordered_map>
 #include "Expr_c.hpp"
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.IRVisitor;
 
 /**
  * An intermediate representation for a binary operation
@@ -13,34 +13,54 @@ enum class OpType {
     EQ, NEQ, LT, GT, LEQ, GEQ
 };
 
+std::unordered_map<OpType, std::string> OpTypeToString = {
+    {OpType::ADD, "ADD"},
+    {OpType::SUB, "SUB"},
+    {OpType::MUL, "MUL"},
+    {OpType::DIV, "DIV"},
+    {OpType::MOD, "MOD"},
+    {OpType::AND, "AND"},
+    {OpType::OR, "OR"},
+    {OpType::XOR, "XOR"},
+    {OpType::LSHIFT, "LSHIFT"},
+    {OpType::RSHIFT, "RSHIFT"},
+    {OpType::ARSHIFT, "ARSHIFT"},
+    {OpType::EQ, "EQ"},
+    {OpType::NEQ, "NEQ"},
+    {OpType::LT, "LT"},
+    {OpType::GT, "GT"},
+    {OpType::LEQ, "LEQ"},
+    {OpType::GEQ, "GEQ"}
+};
+
 /**
  * Binary operators
  */
 class BinOp : public Expr_c {
 private:
     OpType type;
-    Expr left, right;
+    std::shared_ptr<Expr> left, right;
 
 public:
-    BinOp(OpType type, Expr& left, Expr& right);
+    BinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right);
 
     OpType opType() const;
 
-    Expr left() const;
+    std::shared_ptr<Expr> left() const;
 
-    Expr right() const;
+    std::shared_ptr<Expr> right() const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) override {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
         T result = v.unit();
         result = v.bind(result, v.visit(left));
         result = v.bind(result, v.visit(right));
         return result;
     }
 
-    boolean isConstant() const override;
+    bool isConstant() const override;
 }

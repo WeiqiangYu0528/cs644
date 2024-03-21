@@ -1,12 +1,8 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include "FuncDecl.hpp"
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.IRVisitor;
-
-// import java.util.LinkedHashMap;
-// import java.util.Map;
 
 /**
  * An intermediate representation for a compilation unit
@@ -14,27 +10,27 @@
 class CompUnit : public Node_c {
 private:
     std::string name;
-    std::unordered_map<std::string, FuncDecl> functions;
+    std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions;
 
 public:
     CompUnit(const std::string& name);
 
     CompUnit(const std::string& name, std::unordered_map<std::string, FuncDecl> functions);
 
-    void appendFunc(FuncDecl& func);
+    void appendFunc(std::shared_ptr<FuncDecl> func);
 
     std::string name() const;
 
-    std::unordered_map<std::string, FuncDecl> functions() const;
+    std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions() const;
 
-    FuncDecl getFunction(const std::string& name) const;
+    std::shared_ptr<FuncDecl> getFunction(const std::string& name) const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
         T result = v.unit();
         for (FuncDecl func : functions.values())
             result = v.bind(result, v.visit(func));

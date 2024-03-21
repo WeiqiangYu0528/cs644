@@ -1,12 +1,12 @@
 #include "Expr_c.hpp"
 
 CheckCanonicalIRVisitor Expr_c::checkCanonicalEnter(
-            CheckCanonicalIRVisitor& v) {
-    return v.enterExpr();
+            std::shared_ptr<CheckCanonicalIRVisitor> v) {
+    return v->enterExpr();
 }
 
-bool Expr_c::isCanonical(CheckCanonicalIRVisitor& v) const {
-    return v.inExpr() || !v.inExp();
+bool Expr_c::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
+    return v->inExpr() || !v->inExp();
 }
 
 bool Expr_c::isConstant() const {

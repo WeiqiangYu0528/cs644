@@ -1,12 +1,12 @@
 #include "CJump.hpp"
 
-CJump::CJump(Expr& cond, const std::string& trueLabel) : CJump(cond, trueLabel, nullptr) {
+CJump::CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel) : CJump(cond, trueLabel, nullptr) {
 }
 
-CJump::CJump(Expr& cond, const std::string& trueLabel, const std::string& falseLabel) : cond(cond), trueLabel(trueLabel), falseLabel(falseLabel) {
+CJump::CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel, const std::string& falseLabel) : cond(cond), trueLabel(trueLabel), falseLabel(falseLabel) {
 }
 
-Expr CJump::cond() const {
+std::shared_ptr<Expr> CJump::cond() const {
     return cond;
 }
 
@@ -26,8 +26,8 @@ std::string CJump::label() const {
     return "CJUMP";
 }
 
-Node CJump::visitChildren(IRVisitor& v) {
-    Expr expr = (Expr) v.visit(this, this.cond);
+std::shared_ptr<Node> CJump::visitChildren(std::shared_ptr<IRVisitor> v) {
+    std::shared_ptr<Expr> expr = (Expr) v.visit(this, this.cond);
 
     if (expr != this.cond)
         return v.nodeFactory().IRCJump(expr, trueLabel, falseLabel);
@@ -35,6 +35,6 @@ Node CJump::visitChildren(IRVisitor& v) {
     return this;
 }
 
-bool CJump::isCanonical(CheckCanonicalIRVisitor& v) const {
+bool CJump::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !hasFalseLabel();
 }

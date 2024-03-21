@@ -1,13 +1,13 @@
 #include "Call.hpp"
 
-Call::Call(Expr& target, std::vector<Expr>& args) : target(target), args(args) {
+Call::Call(std::shared_ptr<Expr> target, std::vector<std::shared_ptr<Expr>> args) : target(target), args(args) {
 }
 
 Expr Call::target() const {
     return target;
 }
 
-std::vector<Expr> Call::args() const {
+std::vector<std::shared_ptr<Expr>> Call::args() const {
     return args;
 }
 
@@ -19,15 +19,15 @@ std::string Call::label() const {
     return "CALL";
 }
 
-Node Call::visitChildren(IRVisitor& v) {
+std::shared_ptr<Node> Call::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
 
-    Expr target = (Expr) v.visit(this, this.target);
+    std::shared_ptr<Expr> target = (Expr) v.visit(this, this.target);
     if (target != this.target) modified = true;
 
-    std::vector<Expr> results = new ArrayList<>(args.size());
-    for (Expr arg : args) {
-        Expr newExpr = (Expr) v.visit(this, arg);
+    std::vector<std::shared_ptr<Expr>> results = new ArrayList<>(args.size());
+    for (std::shared_ptr<Expr> arg : args) {
+        std::shared_ptr<Expr> newExpr = (Expr) v.visit(this, arg);
         if (newExpr != arg) modified = true;
         results.add(newExpr);
     }
@@ -37,6 +37,6 @@ Node Call::visitChildren(IRVisitor& v) {
     return this;
 }
 
-bool Call::isCanonical(CheckCanonicalIRVisitor& v) const {
-    return !v.inExpr();
+bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
+    return !v->inExpr();
 }

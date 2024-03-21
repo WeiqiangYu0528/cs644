@@ -1,7 +1,5 @@
 #pragma once
-// import joosc.ir.visit.AggregateVisitor;
-// import joosc.ir.visit.CheckCanonicalIRVisitor;
-// import joosc.ir.visit.IRVisitor;
+#include <memory>
 #include "Expr.hpp"
 /**
  * An intermediate representation for evaluating an expression for side effects,
@@ -10,28 +8,28 @@
  */
 class Exp : public Stmt {
 private:
-    Expr expr;
+    std::shared_ptr<Expr> expr;
 
 public:
     /**
      *
      * @param expr the expression to be evaluated and result discarded
      */
-    Exp(Expr& expr);
+    Exp(std::shared_ptr<Expr> expr);
 
-    Expr expr() const;
+    std::shared_ptr<Expr> expr() const;
 
     std::string label() const override;
 
-    Node visitChildren(IRVisitor& v) override;
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
-    T aggregateChildren(AggregateVisitor<T>& v) override {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
         T result = v.unit();
         result = v.bind(result, v.visit(expr));
         return result;
     }
 
     CheckCanonicalIRVisitor checkCanonicalEnter(
-            CheckCanonicalIRVisitor& v) override;
+            std::shared_ptr<CheckCanonicalIRVisitor> v) override;
 }
