@@ -13,6 +13,6 @@ bool Expr_c::isConstant() const {
     return false;
 }
 
-int Expr_c::constant() const {
+int Expr_c::getConstant() const {
     throw new UnsupportedOperationException();
 }

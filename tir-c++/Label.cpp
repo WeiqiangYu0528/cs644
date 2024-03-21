@@ -3,11 +3,11 @@
 Label::Label(const std::string& name) : name(name) {
 }
 
-std::string Label::name() const {
+std::string Label::getName() const {
     return name;
 }
 
-std::string Label::label() const {
+std::string Label::getLabel() const {
     return "LABEL(" + name + ")";
 }
 

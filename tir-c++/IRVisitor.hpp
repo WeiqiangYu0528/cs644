@@ -7,7 +7,6 @@
 class IRVisitor : public std::enable_shared_from_this<IRVisitor> {
 public:
     explicit IRVisitor(std::shared_ptr<NodeFactory> inf);
-    virtual ~IRVisitor() = default;
 
     std::shared_ptr<NodeFactory> nodeFactory();
 

@@ -5,8 +5,6 @@
 template<typename T>
 class AggregateVisitor {
 public:
-    virtual ~AggregateVisitor() {}
-
     virtual T unit() = 0;
     virtual T bind(T r1, T r2) = 0;
     virtual T visit(std::shared_ptr<Node> parent, std::shared_ptr<Node> n);

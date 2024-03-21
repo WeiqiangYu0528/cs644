@@ -7,26 +7,26 @@ OpType BinOp::opType() const {
     return type;
 }
 
-std::shared_ptr<Expr> BinOp::left() const {
+std::shared_ptr<Expr> BinOp::getLeft() const {
     return left;
 }
 
-std::shared_ptr<Expr> BinOp::right() const {
+std::shared_ptr<Expr> BinOp::getRight() const {
     return right;
 }
 
-std::string BinOp::label() const {
+std::string BinOp::getLabel() const {
     return OpTypeToString[type];
 }
 
 std::shared_ptr<Node> BinOp::visitChildren(std::shared_ptr<IRVisitor> v) {
-    std::shared_ptr<Expr> left = (Expr) v.visit(this, this.left);
-    std::shared_ptr<Expr> right = (Expr) v.visit(this, this.right);
+    std::shared_ptr<Expr> l = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), left));
+    std::shared_ptr<Expr> r = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), right));
+    
+    if (l != left || r != right)
+        return v->nodeFactory()->IRBinOp(type, l, r);
 
-    if (left != this.left || right != this.right)
-        return v.nodeFactory().IRBinOp(type, left, right);
-
-    return this;
+    return shared_from_this();
 }
 
 bool BinOp::isConstant() const {

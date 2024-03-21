@@ -5,7 +5,7 @@
 /**
  * An intermediate representation for naming a memory address
  */
-class Label : public Stmt {
+class Label : public Stmt, std::enable_shared_from_this<Label> {
 private:
     std::string name;
 
@@ -16,9 +16,9 @@ public:
      */
     Label(const std::string& name);
 
-    std::string name() const;
+    std::string getName() const;
 
-    std::string label() const override;
+    std::string getLabel() const override;
 
     std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
 }

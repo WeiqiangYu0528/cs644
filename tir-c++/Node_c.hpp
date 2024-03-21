@@ -33,5 +33,5 @@ public:
         return true;
     }
 
-    virtual std::string label() const = 0;
+    virtual std::string getLabel() const = 0;
 };

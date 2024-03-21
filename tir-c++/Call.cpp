@@ -3,11 +3,11 @@
 Call::Call(std::shared_ptr<Expr> target, std::vector<std::shared_ptr<Expr>> args) : target(target), args(args) {
 }
 
-Expr Call::target() const {
+Expr Call::getTarget() const {
     return target;
 }
 
-std::vector<std::shared_ptr<Expr>> Call::args() const {
+std::vector<std::shared_ptr<Expr>> Call::getArgs() const {
     return args;
 }
 
@@ -15,26 +15,26 @@ int Call::getNumArgs() const {
     return args.size();
 }
 
-std::string Call::label() const {
+std::string Call::getLabel() const {
     return "CALL";
 }
 
 std::shared_ptr<Node> Call::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
 
-    std::shared_ptr<Expr> target = (Expr) v.visit(this, this.target);
-    if (target != this.target) modified = true;
+    std::shared_ptr<Expr> t = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), target));
+    if (t != target) modified = true;
 
-    std::vector<std::shared_ptr<Expr>> results = new ArrayList<>(args.size());
+    std::vector<std::shared_ptr<Expr>> results(args.size());
     for (std::shared_ptr<Expr> arg : args) {
-        std::shared_ptr<Expr> newExpr = (Expr) v.visit(this, arg);
+        std::shared_ptr<Expr> newExpr = std::dynamic_pointer_cast<Expr>(v.visit(shared_from_this(), arg));
         if (newExpr != arg) modified = true;
         results.add(newExpr);
     }
 
-    if (modified) return v.nodeFactory().IRCall(target, results);
+    if (modified) return v.nodeFactory().IRCall(t, results);
 
-    return this;
+    return shared_from_this();
 }
 
 bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {

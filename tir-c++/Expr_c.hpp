@@ -12,5 +12,5 @@ public:
 
     bool isConstant() const override;
 
-    int constant() const override;
+    int getConstant() const override;
 }

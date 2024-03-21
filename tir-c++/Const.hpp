@@ -15,11 +15,11 @@ public:
      */
     Const(int value);
 
-    int value() const;
+    int getValue() const;
 
-    std::string label() const override;
+    std::string getLabel() const override;
 
     bool isConstant() const override;
 
-    int constant() const override;
+    int getConstant() const override;
 }

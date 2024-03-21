@@ -1,22 +1,22 @@
 #include "Exp.hpp"
 
-Exp::Exp(std::shared_ptr<Expr> expr) : expr(expr){
+Exp::Exp(std::shared_ptr<Expr> expr) : expr(expr) {
 }
 
-std::shared_ptr<Expr> Exp::expr() const {
+std::shared_ptr<Expr> Exp::getExpr() const {
     return expr;
 }
 
-std::string Exp::label() const {
+std::string Exp::getLabel() const {
     return "EXP";
 }
 
 std::shared_ptr<Node> Exp::visitChildren(std::shared_ptr<IRVisitor> v) {
-    std::shared_ptr<Expr> expr = (Expr) v.visit(this, this.expr);
+    std::shared_ptr<Expr> e = std::dynamic_pointer_cast<Expr>(v.visit(shared_from_this(), expr));
 
-    if (expr != this.expr) return v.nodeFactory().IRExp(expr);
+    if (e != expr) return v->nodeFactory()->IRExp(e);
 
-    return this;
+    return shared_from_this();
 }
 
 CheckCanonicalIRVisitor Exp::checkCanonicalEnter(

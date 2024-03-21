@@ -1,7 +1,9 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
+#include "AggregateVisitor.hpp"
 #include "Expr_c.hpp"
+#include "IRVisitor.hpp"
 
 /**
  * An intermediate representation for a binary operation
@@ -36,7 +38,7 @@ std::unordered_map<OpType, std::string> OpTypeToString = {
 /**
  * Binary operators
  */
-class BinOp : public Expr_c {
+class BinOp : public Expr_c, public std::enable_shared_from_this<BinOp> {
 private:
     OpType type;
     std::shared_ptr<Expr> left, right;
@@ -46,19 +48,19 @@ public:
 
     OpType opType() const;
 
-    std::shared_ptr<Expr> left() const;
+    std::shared_ptr<Expr> getLeft() const;
 
-    std::shared_ptr<Expr> right() const;
+    std::shared_ptr<Expr> getRight() const;
 
-    std::string label() const override;
+    std::string getLabel() const override;
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
     template <typename T>
     T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v.unit();
-        result = v.bind(result, v.visit(left));
-        result = v.bind(result, v.visit(right));
+        T result = v->unit();
+        result = v->bind(result, v->visit(left));
+        result = v->bind(result, v->visit(right));
         return result;
     }
 

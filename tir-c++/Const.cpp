@@ -3,11 +3,11 @@
 Const::Const(int value) : value(value) {
 }
 
-int Const::value() const {
+int Const::getValue() const {
     return value;
 }
 
-std::string Const::label() const {
+std::string Const::getLabel() const {
     return "CONST(" + value + ")";
 }
 
@@ -15,6 +15,6 @@ bool Const::isConstant() const {
     return true;
 }
 
-int Const::constant() const {
+int Const::getConstant() const {
     return value;
 }

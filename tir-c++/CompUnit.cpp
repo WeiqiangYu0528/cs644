@@ -10,19 +10,19 @@ void CompUnit::appendFunc(std::shared_ptr<FuncDecl> func) {
     functions[func.name()] = func;
 }
 
-std::string CompUnit::name() const {
+std::string CompUnit::getName() const {
     return name;
 }
 
-std::unordered_map<std::string, std::shared_ptr<FuncDecl>> CompUnit::functions() const {
+std::unordered_map<std::string, std::shared_ptr<FuncDecl>> CompUnit::getFunctions() const {
     return functions;
 }
 
 std::shared_ptr<FuncDecl> CompUnit::getFunction(const std::string& name) const {
-    return functions.get(name);
+    return functions.at(name);
 }
 
-std::string CompUnit::label() const {
+std::string CompUnit::getLabel() const {
     return "COMPUNIT";
 }
 
@@ -30,13 +30,13 @@ std::shared_ptr<Node> CompUnit::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
 
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> results;
-    for (std::shared_ptr<FuncDecl> func : functions.values()) {
-        std::shared_ptr<FuncDecl> newFunc = (FuncDecl) v.visit(this, func);
+    for (auto [key, func] : functions) {
+        std::shared_ptr<FuncDecl> newFunc = std::dynamic_pointer_cast<FuncDecl>(v.visit(shared_from_this(), func));
         if (newFunc != func) modified = true;
-        results.put(newFunc.name(), newFunc);
+        results[newFunc.name()] = newFunc;
     }
 
-    if (modified) return v->nodeFactory().IRCompUnit(name, results);
+    if (modified) return v->nodeFactory()->IRCompUnit(name, results);
 
-    return this;
+    return shared_from_this();
 }
