@@ -15,7 +15,7 @@ private:
 public:
     CompUnit(const std::string& name);
 
-    CompUnit(const std::string& name, std::unordered_map<std::string, FuncDecl> functions);
+    CompUnit(const std::string& name, std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions);
 
     void appendFunc(std::shared_ptr<FuncDecl> func);
 

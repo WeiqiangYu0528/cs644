@@ -1,7 +1,7 @@
 #include "NodeFactory_c.hpp"
 #include <memory>
 
-BinOp* NodeFactory_c::IRBinOp(BinOp::OpType type, Expr* left, Expr* right) {
+BinOp* NodeFactory_c::IRBinOp(OpType type, Expr* left, Expr* right) {
     return new BinOp(type, left, right);
 }
 

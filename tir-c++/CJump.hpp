@@ -1,8 +1,9 @@
-// package joosc.ir.ast;
 #pragma once
 #include <memory>
 #include <string>
 #include "Expr.hpp"
+#include "IRVisitor.hpp"
+#include "Stmt.hpp"
 
 /**
  * An intermediate representation for a conditional transfer of control

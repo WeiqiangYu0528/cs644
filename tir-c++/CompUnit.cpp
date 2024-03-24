@@ -3,7 +3,7 @@
 CompUnit::CompUnit(const std::string& name) : name(name) {
 }
 
-CompUnit::CompUnit(const std::string& name, std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions) : name(name), functions(functions) {
+CompUnit::CompUnit(const std::string& name, std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions) : name(name), functions(functions) {
 }
 
 void CompUnit::appendFunc(std::shared_ptr<FuncDecl> func) {

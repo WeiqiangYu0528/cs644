@@ -1,6 +1,8 @@
 #pragma once;
 #include <memory>
 #include "Expr.hpp"
+#include "IRVisitor.hpp"
+#include "Stmt.hpp"
 /**
  * An intermediate representation for a transfer of control
  */

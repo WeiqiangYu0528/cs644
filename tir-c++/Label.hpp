@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "InsnMapsBuilder.hpp"
 
 /**
  * An intermediate representation for naming a memory address

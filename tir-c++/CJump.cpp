@@ -19,7 +19,7 @@ std::string CJump::getFalseLabel() const {
 }
 
 bool CJump::hasFalseLabel() const {
-    return falseLabel != nullptr;
+    return !falseLabel.empty();
 }
 
 std::string CJump::getLabel() const {

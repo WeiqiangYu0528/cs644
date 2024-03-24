@@ -1,5 +1,9 @@
 #pragma once
+#include <memory>
+#include "CheckCanonicalIRVisitor.hpp"
 #include "Expr.hpp"
+#include "Node_c.hpp"
+
 /**
  * An intermediate representation for expressions
  */
