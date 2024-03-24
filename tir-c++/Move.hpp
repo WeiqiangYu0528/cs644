@@ -1,21 +1,22 @@
+#pragma once
 #include "Stmt.hpp"
 #include "Expr.hpp"
 
-class Move : public Stmt {
+class Move : public Stmt, std::enable_shared_from_this<Move>{
 private:
-    Expr* target;
-    Expr* src;
+    std::shared_ptr<Expr> target;
+    std::shared_ptr<Expr> src;
 
 public:
-    Move(Expr* target, Expr* src, bool trash = false);
+    Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash = false);
     virtual ~Move();
 
-    Expr* target() const;
-    Expr* source() const;
+    std::shared_ptr<Expr> getTarget() const;
+    std::shared_ptr<Expr> getSource() const;
 
-    virtual std::string label() const override;
+    virtual std::string getLabel() const override;
 
-    virtual Node* visitChildren(IRVisitor* v) override;
+    virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
     template<typename T>
-    T aggregateChildren(AggregateVisitor<T>* v) override;
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override;
 };

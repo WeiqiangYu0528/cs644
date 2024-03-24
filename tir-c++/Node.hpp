@@ -1,3 +1,4 @@
+#pragma once
 #include "IRVisitor.hpp"
 #include "AggregateVisitor.hpp"
 #include "InsnMapsBuilder.hpp"
@@ -7,18 +8,18 @@ class Node {
 public:
     virtual ~Node() = default;
 
-    virtual Node* visitChildren(IRVisitor* v) = 0;
+    virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) = 0;
 
-    virtual InsnMapsBuilder* buildInsnMapsEnter(InsnMapsBuilder* v) = 0;
+    virtual std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) = 0;
 
-    virtual Node* buildInsnMaps(InsnMapsBuilder* v) = 0;
+    virtual std::shared_ptr<Node> buildInsnMaps(std::shared_ptr<InsnMapsBuilder> v) = 0;
 
     template<typename T>
-    virtual T aggregateChildren(AggregateVisitor<T>* v) = 0;
+    virtual T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) = 0;
 
-    virtual CheckCanonicalIRVisitor* checkCanonicalEnter(CheckCanonicalIRVisitor* v) = 0;
+    virtual std::shared_ptr<CheckCanonicalIRVisitor> checkCanonicalEnter(std::shared_ptr<CheckCanonicalIRVisitor> v) = 0;
 
-    virtual bool isCanonical(CheckCanonicalIRVisitor* v) = 0;
+    virtual bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) = 0;
 
-    virtual std::string label() const = 0;
+    virtual std::string getLabel() const = 0;
 };

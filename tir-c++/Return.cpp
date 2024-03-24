@@ -1,34 +1,34 @@
 #include "Return.hpp"
 
-Return::Return(Expr* ret) : ret(ret) {}
+Return::Return(std::shared_ptr<Expr> ret) : ret(ret) {}
 
 Return::~Return() {
 }
 
-Expr* Return::ret() const {
+std::shared_ptr<Expr> Return::getRet() const {
     return ret;
 }
 
-std::string Return::label() const {
+std::string Return::getLabel() const {
     return "RETURN";
 }
 
-Node* Return::visitChildren(IRVisitor* v) {
+std::shared_ptr<Node> Return::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
-    Expr* newExpr = dynamic_cast<Expr*>(v->visit(this, ret));
+    std::shared_ptr<Expr> newExpr = std::dynamic_pointer_cast<Expr>(v->visit(this, ret));
 
     if (newExpr != ret) modified = true;
-    Expr* result = newExpr;
+    std::shared_ptr<Expr> result = newExpr;
 
     if (modified) {
         return v->nodeFactory()->IRReturn(result);
     }
 
-    return this;
+    return shared_from_this();
 }
 
 template<typename T>
-T Return::aggregateChildren(AggregateVisitor<T>* v) {
+T Return::aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
     T result = v->unit();
     result = v->bind(result, v->visit(ret));
     return result;

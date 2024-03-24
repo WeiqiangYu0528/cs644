@@ -3,10 +3,10 @@
 
 Temp::Temp(const std::string& name) : name(name) {}
 
-std::string Temp::name() const {
+std::string Temp::getName() const {
     return name;
 }
 
-std::string Temp::label() const {
+std::string Temp::getLabel() const {
     return "TEMP(" + name + ")";
 }
