@@ -1,35 +1,36 @@
+#pragma once
 #include "IRVisitor.hpp"
 #include "AggregateVisitor.hpp"
 #include "InsnMapsBuilder.hpp"
 #include "CheckCanonicalIRVisitor.hpp"
 
-class Node_c {
+class Node_c, public std::enable_shared_from_this<Node_c>{
 public:
     virtual ~Node_c() = default;
 
-    virtual Node_c* visitChildren(IRVisitor* v) {
+    virtual std::shared_ptr<Node_c> visitChildren(std::shared_ptr<IRVisitor> v) {
         return this;
     }
 
     template<typename T>
-    T aggregateChildren(AggregateVisitor<T>* v) {
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
         return v->unit();
     }
 
-    virtual InsnMapsBuilder* buildInsnMapsEnter(InsnMapsBuilder* v) {
+    virtual std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) {
         return v;
     }
 
-    virtual Node_c* buildInsnMaps(InsnMapsBuilder* v) {
-        v->addInsn(this);
-        return this;
+    virtual std::shared_ptr<Node_c> buildInsnMaps(std::shared_ptr<InsnMapsBuilder> v) {
+        v->addInsn(shared_from_this();
+        return shared_from_this();
     }
 
-    virtual CheckCanonicalIRVisitor* checkCanonicalEnter(CheckCanonicalIRVisitor* v) {
+    virtual CheckCanonicalIRVisitor* checkCanonicalEnter(std::shared_ptr<CheckCanonicalIRVisitor> v) {
         return v;
     }
 
-    virtual bool isCanonical(CheckCanonicalIRVisitor* v) {
+    virtual bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) {
         return true;
     }
 

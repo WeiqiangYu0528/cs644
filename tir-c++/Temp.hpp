@@ -1,3 +1,4 @@
+#pragma once
 #include "Expr_c.hpp"
 class Temp : public Expr_c {
 private:
@@ -6,7 +7,7 @@ private:
 public:
     Temp(const std::string& name);
 
-    std::string name() const;
+    std::string getName() const;
 
-    virtual std::string label() const override;
+    virtual std::string getLabel() const override;
 };

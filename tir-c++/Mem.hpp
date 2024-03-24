@@ -1,22 +1,23 @@
+#pragma once
 #include "Expr_c.hpp"
 #include "IRVisitor.hpp"
 #include "AggregateVisitor.hpp"
 #include "Node.hpp"
 
-class Mem : public Expr_c {
+class Mem : public Expr_c, std::enable_shared_from_this<Mem>{
 private:
-    Expr_c* expr;
+    std::shared_ptr<Expr_c> expr;
 
 public:
-    explicit Mem(Expr_c* expr);
+    explicit Mem(std::shared_ptr<Expr_c> expr);
 
     virtual ~Mem();
 
-    Expr_c* expr() const;
+    std::shared_ptr<Expr_c> getExpr() const;
 
-    virtual std::string label() const override;
+    virtual std::string getLabel() const override;
 
-    virtual Node* visitChildren(IRVisitor* v) override;
+    virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
     template<typename T>
-    T aggregateChildren(AggregateVisitor<T>* v) override;
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override;
 };

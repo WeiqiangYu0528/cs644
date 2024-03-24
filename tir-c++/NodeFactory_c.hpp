@@ -1,4 +1,4 @@
-
+#pragma once
 #include "NodeFactory.hpp"
 #include <vector>
 #include <map>
@@ -8,34 +8,34 @@ class NodeFactory_c : public NodeFactory {
 public:
     NodeFactory_c() = default;
 
-    BinOp* IRBinOp(BinOp::OpType type, Expr* left, Expr* right) override;
-    Call* IRCall(Expr* target, const std::vector<Expr*>& args) override;
-    CJump* IRCJump(Expr* expr, const std::string& trueLabel) override;
-    CJump* IRCJump(Expr* expr, const std::string& trueLabel, const std::string& falseLabel) override;
-    CompUnit* IRCompUnit(const std::string& name) override;
-    CompUnit* IRCompUnit(const std::string& name, const std::map<std::string, FuncDecl*>& functions) override;
-    Const* IRConst(int value) override;
-    ESeq* IRESeq(Stmt* stmt, Expr* expr) override;
-    Exp* IRExp(Expr* expr) override;
-    FuncDecl* IRFuncDecl(const std::string& name, int numParams, Stmt* stmt) override;
-    Jump* IRJump(Expr* expr) override;
-    Label* IRLabel(const std::string& name) override;
-    Mem* IRMem(Expr* expr) override;
-    Move* IRMove(Expr* target, Expr* expr) override;
-    Name* IRName(const std::string& name) override;
-    Return* IRReturn(Expr* ret) override;
-    Seq* IRSeq(const std::vector<Stmt*>& stmts) override;
-    Temp* IRTemp(const std::string& name) override;
+    std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) override;
+    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) override;
+    std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) override;
+    std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel, const std::string& falseLabel) override;
+    std::shared_ptr<CompUnit> IRCompUnit(const std::string& name) override;
+    std::shared_ptr<CompUnit> IRCompUnit(const std::string& name, const std::map<std::string, std::shared_ptr<FuncDecl>>& functions) override;
+    std::shared_ptr<Const> IRConst(int value) override;
+    std::shared_ptr<ESeq> IRESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr) override;
+    std::shared_ptr<Exp> IRExp(std::shared_ptr<Expr> expr) override;
+    std::shared_ptr<FuncDecl> IRFuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> stmt) override;
+    std::shared_ptr<Jump> IRJump(std::shared_ptr<Expr> expr) override;
+    std::shared_ptr<Label> IRLabel(const std::string& name) override;
+    std::shared_ptr<Mem> IRMem(std::shared_ptr<Expr> expr) override;
+    std::shared_ptr<Move> IRMove(std::shared_ptr<Expr> target, std::shared_ptr<Expr> expr) override;
+    std::shared_ptr<Name> IRName(const std::string& name) override;
+    std::shared_ptr<Return> IRReturn(std::shared_ptr<Expr> ret) override;
+    std::shared_ptr<Seq> IRSeq(const std::vector<std::shared_ptr<Stmt>>& stmts) override;
+    std::shared_ptr<Temp> IRTemp(const std::string& name) override;
 
     template<typename... Exprs>
-    Call* IRCall(Expr* target, Exprs... args) {
-        std::vector<Expr*> argsVec = {args...};
+    Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) {
+        std::vector<std::shared_ptr<Expr>> argsVec = {args...};
         return IRCall(target, argsVec);
     }
 
     template<typename... Stmts>
-    Seq* IRSeq(Stmts... stmts) {
-        std::vector<Stmt*> stmtsVec = {stmts...};
+    std::shared_ptr<Seq> IRSeq(Stmts... stmts) {
+        std::vector<std::shared_ptr<Stmt>> stmtsVec = {stmts...};
         return IRSeq(stmtsVec);
     }
 };

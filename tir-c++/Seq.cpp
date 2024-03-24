@@ -15,27 +15,27 @@ const std::vector<std::shared_ptr<Stmt>>& Seq::getStmts() const {
     return stmts;
 }
 
-std::string Seq::label() const {
+std::string Seq::getLabel() const {
     return "SEQ";
 }
 
-Node* Seq::visitChildren(IRVisitor* v) {
+std::shared_ptr<Node> Seq::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
     std::vector<std::shared_ptr<Stmt>> results;
 
     for (const auto& stmt : stmts) {
-        auto newStmt = dynamic_cast<Stmt*>(v->visit(this, stmt.get()));
+        auto newStmt = std::dynamic_pointer_cast<Stmt>(v->visit(share_from_this(), stmt.get()));
         if (newStmt != stmt.get()) modified = true;
         results.emplace_back(newStmt);
     }
 
     if (modified) return v->nodeFactory()->IRSeq(results, replaceParent);
 
-    return this;
+    return shared_from_this();
 }
 
 template<typename T>
-T Seq::aggregateChildren(AggregateVisitor<T>* v) {
+T Seq::aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
     T result = v->unit();
     for (const auto& stmt : stmts) {
         result = v->bind(result, v->visit(stmt.get()));
@@ -43,10 +43,10 @@ T Seq::aggregateChildren(AggregateVisitor<T>* v) {
     return result;
 }
 
-CheckCanonicalIRVisitor* Seq::checkCanonicalEnter(CheckCanonicalIRVisitor* v) {
+std::shared_ptr<CheckCanonicalIRVisitor> Seq::checkCanonicalEnter(std::shared_ptr<CheckCanonicalIRVisitor> v) {
     return v->enterSeq();
 }
 
-bool Seq::isCanonical(CheckCanonicalIRVisitor* v) {
+bool Seq::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) {
     return !v->inSeq();
 }

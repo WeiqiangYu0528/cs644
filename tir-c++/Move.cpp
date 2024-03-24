@@ -1,25 +1,25 @@
 #include "Move.hpp"
 
-Move::Move(Expr* target, Expr* src, bool trash) : target(target), src(src) {}
+Move::Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash) : target(target), src(src) {}
 
 Move::~Move() {
 }
 
-Expr* Move::target() const {
+std::shared_ptr<Expr> Move::getTarget() const {
     return target;
 }
 
-Expr* Move::source() const {
+std::shared_ptr<Expr> Move::getSource() const {
     return src;
 }
 
-std::string Move::label() const {
+std::string Move::getLabel() const {
     return "MOVE";
 }
 
-Node* Move::visitChildren(IRVisitor* v) {
-    Expr* newTarget = dynamic_cast<Expr*>(v->visit(this, target));
-    Expr* newSrc = dynamic_cast<Expr*>(v->visit(this, src));
+std::shared_ptr<Node> Move::visitChildren(std::shared_ptr<IRVisitor> v) {
+    std::shared_ptr<Expr> newTarget = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), target));
+    std::shared_ptr<Expr> newSrc = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), src));
 
     if (newTarget != target || newSrc != src)
         return v->nodeFactory()->IRMove(newTarget, newSrc);

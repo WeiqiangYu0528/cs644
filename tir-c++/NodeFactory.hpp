@@ -1,6 +1,4 @@
-#ifndef NODEFACTORY_HPP
-#define NODEFACTORY_HPP
-
+#pragma once
 #include <vector>
 #include <map>
 #include <string>
@@ -27,28 +25,26 @@ class NodeFactory {
 public:
     virtual ~NodeFactory() {}
 
-    virtual BinOp* IRBinOp(BinOp::OpType type, Expr* left, Expr* right) = 0;
-    virtual Call* IRCall(Expr* target, const std::vector<Expr*>& args) = 0;
+    virtual std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) = 0;
+    virtual std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) = 0;
     template<typename... Exprs>
-    Call* IRCall(Expr* target, Exprs... args);
-    virtual CJump* IRCJump(Expr* expr, const std::string& trueLabel) = 0;
-    virtual CJump* IRCJump(Expr* expr, const std::string& trueLabel, const std::string& falseLabel) = 0;
-    virtual CompUnit* IRCompUnit(const std::string& name) = 0;
-    virtual CompUnit* IRCompUnit(const std::string& name, const std::map<std::string, FuncDecl*>& functions) = 0;
-    virtual Const* IRConst(int value) = 0;
-    virtual ESeq* IRESeq(Stmt* stmt, Expr* expr) = 0;
-    virtual Exp* IRExp(Expr* expr) = 0;
-    virtual FuncDecl* IRFuncDecl(const std::string& name, int numParams, Stmt* stmt) = 0;
-    virtual Jump* IRJump(Expr* expr) = 0;
-    virtual Label* IRLabel(const std::string& name) = 0;
-    virtual Mem* IRMem(Expr* expr) = 0;
-    virtual Move* IRMove(Expr* target, Expr* expr) = 0;
-    virtual Name* IRName(const std::string& name) = 0;
-    virtual Return* IRReturn(Expr* ret) = 0;
-    virtual Seq* IRSeq(const std::vector<Stmt*>& stmts) = 0;
+    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args);
+    virtual std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) = 0;
+    virtual std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel, const std::string& falseLabel) = 0;
+    virtual std::shared_ptr<CompUnit> IRCompUnit(const std::string& name) = 0;
+    virtual std::shared_ptr<CompUnit> IRCompUnit(const std::string& name, const std::map<std::string, std::shared_ptr<FuncDecl>>& functions) = 0;
+    virtual std::shared_ptr<Const> IRConst(int value) = 0;
+    virtual std::shared_ptr<ESeq> IRESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr) = 0;
+    virtual std::shared_ptr<Exp> IRExp(std::shared_ptr<Expr> expr) = 0;
+    virtual std::shared_ptr<FuncDecl> IRFuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> stmt) = 0;
+    virtual std::shared_ptr<Jump> IRJump(std::shared_ptr<Expr> expr) = 0;
+    virtual std::shared_ptr<Label> IRLabel(const std::string& name) = 0;
+    virtual std::shared_ptr<Mem> IRMem(std::shared_ptr<Expr> expr) = 0;
+    virtual std::shared_ptr<Move> IRMove(std::shared_ptr<Expr> target, std::shared_ptr<Expr> expr) = 0;
+    virtual std::shared_ptr<Name> IRName(const std::string& name) = 0;
+    virtual std::shared_ptr<Return> IRReturn(std::shared_ptr<std::shared_ptr<Expr> ret) = 0;
+    virtual std::shared_ptr<Seq> IRSeq(const std::vector<std::shared_ptr<Stmt>>& stmts) = 0;
     template<typename... Stmts>
-    Seq* IRSeq(Stmts... stmts);
-    virtual Temp* IRTemp(const std::string& name) = 0;
+    std::shared_ptr<Seq> IRSeq(Stmts... stmts);
+    virtual std::shared_ptr<Temp> IRTemp(const std::string& name) = 0;
 };
-
-#endif // NODEFACTORY_HPP
