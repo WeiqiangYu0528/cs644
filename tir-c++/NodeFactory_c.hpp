@@ -6,9 +6,7 @@
 
 class NodeFactory_c : public NodeFactory {
 public:
-    NodeFactory_c() = default;
-
-    std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) override;
+    std::shared_ptr<BinOp> IRBinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) override;
     std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) override;
     std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) override;
     std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel, const std::string& falseLabel) override;
@@ -28,7 +26,7 @@ public:
     std::shared_ptr<Temp> IRTemp(const std::string& name) override;
 
     template<typename... Exprs>
-    Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) {
+    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) {
         std::vector<std::shared_ptr<Expr>> argsVec = {args...};
         return IRCall(target, argsVec);
     }

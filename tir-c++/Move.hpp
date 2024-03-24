@@ -9,7 +9,6 @@ private:
 
 public:
     Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash = false);
-    virtual ~Move();
 
     std::shared_ptr<Expr> getTarget() const;
     std::shared_ptr<Expr> getSource() const;
@@ -18,5 +17,10 @@ public:
 
     virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
     template<typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override;
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
+        T result = v->unit();
+        result = v->bind(result, v->visit(target));
+        result = v->bind(result, v->visit(src));
+        return result;
+    }
 };

@@ -6,8 +6,6 @@
 
 class Node {
 public:
-    virtual ~Node() = default;
-
     virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) = 0;
 
     virtual std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) = 0;

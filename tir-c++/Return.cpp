@@ -26,10 +26,3 @@ std::shared_ptr<Node> Return::visitChildren(std::shared_ptr<IRVisitor> v) {
 
     return shared_from_this();
 }
-
-template<typename T>
-T Return::aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
-    T result = v->unit();
-    result = v->bind(result, v->visit(ret));
-    return result;
-}

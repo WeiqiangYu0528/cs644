@@ -11,13 +11,15 @@ protected:
 public:
     explicit Return(std::shared_ptr<Expr> ret);
 
-    virtual ~Return();
-
     std::shared_ptr<Expr> getRet() const;
 
     virtual std::string getLabel() const override;
 
     virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v);
     template<typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v);
+    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
+        T result = v->unit();
+        result = v->bind(result, v->visit(ret));
+        return result;
+    }
 };

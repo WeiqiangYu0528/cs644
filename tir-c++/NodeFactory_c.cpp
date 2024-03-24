@@ -1,74 +1,73 @@
 #include "NodeFactory_c.hpp"
 #include <memory>
-
-BinOp* NodeFactory_c::IRBinOp(OpType type, Expr* left, Expr* right) {
-    return new BinOp(type, left, right);
+std::shared_ptr<BinOp> NodeFactory_c::IRBinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) {
+    return std::make_shared<BinOp>(type, left, right);
 }
 
-Call* NodeFactory_c::IRCall(Expr* target, const std::vector<Expr*>& args) {
-    return new Call(target, args);
+std::shared_ptr<Call> NodeFactory_c::IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) {
+    return std::make_shared<Call>(target, args);
 }
 
-CJump* NodeFactory_c::IRCJump(Expr* expr, const std::string& trueLabel) {
-    return new CJump(expr, trueLabel);
+std::shared_ptr<CJump> NodeFactory_c::IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) {
+    return std::make_shared<CJump>(expr, trueLabel);
 }
 
-CJump* NodeFactory_c::IRCJump(Expr* expr, const std::string& trueLabel, const std::string& falseLabel) {
-    return new CJump(expr, trueLabel, falseLabel);
+std::shared_ptr<CJump> NodeFactory_c::IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel, const std::string& falseLabel) {
+    return std::make_shared<CJump>(expr, trueLabel, falseLabel);
 }
 
-CompUnit* NodeFactory_c::IRCompUnit(const std::string& name) {
-    return new CompUnit(name);
+std::shared_ptr<CompUnit> NodeFactory_c::IRCompUnit(const std::string& name) {
+    return std::make_shared<CompUnit>(name);
 }
 
-CompUnit* NodeFactory_c::IRCompUnit(const std::string& name, const std::map<std::string, FuncDecl*>& functions) {
-    return new CompUnit(name, functions);
+std::shared_ptr<CompUnit> NodeFactory_c::IRCompUnit(const std::string& name, const std::map<std::string, FuncDecl*>& functions) {
+    return std::make_shared<CompUnit>(name, functions);
 }
 
-Const* NodeFactory_c::IRConst(int value) {
-    return new Const(value);
+std::shared_ptr<Const> NodeFactory_c::IRConst(int value) {
+    return std::make_shared<Const>(value);
 }
 
-ESeq* NodeFactory_c::IRESeq(Stmt* stmt, Expr* expr) {
-    return new ESeq(stmt, expr);
+std::shared_ptr<ESeq> NodeFactory_c::IRESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr) {
+    return std::make_shared<ESeq>(stmt, expr);
 }
 
-Exp* NodeFactory_c::IRExp(Expr* expr) {
-    return new Exp(expr);
+std::shared_ptr<Exp> NodeFactory_c::IRExp(std::shared_ptr<Expr> expr) {
+    return std::make_shared<Exp>(expr);
 }
 
-FuncDecl* NodeFactory_c::IRFuncDecl(const std::string& name, int numParams, Stmt* stmt) {
-    return new FuncDecl(name, numParams, stmt);
+std::shared_ptr<FuncDecl> NodeFactory_c::IRFuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> stmt) {
+    return std::make_shared<FuncDecl>(name, numParams, stmt);
 }
 
-Jump* NodeFactory_c::IRJump(Expr* expr) {
-    return new Jump(expr);
+std::shared_ptr<Jump> NodeFactory_c::IRJump(std::shared_ptr<Expr> expr) {
+    return std::make_shared<Jump>(expr);
 }
 
-Label* NodeFactory_c::IRLabel(const std::string& name) {
-    return new Label(name);
+std::shared_ptr<Label> NodeFactory_c::IRLabel(const std::string& name) {
+    return std::make_shared<Label>(name);
 }
 
-Mem* NodeFactory_c::IRMem(Expr* expr) {
-    return new Mem(expr);
+std::shared_ptr<Mem> NodeFactory_c::IRMem(std::shared_ptr<Expr> expr) {
+    return std::make_shared<Mem>(expr);
 }
 
-Move* NodeFactory_c::IRMove(Expr* target, Expr* expr) {
-    return new Move(target, expr);
+std::shared_ptr<Move> NodeFactory_c::IRMove(std::shared_ptr<Expr> target, std::shared_ptr<Expr> expr) {
+    return std::make_shared<Move>(target, expr);
 }
 
-Name* NodeFactory_c::IRName(const std::string& name) {
-    return new Name(name);
+std::shared_ptr<Name> NodeFactory_c::IRName(const std::string& name) {
+    return std::make_shared<Name>(name);
 }
 
-Return* NodeFactory_c::IRReturn(Expr* ret) {
-    return new Return(ret);
+std::shared_ptr<Return> NodeFactory_c::IRReturn(std::shared_ptr<Expr> ret) {
+    return std::make_shared<Return>(ret);
 }
 
-Seq* NodeFactory_c::IRSeq(const std::vector<Stmt*>& stmts) {
-    return new Seq(stmts);
+std::shared_ptr<Seq> NodeFactory_c::IRSeq(const std::vector<std::shared_ptr<Stmt>>& stmts) {
+    return std::make_shared<Seq>(stmts);
 }
 
-Temp* NodeFactory_c::IRTemp(const std::string& name) {
-    return new Temp(name);
+std::shared_ptr<Temp> NodeFactory_c::IRTemp(const std::string& name) {
+    return std::make_shared<Temp>(name);
 }

@@ -23,12 +23,10 @@
 
 class NodeFactory {
 public:
-    virtual ~NodeFactory() {}
-
     virtual std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) = 0;
     virtual std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) = 0;
     template<typename... Exprs>
-    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args);
+    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) = 0;
     virtual std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) = 0;
     virtual std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel, const std::string& falseLabel) = 0;
     virtual std::shared_ptr<CompUnit> IRCompUnit(const std::string& name) = 0;
