@@ -1,5 +1,4 @@
 #include "Temp.hpp"
-#include <string>
 
 Temp::Temp(const std::string& name) : name(name) {}
 

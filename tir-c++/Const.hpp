@@ -1,4 +1,5 @@
 #pragma once
+#include "Expr_c.hpp"
 
 /**
  * An intermediate representation for a 64-bit integer constant.

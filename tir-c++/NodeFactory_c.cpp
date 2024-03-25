@@ -1,10 +1,10 @@
 #include "NodeFactory_c.hpp"
-#include <memory>
+
 std::shared_ptr<BinOp> NodeFactory_c::IRBinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) {
     return std::make_shared<BinOp>(type, left, right);
 }
 
-std::shared_ptr<Call> NodeFactory_c::IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) {
+std::shared_ptr<Call> NodeFactory_c::IRCall(std::shared_ptr<Expr> target, std::vector<std::shared_ptr<Expr>>& args) {
     return std::make_shared<Call>(target, args);
 }
 
@@ -20,7 +20,7 @@ std::shared_ptr<CompUnit> NodeFactory_c::IRCompUnit(const std::string& name) {
     return std::make_shared<CompUnit>(name);
 }
 
-std::shared_ptr<CompUnit> NodeFactory_c::IRCompUnit(const std::string& name, const std::map<std::string, FuncDecl*>& functions) {
+std::shared_ptr<CompUnit> NodeFactory_c::IRCompUnit(const std::string& name, std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions) {
     return std::make_shared<CompUnit>(name, functions);
 }
 
@@ -64,7 +64,7 @@ std::shared_ptr<Return> NodeFactory_c::IRReturn(std::shared_ptr<Expr> ret) {
     return std::make_shared<Return>(ret);
 }
 
-std::shared_ptr<Seq> NodeFactory_c::IRSeq(const std::vector<std::shared_ptr<Stmt>>& stmts) {
+std::shared_ptr<Seq> NodeFactory_c::IRSeq(std::vector<std::shared_ptr<Stmt>>& stmts) {
     return std::make_shared<Seq>(stmts);
 }
 

@@ -4,7 +4,7 @@
 #include "Stmt.hpp"
 
 /** An IR function declaration */
-class FuncDecl : public Node_c, std::enable_shared_from_this<FuncDecl> {
+class FuncDecl : public Node_c, public std::enable_shared_from_this<FuncDecl> {
 private:
     std::string name;
     std::shared_ptr<Stmt> body;

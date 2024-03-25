@@ -6,7 +6,7 @@
 /**
  * An intermediate representation for naming a memory address
  */
-class Label : public Stmt, std::enable_shared_from_this<Label> {
+class Label : public Stmt, public std::enable_shared_from_this<Label> {
 private:
     std::string name;
 

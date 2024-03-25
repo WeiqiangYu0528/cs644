@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "Expr.hpp"
+#include "Stmt.hpp"
 /**
  * An intermediate representation for evaluating an expression for side effects,
  * discarding the result

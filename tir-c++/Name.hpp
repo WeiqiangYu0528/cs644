@@ -1,8 +1,8 @@
 #pragma once
-#include "Expr_c.hpp"
 #include <string>
+#include "Expr_c.hpp"
 
-class Name : public Expr_c, std::enable_shared_from_this<Name> {
+class Name : public Expr_c, public std::enable_shared_from_this<Name> {
 private:
     std::string name;
 
