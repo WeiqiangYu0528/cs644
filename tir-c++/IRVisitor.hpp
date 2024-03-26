@@ -20,5 +20,10 @@ protected:
     virtual std::shared_ptr<Node> leave(std::shared_ptr<Node> parent, std::shared_ptr<Node> n, std::shared_ptr<Node> n_, std::shared_ptr<IRVisitor> v_);
     
     template<typename V>
-    std::shared_ptr<V> copyIfNeeded(const std::shared_ptr<V>& v);
+    std::shared_ptr<V> copyIfNeeded(const std::shared_ptr<V> v) {
+        if (v.get() == this) {
+            return std::make_shared<V>(*v);
+        }
+        return v;
+    }
 };

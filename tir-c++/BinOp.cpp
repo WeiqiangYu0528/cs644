@@ -3,7 +3,7 @@
 BinOp::BinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) : type(type), left(left), right(right) {
 }
 
-OpType BinOp::opType() const {
+OpType BinOp::getOpType() const {
     return type;
 }
 

@@ -41,11 +41,3 @@ std::shared_ptr<IRVisitor> IRVisitor::enter(std::shared_ptr<Node> parent, std::s
 std::shared_ptr<Node> IRVisitor::leave(std::shared_ptr<Node> parent, std::shared_ptr<Node> n, std::shared_ptr<Node> n_, std::shared_ptr<IRVisitor> v_) {
     return n_;
 }
-
-template<typename V>
-std::shared_ptr<V> IRVisitor::copyIfNeeded(const std::shared_ptr<V>& v) {
-    if (v.get() == this) {
-        return std::dynamic_pointer_cast<V>(std::make_shared<ConcreteVisitor>(*this));
-    }
-    return v;
-}

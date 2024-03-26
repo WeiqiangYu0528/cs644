@@ -1,9 +1,7 @@
 #include "CheckCanonicalIRVisitor.hpp"
 
 CheckCanonicalIRVisitor::CheckCanonicalIRVisitor()
-    : inSeqFlag(false), inExpFlag(false), inExprFlag(false), outer(nullptr) {}
-
-CheckCanonicalIRVisitor::~CheckCanonicalIRVisitor() {}
+    : inSeqFlag(false), inExpFlag(false), inExprFlag(false), offender(nullptr), outer(nullptr) {}
 
 bool CheckCanonicalIRVisitor::unit() {
     return true;

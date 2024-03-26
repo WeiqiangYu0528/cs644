@@ -3,10 +3,9 @@
 #include "AggregateVisitor.hpp"
 #include "Node.hpp"
 
-class CheckCanonicalIRVisitor : public AggregateVisitor<bool> {
+class CheckCanonicalIRVisitor : public AggregateVisitor<bool>, public std::enable_shared_from_this<CheckCanonicalIRVisitor> {
 public:
     CheckCanonicalIRVisitor();
-    virtual ~CheckCanonicalIRVisitor();
 
     virtual bool unit() override;
     virtual bool bind(bool r1, bool r2) override;

@@ -18,7 +18,7 @@ std::shared_ptr<IRVisitor> InsnMapsBuilder::enter(std::shared_ptr<Node> parent, 
 }
 
 std::shared_ptr<Node> InsnMapsBuilder::leave(std::shared_ptr<Node> parent, std::shared_ptr<Node> n, std::shared_ptr<Node> n_, std::shared_ptr<IRVisitor> v_) {
-    return n_->buildInsnMaps(std::static_pointer_cast<InsnMapsBuilder>(v_));
+    return n_->buildInsnMaps(std::dynamic_pointer_cast<InsnMapsBuilder>(v_));
 }
 
 void InsnMapsBuilder::addInsn(std::shared_ptr<Node> n) {

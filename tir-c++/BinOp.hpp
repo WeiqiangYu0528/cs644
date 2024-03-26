@@ -46,7 +46,7 @@ private:
 public:
     BinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right);
 
-    OpType opType() const;
+    OpType getOpType() const;
 
     std::shared_ptr<Expr> getLeft() const;
 
