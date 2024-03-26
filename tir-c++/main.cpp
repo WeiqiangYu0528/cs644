@@ -14,7 +14,16 @@
 #include <string>
 
 int main() {
-    // IR roughly corresponds to the Java example
+    // Runs a simple program in the interpreter
+
+    // IR roughly corresponds to the following:
+    //     int a(int i, int j) {
+    //         return i + 2 * j;
+    //     }
+    //     int b(int i, int j) {
+    //         int x = a(i, j) + 1;
+    //         return x + 20 * 5;
+    //     }
     std::string arg0 = Configuration::ABSTRACT_ARG_PREFIX + "0";
     std::string arg1 = Configuration::ABSTRACT_ARG_PREFIX + "1";
 
