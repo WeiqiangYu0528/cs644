@@ -1,15 +1,12 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include "AggregateVisitor.hpp"
 #include "Expr_c.hpp"
-#include "IRVisitor.hpp"
 
 /**
  * An intermediate representation for a binary operation
  * OP(left, right)
  */
-
 enum class OpType {
     ADD, SUB, MUL, DIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT,
     EQ, NEQ, LT, GT, LEQ, GEQ
@@ -38,7 +35,7 @@ std::unordered_map<OpType, std::string> OpTypeToString = {
 /**
  * Binary operators
  */
-class BinOp : public Expr_c, public std::enable_shared_from_this<BinOp> {
+class BinOp : public Expr_c {
 private:
     OpType type;
     std::shared_ptr<Expr> left, right;
@@ -56,13 +53,12 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template <typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v->unit();
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
         result = v->bind(result, v->visit(left));
         result = v->bind(result, v->visit(right));
         return result;
     }
 
     bool isConstant() const override;
-}
+};

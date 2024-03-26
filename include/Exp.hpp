@@ -7,7 +7,7 @@
  * discarding the result
  * EXP(e)
  */
-class Exp : public Stmt, public std::enable_shared_from_this<Exp> {
+class Exp : public Stmt {
 private:
     std::shared_ptr<Expr> expr;
 
@@ -24,13 +24,12 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template <typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v->unit();
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
         result = v->bind(result, v->visit(expr));
         return result;
     }
 
-    CheckCanonicalIRVisitor checkCanonicalEnter(
+    std::shared_ptr<CheckCanonicalIRVisitor> checkCanonicalEnter(
             std::shared_ptr<CheckCanonicalIRVisitor> v) override;
-}
+};

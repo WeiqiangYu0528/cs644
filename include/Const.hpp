@@ -23,4 +23,4 @@ public:
     bool isConstant() const override;
 
     int getConstant() const override;
-}
+};

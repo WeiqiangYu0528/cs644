@@ -19,7 +19,7 @@ std::shared_ptr<Node> Exp::visitChildren(std::shared_ptr<IRVisitor> v) {
     return shared_from_this();
 }
 
-CheckCanonicalIRVisitor Exp::checkCanonicalEnter(
+std::shared_ptr<CheckCanonicalIRVisitor> Exp::checkCanonicalEnter(
         std::shared_ptr<CheckCanonicalIRVisitor> v) {
     return v->enterExp();
 }

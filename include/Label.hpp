@@ -1,12 +1,12 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "InsnMapsBuilder.hpp"
+#include "Stmt.hpp"
 
 /**
  * An intermediate representation for naming a memory address
  */
-class Label : public Stmt, public std::enable_shared_from_this<Label> {
+class Label : public Stmt {
 private:
     std::string name;
 
@@ -22,4 +22,4 @@ public:
     std::string getLabel() const override;
 
     std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
-}
+};

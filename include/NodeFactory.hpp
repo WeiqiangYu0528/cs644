@@ -2,6 +2,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "Expr.hpp"
+#include "Stmt.hpp"
 #include "BinOp.hpp"
 #include "Call.hpp"
 #include "CJump.hpp"
@@ -18,9 +20,6 @@
 #include "Return.hpp"
 #include "Seq.hpp"
 #include "Temp.hpp"
-#include "Expr.hpp"
-#include "Stmt.hpp"
-#include "FuncDecl.hpp"
 
 class NodeFactory {
 public:

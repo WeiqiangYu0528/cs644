@@ -4,7 +4,7 @@
 #include "Stmt.hpp"
 
 /** An IR function declaration */
-class FuncDecl : public Node_c, public std::enable_shared_from_this<FuncDecl> {
+class FuncDecl : public Node_c {
 private:
     std::string name;
     std::shared_ptr<Stmt> body;
@@ -23,14 +23,13 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template <typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v->unit();
+    std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
+
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
         result = v->bind(result, v->visit(body));
         return result;
     }
-
-    std::shared_ptr<InsnMapsBuilder> buildInsnMapsEnter(std::shared_ptr<InsnMapsBuilder> v) override;
 
     std::shared_ptr<Node> buildInsnMaps(std::shared_ptr<InsnMapsBuilder> v) override;
 };

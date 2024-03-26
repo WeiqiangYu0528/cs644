@@ -1,17 +1,15 @@
 #pragma once
 #include "IRVisitor.hpp"
-#include "AggregateVisitor.hpp"
 #include "InsnMapsBuilder.hpp"
 #include "CheckCanonicalIRVisitor.hpp"
 
-class Node_c : public Node, public std::enable_shared_from_this<Node_c> {
+class Node_c : public Node {
 public:
     virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override {
         return shared_from_this();
     }
 
-    template<typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
         return v->unit();
     }
 
@@ -28,7 +26,7 @@ public:
         return v;
     }
 
-    virtual bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) override {
+    virtual bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override {
         return true;
     }
 

@@ -2,14 +2,13 @@
 #include <memory>
 #include <string>
 #include "Expr.hpp"
-#include "IRVisitor.hpp"
 #include "Stmt.hpp"
 
 /**
  * An intermediate representation for a conditional transfer of control
  * CJUMP(expr, trueLabel, falseLabel)
  */
-class CJump : public Stmt, public std::enable_shared_from_this<CJump> {
+class CJump : public Stmt {
 private:
     std::shared_ptr<Expr> cond;
     std::string trueLabel, falseLabel;
@@ -44,12 +43,11 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template <typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v->unit();
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
         result = v->bind(result, v->visit(cond));
         return result;
     }
 
     bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
-}
+};

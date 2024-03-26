@@ -1,6 +1,6 @@
 #include "Expr_c.hpp"
 
-CheckCanonicalIRVisitor Expr_c::checkCanonicalEnter(
+std::shared_ptr<CheckCanonicalIRVisitor> Expr_c::checkCanonicalEnter(
             std::shared_ptr<CheckCanonicalIRVisitor> v) {
     return v->enterExpr();
 }
@@ -14,5 +14,5 @@ bool Expr_c::isConstant() const {
 }
 
 int Expr_c::getConstant() const {
-    throw new UnsupportedOperationException();
+    throw std::runtime_error("Unsupported Operation Exception");
 }

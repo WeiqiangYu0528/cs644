@@ -1,8 +1,9 @@
 #pragma once
 #include <memory>
 #include <stdexcept>
-#include "NodeFactory.hpp"
 #include "Node.hpp"
+class NodeFactory;
+class Node;
 
 class IRVisitor : public std::enable_shared_from_this<IRVisitor> {
 public:

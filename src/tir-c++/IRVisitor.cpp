@@ -1,3 +1,5 @@
+#include "NodeFactory.hpp"
+#include "Node.hpp"
 #include "IRVisitor.hpp"
 #include <stdexcept>
 

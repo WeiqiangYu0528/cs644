@@ -118,7 +118,7 @@ public:
     StackItem(int value, int addr) : type(Kind::MEM), value(value), addr(addr) {
     }
 
-    StackItem(Kind type, int value, String string) : type(type), value(value) {
+    StackItem(Kind type, int value, const std::string& string) : type(type), value(value) {
         if (type == Kind::TEMP)
             temp = string;
         else if (type == Kind::NAME)
@@ -467,8 +467,7 @@ public:
                     targetName = func->getName();
                 else throw std::runtime_error("Call to a non-function instruction!");
             }
-            else throw std::runtime_error("Invalid function call '"
-                    + insn + "' (target '" + target->value + "' is unknown)!");
+            else throw std::runtime_error("Invalid function call (target '" + std::to_string(target->value) + "' is unknown)!");
 
             int retVal = call(frame, targetName, args);
             exprStack->pushValue(retVal);

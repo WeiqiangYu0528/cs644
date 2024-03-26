@@ -8,7 +8,7 @@
  * An intermediate representation for an expression evaluated under side effects
  * ESEQ(stmt, expr)
  */
-class ESeq : public Expr_c, public std::enable_shared_from_this<ESeq> {
+class ESeq : public Expr_c {
 private:
     std::shared_ptr<Stmt> stmt;
     std::shared_ptr<Expr> expr;
@@ -30,13 +30,12 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template <typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) override {
-        T result = v->unit();
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
         result = v->bind(result, v->visit(stmt));
         result = v->bind(result, v->visit(expr));
         return result;
     }
 
     bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
-}
+};

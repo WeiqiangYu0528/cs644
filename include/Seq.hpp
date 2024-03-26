@@ -4,7 +4,7 @@
 #include <memory>
 #include <algorithm>
 
-class Seq : public Stmt, public std::enable_shared_from_this<Seq> {
+class Seq : public Stmt {
 private:
     std::vector<std::shared_ptr<Stmt>> stmts;
     bool replaceParent;
@@ -19,16 +19,15 @@ public:
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 
-    template<typename T>
-    T aggregateChildren(std::shared_ptr<AggregateVisitor<T>> v) {
-        T result = v->unit();
+    std::shared_ptr<CheckCanonicalIRVisitor> checkCanonicalEnter(std::shared_ptr<CheckCanonicalIRVisitor> v) override;
+
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) {
+        bool result = v->unit();
         for (auto stmt : stmts) {
             result = v->bind(result, v->visit(stmt));
         }
         return result;
     }
-
-    std::shared_ptr<CheckCanonicalIRVisitor> checkCanonicalEnter(std::shared_ptr<CheckCanonicalIRVisitor> v) override;
 
     bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) override;
 };
