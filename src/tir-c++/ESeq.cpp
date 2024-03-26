@@ -1,4 +1,5 @@
 #include "ESeq.hpp"
+#include "NodeFactory.hpp"
 
 ESeq::ESeq(std::shared_ptr<Stmt> stmt, std::shared_ptr<Expr> expr) : stmt(stmt), expr(expr) {
 }
@@ -19,8 +20,8 @@ std::string ESeq::getLabel() const {
 }
 
 std::shared_ptr<Node> ESeq::visitChildren(std::shared_ptr<IRVisitor> v) {
-    std::shared_ptr<Stmt> s = std::dynamic_pointer_cast<Stmt>(v.visit(shared_from_this(), stmt));
-    std::shared_ptr<Expr> e = std::dynamic_pointer_cast<Expr>(v.visit(shared_from_this(), expr));
+    std::shared_ptr<Stmt> s = std::dynamic_pointer_cast<Stmt>(v->visit(shared_from_this(), stmt));
+    std::shared_ptr<Expr> e = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), expr));
 
     if (e != expr || s != stmt)
         return v->nodeFactory()->IRESeq(s, e);

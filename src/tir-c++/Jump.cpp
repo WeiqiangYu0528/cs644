@@ -1,4 +1,5 @@
 #include "Jump.hpp"
+#include "NodeFactory.hpp"
 
 Jump::Jump(std::shared_ptr<Expr> expr) : target(expr) {
 }

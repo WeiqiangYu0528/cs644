@@ -1,19 +1,15 @@
 #include "InsnMapsBuilder.hpp"
 #include <stdexcept>
 
-InsnMapsBuilder::InsnMapsBuilder() : index(0) {
+InsnMapsBuilder::InsnMapsBuilder() :IRVisitor(inf), index(0) {
 }
 
 std::unordered_map<std::string, int>& InsnMapsBuilder::nameToIndex() {
     return nameToIndexMap;
 }
 
-std::unordered_map<int, std::shared_ptr<Node>>& InsnMapsBuilder::indexToInsn() {
-    return indexToInsnMap;
-}
-
 std::shared_ptr<IRVisitor> InsnMapsBuilder::enter(std::shared_ptr<Node> parent, std::shared_ptr<Node> n) {
-    auto v = n->buildInsnMapsEnter(shared_from_this());
+    auto v = n->buildInsnMapsEnter(std::dynamic_pointer_cast<InsnMapsBuilder>(shared_from_this()));
     return v;
 }
 

@@ -23,7 +23,7 @@ int debugLevel = 0;
  * within an execution frame.
  */
 class ExecutionFrame : public std::enable_shared_from_this<ExecutionFrame> {
-protected:
+public:
     /** instruction pointer */
     int ip;
 

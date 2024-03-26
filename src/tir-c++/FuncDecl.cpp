@@ -1,4 +1,5 @@
 #include "FuncDecl.hpp"
+#include "NodeFactory.hpp"
 
 FuncDecl::FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body) : name(name), body(body), numParams(numParams) {
 }
@@ -20,7 +21,7 @@ std::string FuncDecl::getLabel() const {
 }
 
 std::shared_ptr<Node> FuncDecl::visitChildren(std::shared_ptr<IRVisitor> v) {
-    std::shared_ptr<Stmt> stmt = std::dynamic_pointer_cast<Stmt>(v.visit(shared_from_this(), body));
+    std::shared_ptr<Stmt> stmt = std::dynamic_pointer_cast<Stmt>(v->visit(shared_from_this(), body));
 
     if (stmt != body) return v->nodeFactory()->IRFuncDecl(
             name, numParams, stmt
