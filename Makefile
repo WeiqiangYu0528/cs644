@@ -25,7 +25,7 @@ TARGET=$(TARGET_DIR)/joosc
 all: $(TARGET)
 
 
-DIRS := $(OBJ_DIR) $(OBJ_DIR)/parser $(OBJ_DIR)/lexer $(OBJ_DIR)/ast
+DIRS := $(OBJ_DIR) $(OBJ_DIR)/parser $(OBJ_DIR)/lexer $(OBJ_DIR)/ast $(OBJ_DIR)/tir-c++
 
 $(DIRS):
 	mkdir -p $(DIRS)

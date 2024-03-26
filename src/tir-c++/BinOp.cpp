@@ -1,4 +1,5 @@
 #include "BinOp.hpp"
+#include "NodeFactory.hpp"
 
 BinOp::BinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) : type(type), left(left), right(right) {
 }

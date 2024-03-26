@@ -29,5 +29,5 @@ public:
         return result;
     }
 
-    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) override;
+    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v);
 };
