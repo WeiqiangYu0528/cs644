@@ -38,16 +38,4 @@ public:
     std::shared_ptr<Seq> IRSeq(std::vector<std::shared_ptr<Stmt>>& stmts) override;
 
     std::shared_ptr<Temp> IRTemp(const std::string& name) override;
-
-    template<typename... Exprs>
-    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) {
-        std::vector<std::shared_ptr<Expr>> argsVec = {args...};
-        return IRCall(target, argsVec);
-    }
-
-    template<typename... Stmts>
-    std::shared_ptr<Seq> IRSeq(Stmts... stmts) {
-        std::vector<std::shared_ptr<Stmt>> stmtsVec = {stmts...};
-        return IRSeq(stmtsVec);
-    }
 };

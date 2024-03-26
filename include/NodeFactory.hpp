@@ -20,6 +20,7 @@
 #include "Temp.hpp"
 #include "Expr.hpp"
 #include "Stmt.hpp"
+#include "FuncDecl.hpp"
 
 class NodeFactory {
 public:
@@ -28,7 +29,10 @@ public:
     virtual std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, std::vector<std::shared_ptr<Expr>>& args) = 0;
 
     template<typename... Exprs>
-    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) = 0;
+    std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, Exprs... args) {
+        std::vector<std::shared_ptr<Expr>> argsVec = {args...};
+        return IRCall(target, argsVec);
+    }
 
     virtual std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) = 0;
 
@@ -56,12 +60,15 @@ public:
 
     virtual std::shared_ptr<Name> IRName(const std::string& name) = 0;
 
-    virtual std::shared_ptr<Return> IRReturn(std::shared_ptr<std::shared_ptr<Expr>> ret) = 0;
+    virtual std::shared_ptr<Return> IRReturn(std::shared_ptr<Expr> ret) = 0;
 
     virtual std::shared_ptr<Seq> IRSeq(std::vector<std::shared_ptr<Stmt>>& stmts) = 0;
 
     template<typename... Stmts>
-    virtual std::shared_ptr<Seq> IRSeq(Stmts... stmts) = 0;
+    std::shared_ptr<Seq> IRSeq(Stmts... stmts) {
+        std::vector<std::shared_ptr<Stmt>> stmtsVec = {stmts...};
+        return IRSeq(stmtsVec);
+    }
 
     virtual std::shared_ptr<Temp> IRTemp(const std::string& name) = 0;
 };

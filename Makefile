@@ -15,7 +15,7 @@ FLEX_OUT=src/lexer/lex.yy.cpp
 FLEX_OPTS=
 
 OBJ_DIR=build
-SRC_DIRS=src src/ast
+SRC_DIRS=src src/ast src/tir-c++
 SRC_FILES=$(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 OBJ_FILES=$(SRC_FILES:src/%.cpp=$(OBJ_DIR)/%.o) $(OBJ_DIR)/parser/parser.tab.o $(OBJ_DIR)/lexer/lex.yy.o
 
