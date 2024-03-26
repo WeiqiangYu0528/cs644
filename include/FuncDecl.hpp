@@ -5,12 +5,11 @@
 
 /** An IR function declaration */
 class FuncDecl : public Node_c {
-private:
+public:
     std::string name;
     std::shared_ptr<Stmt> body;
     int numParams;
 
-public:
     FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body);
 
     std::string getName() const;

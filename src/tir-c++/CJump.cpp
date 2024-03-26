@@ -1,4 +1,5 @@
 #include "CJump.hpp"
+#include "NodeFactory.hpp"
 
 CJump::CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel) : CJump(cond, trueLabel, nullptr) {
 }

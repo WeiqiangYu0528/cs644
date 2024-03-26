@@ -1,4 +1,5 @@
 #include "CompUnit.hpp"
+#include "NodeFactory.hpp"
 
 CompUnit::CompUnit(const std::string& name) : name(name) {
 }
@@ -7,7 +8,7 @@ CompUnit::CompUnit(const std::string& name, std::unordered_map<std::string, std:
 }
 
 void CompUnit::appendFunc(std::shared_ptr<FuncDecl> func) {
-    functions[func.name()] = func;
+    functions[func->name] = func;
 }
 
 std::string CompUnit::getName() const {
@@ -31,9 +32,9 @@ std::shared_ptr<Node> CompUnit::visitChildren(std::shared_ptr<IRVisitor> v) {
 
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> results;
     for (auto [key, func] : functions) {
-        std::shared_ptr<FuncDecl> newFunc = std::dynamic_pointer_cast<FuncDecl>(v.visit(shared_from_this(), func));
+        std::shared_ptr<FuncDecl> newFunc = std::dynamic_pointer_cast<FuncDecl>(v->visit(shared_from_this(), func));
         if (newFunc != func) modified = true;
-        results[newFunc.name()] = newFunc;
+        results[newFunc->name] = newFunc;
     }
 
     if (modified) return v->nodeFactory()->IRCompUnit(name, results);

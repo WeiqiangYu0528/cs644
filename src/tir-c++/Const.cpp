@@ -8,7 +8,7 @@ int Const::getValue() const {
 }
 
 std::string Const::getLabel() const {
-    return "CONST(" + value + ")";
+    return "CONST(" + std::to_string(value) + ")";
 }
 
 bool Const::isConstant() const {
