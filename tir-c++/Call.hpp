@@ -27,7 +27,7 @@ public:
      * @param numRets number of return values for this function call
      * @param args arguments of this function call
      */
-    Call(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>> args);
+    Call(std::shared_ptr<Expr> target, std::vector<std::shared_ptr<Expr>> args);
 
     std::shared_ptr<Expr> getTarget() const;
 

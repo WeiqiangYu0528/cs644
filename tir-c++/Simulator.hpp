@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include "CompUnit.hpp"
+#include "Configuration.hpp"
 
 class Simulator;
 
@@ -231,9 +232,9 @@ public:
      */
     int malloc(int size) {
         if (size < 0) throw std::runtime_error("Invalid size");
-        if (size % Configuration.WORD_SIZE != 0)
+        if (size % Configuration::WORD_SIZE != 0)
             throw std::runtime_error("Can only allocate in chunks of "
-                    + Configuration.WORD_SIZE + " bytes!");
+                    + Configuration::WORD_SIZE + " bytes!");
 
         int retval = mem.size();
         if (retval + size > heapSizeMax) throw std::runtime_error("Out of heap!");
@@ -281,10 +282,10 @@ public:
     }
 
     int getMemoryIndex(int addr) {
-        if (addr % Configuration.WORD_SIZE != 0)
+        if (addr % Configuration::WORD_SIZE != 0)
             throw std::runtime_error("Unaligned memory access: " + addr + " (word size="
-                    + Configuration.WORD_SIZE + ")");
-        return addr / Configuration.WORD_SIZE;
+                    + Configuration::WORD_SIZE + ")");
+        return addr / Configuration::WORD_SIZE;
     }
 
     /**
@@ -332,7 +333,7 @@ public:
 
             // Pass the remaining arguments into registers.
             for (int i = 0; i < args.size(); ++i)
-                frame->put(Configuration.ABSTRACT_ARG_PREFIX + i, args[i]);
+                frame->put(std::string(Configuration::ABSTRACT_ARG_PREFIX) + std::to_string(i), args[i]);
 
             // Simulate!
             while (frame->advance()) ;
@@ -340,7 +341,7 @@ public:
             ret = frame->ret;
         }
 
-        parent->put(Configuration.ABSTRACT_RET, ret);
+        parent->put(Configuration::ABSTRACT_RET, ret);
         return ret;
     }
 
@@ -351,7 +352,7 @@ public:
      *          the pointer to the location of multiple results
      */
     int libraryCall(const std::string& name, vector<int>& args) {
-        int ws = Configuration.WORD_SIZE;
+        int ws = Configuration::WORD_SIZE;
         int ret;
         if (name == "NATIVEjava.io.OutputStream.nativeWrite") {
             std::cout << static_cast<char>(args[0]) << std::endl;
@@ -529,3 +530,4 @@ public:
             throw std::runtime_error("Could not find label '" + name + "'!");
         return nameToIndex[name];
     }
+};

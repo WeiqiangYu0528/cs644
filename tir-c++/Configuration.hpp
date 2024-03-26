@@ -1,10 +1,7 @@
 #pragma once
-#include <string>
 
-class Configuration {
-public:
-    static const std::string ABSTRACT_ARG_PREFIX;
-    static const std::string ABSTRACT_RET;
-
-    static const int WORD_SIZE;
+struct Configuration {
+    static constexpr const char* ABSTRACT_ARG_PREFIX = "_ARG";
+    static constexpr const char* ABSTRACT_RET = "_RET";
+    static constexpr int WORD_SIZE = 4;
 };
