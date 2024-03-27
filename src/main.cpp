@@ -1,157 +1,68 @@
-#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include "PackageTrie.hpp"
-#include "parser.h"
-#include "contextVisitor.hpp"
-#include "symbolTable.hpp"
-#include "typeLinkingVisitor.hpp"
-#include "hierarchyVisitor.hpp"
+#include "IRAst.hpp"
+#include "Configuration.hpp"
+#include "CheckCanonicalIRVisitor.hpp"
+#include "Simulator.hpp"
 
-std::string extractFilename(const std::string& filePath) {
-    size_t start = filePath.rfind('/') + 1; // Find the last '/' character
-    size_t end = filePath.rfind('.');       // Find the last '.' character
-    if (start == std::string::npos || end == std::string::npos || end <= start) {
-        return ""; // Return an empty string if the format is not as expected
-    }
-    return filePath.substr(start, end - start); // Extract the substring representing the filename
-}
+int main() {
+    // Runs a simple program in the interpreter
 
-bool DFS(std::string current, std::unordered_set<std::string>& visited, std::unordered_set<std::string>& pathVisited, 
-std::unordered_map<std::string, std::vector<std::string>>& edges) {
-    visited.insert(current);
-    pathVisited.insert(current);
-    for (std::string neighbour : edges[current]) {
-        if (pathVisited.contains(neighbour)) return true;
-        else if (visited.contains(neighbour)) continue;
-        else if (DFS(neighbour, visited, pathVisited, edges)) return true;
-    }
-    pathVisited.erase(current);
-    return false;
-}
+    // IR roughly corresponds to the following:
+    //     int a(int i, int j) {
+    //         return i + 2 * j;
+    //     }
+    //     int b(int i, int j) {
+    //         int x = a(i, j) + 1;
+    //         return x + 20 * 5;
+    //     }
+    std::string arg0 = std::string(Configuration::ABSTRACT_ARG_PREFIX) + "0";
+    std::string arg1 = std::string(Configuration::ABSTRACT_ARG_PREFIX) + "1";
 
-template <typename T> 
-bool detectCycle(std::vector<std::shared_ptr<T>> decls) {
-    //prepare the graph
-    std::vector<std::string> vertices;
-    std::unordered_map<std::string, std::vector<std::string>> edges;
-    for (auto decl : decls) {
-        vertices.push_back(decl->id->name); //add all classes/interfaces to vector of vertices
-        edges[decl->id->name] = std::vector<std::string>{}; //initialize edges vector for each class/interface
-        for (auto ext : decl->extended) { //go through neighbours
-            edges[decl->id->name].push_back(ext->id->name); //add them to the list of edges
-        }
-    }
-    //perform DFS
-    std::unordered_set<std::string> visited;
-    std::unordered_set<std::string> pathVisited;
-    for (std::string vertex : vertices) {
-        if (!edges.contains(vertex)) continue;
-        if (visited.contains(vertex)) continue;
-        else {
-            bool result = DFS(vertex, visited, pathVisited, edges);
-            if (result) return result;
-        }
-    }
-    return false;
-}
+    auto aBody = std::make_shared<Seq>(std::vector<std::shared_ptr<Stmt>>{
+        std::make_shared<Move>(std::make_shared<Temp>("i"), std::make_shared<Temp>(arg0)),
+        std::make_shared<Move>(std::make_shared<Temp>("j"), std::make_shared<Temp>(arg1)),
+        std::make_shared<Return>(std::make_shared<BinOp>(BinOp::OpType::ADD,
+            std::make_shared<Temp>("i"),
+            std::make_shared<BinOp>(BinOp::OpType::MUL,
+                std::make_shared<Const>(2),
+                std::make_shared<Temp>("j"))))
+    });
+    std::shared_ptr<FuncDecl> aFunc = std::make_shared<FuncDecl>("a", 2, aBody);
 
-int main(int argc, char* argv[])
-{
-    // std::unordered_map<std::string, 
-    //                    std::unordered_map<std::string, std::shared_ptr<SymbolTable>>> tables;
-    std::shared_ptr<PackageTrie> pkgTrie = std::make_shared<PackageTrie>();
-    std::vector<std::shared_ptr<Program>> asts;
-    bool error {false};
-    for (int i = 1; i < argc; ++i) {
-        std::ifstream inputFile;
-        inputFile.open(argv[i]);
-        if (!inputFile.is_open()) {
-            std::cerr << "Error: Unable to open file " << argv[i] << std::endl;
-            return 1;
-        }
-        std::string filename{extractFilename(argv[i])};
-        yy::MyLexer lexer(*static_cast<std::istream*>(&inputFile), filename);
-        Ast ast;
-        yy::parser parser(lexer, ast);
-        int ret = parser.parse();
-        if (ret != 0) {
-            error = true;
-            break;
-        }
-        if (std::shared_ptr<Program> program = ast.getAst()) {
-            // PrintVisitor visitor;
-            ContextVisitor cvisitor{};
-            program->accept(&cvisitor);
-            auto [pkg, cdecl] = program->getQualifiedName();
-            std::string qualifiedName {pkg + "." + cdecl};
-            auto symbolTable = cvisitor.getSymbolTable();
-            if (cvisitor.isError() || !pkgTrie->insert(qualifiedName, symbolTable)) {
-                std::cerr << "Error: Environment Building failed" << std::endl;
-                error = true;
-                break;
-            }
-            program->scope = std::make_shared<Scope>(symbolTable, pkgTrie);
-            asts.push_back(program);
-        }
+    auto bBody = std::make_shared<Seq>(std::vector<std::shared_ptr<Stmt>>{
+        std::make_shared<Move>(std::make_shared<Temp>("i"), std::make_shared<Temp>(arg0)),
+        std::make_shared<Move>(std::make_shared<Temp>("j"), std::make_shared<Temp>(arg1)),
+        std::make_shared<Move>(std::make_shared<Temp>("x"),
+            std::make_shared<BinOp>(BinOp::OpType::ADD,
+                std::make_shared<Call>(std::make_shared<Name>("a"),
+                    std::vector<std::shared_ptr<Expr>>{std::make_shared<Temp>("i"), std::make_shared<Temp>("j")}),
+                std::make_shared<Const>(1))),
+        std::make_shared<Return>(std::make_shared<BinOp>(BinOp::OpType::ADD,
+            std::make_shared<Temp>("x"),
+            std::make_shared<BinOp>(BinOp::OpType::MUL,
+                std::make_shared<Const>(20),
+                std::make_shared<Const>(5))))
+    });
+    std::shared_ptr<FuncDecl> bFunc = std::make_shared<FuncDecl>("b", 2, bBody);
+
+    std::shared_ptr<CompUnit> compUnit = std::make_shared<CompUnit>("test");
+    compUnit->appendFunc(aFunc);
+    compUnit->appendFunc(bFunc);
+
+    // IR interpreter demo
+    {
+        Simulator sim(compUnit);
+        long result = sim.call("b", -1, 1);
+        std::cout << "b(-1,1) evaluates to " << result << std::endl;
     }
 
-    //partition class and interface declarations into two vectors
-    std::vector<std::shared_ptr<ClassDecl>> classDecls;
-    std::vector<std::shared_ptr<InterfaceDecl>> interfaceDecls;
-    for (auto program : asts) {
-        if (!program) continue;
-        if (program->classOrInterfaceDecl) {
-            std::shared_ptr<ClassDecl> classDecl = std::dynamic_pointer_cast<ClassDecl>(program->classOrInterfaceDecl);
-            if (classDecl != nullptr) classDecls.push_back(classDecl);
-            else {
-                std::shared_ptr<InterfaceDecl> interfaceDecl = std::dynamic_pointer_cast<InterfaceDecl>(program->classOrInterfaceDecl);
-                assert(interfaceDecl != nullptr);
-                interfaceDecls.push_back(interfaceDecl);
-            }
-        }
+    // IR canonical checker demo
+    {
+        std::shared_ptr<CheckCanonicalIRVisitor> cv = std::make_shared<CheckCanonicalIRVisitor>();
+        std::cout << "Canonical? " << (cv->visit(compUnit) ? "Yes" : "No") << std::endl;
     }
 
-    bool classCycle = detectCycle<ClassDecl>(classDecls);
-    bool interfaceCycle = detectCycle<InterfaceDecl>(interfaceDecls);
-    if (classCycle) {
-        std::cerr << "Error: Detected a cycle among the classes" << std::endl; 
-        std::cerr << "Error: Hierarchy Checking failed" << std::endl;
-        error = true;
-    } else if (interfaceCycle) {
-        std::cerr << "Error: Detected a cycle among the interfaces" << std::endl; 
-        std::cerr << "Error: Hierarchy Checking failed" << std::endl;
-        error = true;
-    }
-
-    if (!error) {
-        for (auto ast : asts) {
-            TypeLinkingVisitor tvisitor{ast->scope};
-            ast->accept(&tvisitor);
-            if (tvisitor.isError()) {
-                std::cerr << "Error: Type linking failed" << std::endl;
-                error = true;
-                break;
-            }
-        }
-    }
-
-    if (!error) {
-        for (std::shared_ptr<Program> program : asts) {
-            HierarchyVisitor hvisitor(program->scope);
-            program->accept(&hvisitor);
-            if (hvisitor.isError()) {
-                std::cerr << "Error: Hierarchy Checking failed" << std::endl;
-                error = true;
-                break;
-            }
-        }
-    }
-
-    if (error)
-        return 42;
-    else
-        return 0;
+    return 0;
 }

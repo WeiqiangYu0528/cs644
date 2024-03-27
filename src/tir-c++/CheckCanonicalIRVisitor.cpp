@@ -1,5 +1,6 @@
+#include "IRAst.hpp"
 #include "CheckCanonicalIRVisitor.hpp"
-#include "Node.hpp"
+#include <iostream>
 
 CheckCanonicalIRVisitor::CheckCanonicalIRVisitor()
     : inSeqFlag(false), inExpFlag(false), inExprFlag(false), offender(nullptr), outer(nullptr) {}
@@ -13,14 +14,12 @@ bool CheckCanonicalIRVisitor::bind(bool r1, bool r2) {
 }
 
 std::shared_ptr<AggregateVisitor> CheckCanonicalIRVisitor::enter(std::shared_ptr<Node> parent, std::shared_ptr<Node> n) {
-    return nullptr;
-    
-    //  n->checkCanonicalEnter(shared_from_this());
+    return n->checkCanonicalEnter(std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this()));
 }
 
 bool CheckCanonicalIRVisitor::leave(std::shared_ptr<Node> parent, std::shared_ptr<Node> n, bool r, std::shared_ptr<AggregateVisitor> v_) {
     if (!r) return false;
-    if (!n->isCanonical(std::static_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this()))) {
+    if (!n->isCanonical(std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this()))) {
         noncanonical(parent ? parent : n);
         return false;
     }

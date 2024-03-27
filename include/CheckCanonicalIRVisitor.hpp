@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include "AggregateVisitor.hpp"
-#include "Node.hpp"
 
 class CheckCanonicalIRVisitor : public AggregateVisitor {
 public:
@@ -9,7 +8,7 @@ public:
 
     virtual bool unit() override;
     virtual bool bind(bool r1, bool r2) override;
-    virtual std::shared_ptr<AggregateVisitor> enter(std::shared_ptr<Node> parent, std::shared_ptr<Node> n);
+    virtual std::shared_ptr<AggregateVisitor> enter(std::shared_ptr<Node> parent, std::shared_ptr<Node> n) override;
     virtual bool leave(std::shared_ptr<Node> parent, std::shared_ptr<Node> n, bool r, std::shared_ptr<AggregateVisitor> v_) override;
 
     std::shared_ptr<CheckCanonicalIRVisitor> enterSeq();

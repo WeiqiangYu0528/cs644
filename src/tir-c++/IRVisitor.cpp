@@ -1,7 +1,5 @@
-#include "NodeFactory.hpp"
-#include "Node.hpp"
+#include "IRAst.hpp"
 #include "IRVisitor.hpp"
-#include <stdexcept>
 
 IRVisitor::IRVisitor(std::shared_ptr<NodeFactory> inf) : inf(inf) {}
 

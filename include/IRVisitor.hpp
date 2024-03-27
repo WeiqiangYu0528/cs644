@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 #include <stdexcept>
-#include "Node.hpp"
 class NodeFactory;
 class Node;
 
