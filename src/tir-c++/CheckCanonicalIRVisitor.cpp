@@ -27,34 +27,36 @@ bool CheckCanonicalIRVisitor::leave(std::shared_ptr<Node> parent, std::shared_pt
 }
 
 std::shared_ptr<CheckCanonicalIRVisitor> CheckCanonicalIRVisitor::enterSeq() {
+    std::shared_ptr<CheckCanonicalIRVisitor> v_ = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
     if (!inSeqFlag) {
-        std::shared_ptr<CheckCanonicalIRVisitor> v = std::make_shared<CheckCanonicalIRVisitor>();
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->outer = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->inSeqFlag = true;
-        return std::static_pointer_cast<CheckCanonicalIRVisitor>(v);
+        std::shared_ptr<CheckCanonicalIRVisitor> v = copyIfNeeded(v_);
+        v->outer = v_;
+        v->inSeqFlag = true;
+        return v;
     }
-    return std::static_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
+    return v_;
 }
 
 std::shared_ptr<CheckCanonicalIRVisitor> CheckCanonicalIRVisitor::enterExp() {
+    std::shared_ptr<CheckCanonicalIRVisitor> v_ = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
     if (!inExpFlag) {
-        std::shared_ptr<CheckCanonicalIRVisitor> v = std::make_shared<CheckCanonicalIRVisitor>();
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->outer = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->inExpFlag = true;
+        std::shared_ptr<CheckCanonicalIRVisitor> v = copyIfNeeded(v_);
+        v->outer = v_;
+        v->inExpFlag = true;
         return v;
     }
-    return std::static_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
+    return v_;
 }
 
 std::shared_ptr<CheckCanonicalIRVisitor> CheckCanonicalIRVisitor::enterExpr() {
+    std::shared_ptr<CheckCanonicalIRVisitor> v_ = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
     if (!inExprFlag) {
-        std::shared_ptr<CheckCanonicalIRVisitor> v = std::make_shared<CheckCanonicalIRVisitor>();
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->outer = std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
-        std::dynamic_pointer_cast<CheckCanonicalIRVisitor>(v)->inExprFlag = true;
+        std::shared_ptr<CheckCanonicalIRVisitor> v = copyIfNeeded(v_);
+        v->outer = v_;
+        v->inExprFlag = true;
         return v;
-        
     }
-    return std::static_pointer_cast<CheckCanonicalIRVisitor>(shared_from_this());
+    return v_;
 }
 
 bool CheckCanonicalIRVisitor::inSeq() const {

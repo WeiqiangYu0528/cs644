@@ -294,8 +294,9 @@ public:
 
     bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) {
         bool result = v->unit();
-        for (auto [key, func] : functions)
+        for (auto [key, func] : functions) {
             result = v->bind(result, v->visit(func));
+        }
         return result;
     }
 
@@ -526,7 +527,7 @@ public:
         return result;
     }
 
-    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v);
+    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
 };
 
 class Temp : public Expr_c {

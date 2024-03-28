@@ -444,7 +444,7 @@ std::shared_ptr<CheckCanonicalIRVisitor> Seq::checkCanonicalEnter(std::shared_pt
     return v->enterSeq();
 }
 
-bool Seq::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) {
+bool Seq::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inSeq();
 }
 
