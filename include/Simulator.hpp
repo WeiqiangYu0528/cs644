@@ -10,6 +10,8 @@
 #include <vector>
 #include "Configuration.hpp"
 
+namespace TIR {
+
 class CompUnit;
 class Simulator;
 
@@ -209,4 +211,6 @@ public:
      * @return the IR node at the named label
      */
     int findLabel(const std::string& name);
+};
+
 };

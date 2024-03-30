@@ -9,6 +9,8 @@
 #include "InsnMapsBuilder.hpp"
 #include "CheckCanonicalIRVisitor.hpp"
 
+namespace TIR {
+
 class Node : public std::enable_shared_from_this<Node> {
 public:
     virtual ~Node() = default;
@@ -98,7 +100,7 @@ public:
      */
     enum class OpType {
         ADD, SUB, MUL, DIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT,
-        EQ, NEQ, LT, GT, LEQ, GEQ
+        EQ, NEQ, LT, LTU, GT, LEQ, GEQ
     };
 
     std::unordered_map<OpType, std::string> OpTypeToString = {
@@ -116,6 +118,7 @@ public:
         {OpType::EQ, "EQ"},
         {OpType::NEQ, "NEQ"},
         {OpType::LT, "LT"},
+        {OpType::LTU, "LTU"},
         {OpType::GT, "GT"},
         {OpType::LEQ, "LEQ"},
         {OpType::GEQ, "GEQ"}
@@ -138,6 +141,47 @@ public:
         bool result = v->unit();
         result = v->bind(result, v->visit(left));
         result = v->bind(result, v->visit(right));
+        return result;
+    }
+
+    bool isConstant() const override;
+};
+
+/**
+ * Unary operators
+ */
+class UnaryOp : public Expr_c {
+private:
+    std::shared_ptr<Expr> expr;
+
+public:
+   /**
+     * An intermediate representation for an unary operation
+     * OP(exp)
+     */
+    enum class OpType {
+        NEG, NOT
+    };
+
+    std::unordered_map<OpType, std::string> OpTypeToString = {
+        {OpType::NEG, "NEG"},
+        {OpType::NOT, "NOT"}
+    };
+    OpType type;
+
+    UnaryOp(OpType type, std::shared_ptr<Expr> expr);
+
+    OpType getOpType() const;
+
+    std::shared_ptr<Expr> getExpr() const;
+
+    std::string getLabel() const override;
+
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
+
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
+        result = v->bind(result, v->visit(expr));
         return result;
     }
 
@@ -511,7 +555,7 @@ private:
 public:
     Seq(const std::vector<std::shared_ptr<Stmt>>& stmts, bool replaceParent = false);
 
-    std::vector<std::shared_ptr<Stmt>> getStmts() const;
+    const std::vector<std::shared_ptr<Stmt>>& getStmts() const;
 
     std::string getLabel() const override;
 
@@ -567,6 +611,8 @@ class NodeFactory {
 public:
     virtual std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) = 0;
 
+    virtual std::shared_ptr<UnaryOp> IRUnaryOp(UnaryOp::OpType type, std::shared_ptr<Expr> expr) = 0;
+
     virtual std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) = 0;
 
     template<typename... Exprs>
@@ -618,6 +664,8 @@ class NodeFactory_c : public NodeFactory {
 public:
     std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) override;
 
+    std::shared_ptr<UnaryOp> IRUnaryOp(UnaryOp::OpType type, std::shared_ptr<Expr> expr) override;
+
     std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) override;
 
     std::shared_ptr<CJump> IRCJump(std::shared_ptr<Expr> expr, const std::string& trueLabel) override;
@@ -653,4 +701,4 @@ public:
     std::shared_ptr<Temp> IRTemp(const std::string& name) override;
 };
 
-
+};

@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
 #include <stdexcept>
+
+namespace TIR {
+
 class NodeFactory;
 class Node;
 
@@ -26,4 +29,6 @@ protected:
         }
         return v;
     }
+};
+
 };

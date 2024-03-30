@@ -2,6 +2,8 @@
 #include "InsnMapsBuilder.hpp"
 #include <stdexcept>
 
+using namespace TIR;
+
 InsnMapsBuilder::InsnMapsBuilder() : IRVisitor(nullptr), index(0) {
 }
 

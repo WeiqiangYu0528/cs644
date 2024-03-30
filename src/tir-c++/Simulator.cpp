@@ -1,9 +1,11 @@
 #include "IRAst.hpp"
 #include "Simulator.hpp"
 
-std::random_device rd;  // Obtain a random number from hardware
-std::mt19937 gen(rd()); // Seed the generator
-std::uniform_int_distribution<> distr(0, INT_MAX); // Define the range
+using namespace TIR;
+
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_int_distribution<> distr(0, INT_MAX);
 int debugLevel = 0;
 
 ExecutionFrame::ExecutionFrame(int ip, Simulator& simulator) : ip(ip), ret(distr(gen)), simulator(simulator) {
@@ -276,6 +278,9 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
         case LT:
             result = l < r ? 1 : 0;
             break;
+        case LTU:
+            result = (unsigned) l < (unsigned) r ? 1 : 0;
+            break;
         case GT:
             result = l > r ? 1 : 0;
             break;
@@ -287,6 +292,22 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
             break;
         default:
             throw std::runtime_error("Invalid binary operation");
+        }
+        exprStack->pushValue(result);
+    }
+    else if (auto temp = std::dynamic_pointer_cast<UnaryOp>(insn)) {
+        int top = exprStack->popValue();
+        int result;
+        switch (temp->getOpType()) {
+        using enum UnaryOp::OpType;
+        case NEG:
+            result = -top;
+            break;
+        case NOT:
+            result = !top;
+            break;
+        default:
+            throw std::runtime_error("Invalid unary operation");
         }
         exprStack->pushValue(result);
     }

@@ -2,6 +2,8 @@
 #include "CheckCanonicalIRVisitor.hpp"
 #include <iostream>
 
+using namespace TIR;
+
 CheckCanonicalIRVisitor::CheckCanonicalIRVisitor()
     : inSeqFlag(false), inExpFlag(false), inExprFlag(false), offender(nullptr), outer(nullptr) {}
 

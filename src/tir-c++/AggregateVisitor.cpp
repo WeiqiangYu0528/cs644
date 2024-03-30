@@ -1,6 +1,8 @@
 #include "IRAst.hpp"
 #include "AggregateVisitor.hpp"
 
+using namespace TIR;
+
 bool AggregateVisitor::visit(std::shared_ptr<Node> parent, std::shared_ptr<Node> n) {
     if (!n) return false;
 

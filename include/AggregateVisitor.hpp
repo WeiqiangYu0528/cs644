@@ -2,6 +2,8 @@
 #include <memory>
 #include <stdexcept>
 
+namespace TIR {
+
 class Node;
 
 class AggregateVisitor : public std::enable_shared_from_this<AggregateVisitor> {
@@ -24,4 +26,6 @@ protected:
     std::shared_ptr<V> copyIfNeeded(std::shared_ptr<V> v) {
         return (v.get() == this) ? std::make_shared<V>(*v) : v;
     }
+};
+
 };

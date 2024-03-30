@@ -4,6 +4,8 @@
 #include <string>
 #include "IRVisitor.hpp"
 
+namespace TIR {
+
 class InsnMapsBuilder : public IRVisitor {
 public:
     InsnMapsBuilder();
@@ -21,4 +23,6 @@ private:
     std::unordered_map<std::string, int> nameToIndexMap;
     std::unordered_map<int, std::shared_ptr<Node>> indexToInsnMap;
     int index;
+};
+
 };

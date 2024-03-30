@@ -1,202 +1,340 @@
-// #include "transformVisitor.hpp"
-// #include "unordered_map"
+#include <algorithm>
+#include "transformVisitor.hpp"
+#include "Configuration.hpp"
 
-// TransformVisitor::TransformVisitor(std::shared_ptr<NodeFactory> nf) : nodeFactory(nf), labelCounter(0) {
-// }
+TransformVisitor::TransformVisitor(std::shared_ptr<TIR::NodeFactory> nf) : nodeFactory(nf), node(nullptr), labelCounter(0) {
+}
 
-// std::shared_ptr<CompUnit> TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
-//     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> methods;
-//     for (std::shared_ptr<Method> method : n->declarations[1]) {
-//         methods[method->methodName->name] = visit(method);
-//     }
-//     return nodeFactory->IRCompUnit(n->id->name, methods);
-// }
+void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
+    std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
+    for (auto methodDecl: n->declarations[1]) {
+        auto method = std::dynamic_pointer_cast<Method>(methodDecl);
+        method->accept(this);
+        methods[method->methodName->name] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+    }
+    node = nodeFactory->IRCompUnit(n->id->name, methods);
+}
 
-// std::shared_ptr<CompUnit> TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
-//     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> methods;
-//     for (auto method : n->methods) {
-//         methods[method->methodName->name] = visit(method);
-//     }
-//     return nodeFactory->IRCompUnit(n->id->name, methods);
-// }
+void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
+    std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
+    for (auto method : n->methods) {
+        method->accept(this);
+        methods[method->methodName->name] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+    }
+    node = nodeFactory->IRCompUnit(n->id->name, methods);
+}
 
-// std::shared_ptr<FuncDecl> TransformVisitor::visit(std::shared_ptr<Method> n) {
-//     return nodeFactory->IRFuncDecl(n->methodName->name, n->formalParameters.size(), visit(n->block));   
-// }
+void TransformVisitor::visit(std::shared_ptr<Method> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    for (size_t i = 0; i < n->formalParameters.size(); ++i) {
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(n->formalParameters[i]->variableName->name), nodeFactory->IRTemp(std::string(TIR::Configuration::ABSTRACT_ARG_PREFIX) + std::to_string(i))));
+    }
+    n->block->accept(this);
+    auto body = std::dynamic_pointer_cast<TIR::Seq>(node)->getStmts();
+    stmts.insert(stmts.end(), body.begin(), body.end());
+    node = nodeFactory->IRFuncDecl(n->methodName->name, n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
-//     return nodeFactory->IRBinOp(OpType::ADD, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<MinusExp> n) {
-//     return nodeFactory->IRBinOp(OpType::SUB, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<MinusExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, exp1, exp2);
+}
+              
+void TransformVisitor::visit(std::shared_ptr<TimesExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::MUL, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<TimesExp> n) {
-//     return nodeFactory->IRBinOp(OpType::MUL, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<DivideExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::DIV, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<DivideExp> n) {
-//     return nodeFactory->IRBinOp(OpType::DIV, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<ModuloExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::MOD, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<ModuloExp> n) {
-//     return nodeFactory->IRBinOp(OpType::MOD, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<LessExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::LT, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<LessExp> n) {
-//     return nodeFactory->IRBinOp(OpType::LT, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<GreaterExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::GT, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<GreaterExp> n) {
-//     return nodeFactory->IRBinOp(OpType::GT, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<LessEqualExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::LEQ, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<LessEqualExp> n) {
-//     return nodeFactory->IRBinOp(OpType::LEQ, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
+     n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::GEQ, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
-//     return nodeFactory->IRBinOp(OpType::GEQ, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
+     n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::EQ, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
-//     return nodeFactory->IRBinOp(OpType::EQ, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<NotEqualExp> n) {
+     n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::NEQ, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<NotEqualExp> n) {
-//     return nodeFactory->IRBinOp(OpType::NEQ, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::AND, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
-//     return nodeFactory->IRBinOp(OpType::AND, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
+    n->exp1->accept(this);
+    auto exp1 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->exp2->accept(this);
+    auto exp2 = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::OR, exp1, exp2);
+}
 
-// std::shared_ptr<BinOp> TransformVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
-//     return nodeFactory->IRBinOp(OpType::OR, visit(n->exp1), visit(n->exp2));
-// }
+void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
+    n->left->accept(this);
+    auto left = std::dynamic_pointer_cast<TIR::Expr>(node);
+    n->right->accept(this);
+    auto right = std::dynamic_pointer_cast<TIR::Expr>(node);
+    node = nodeFactory->IRMove(left, right);
+}
 
-// std::shared_ptr<Move> TransformVisitor::visit(std::shared_ptr<Assignment> n) {
-//     return nodeFactory->IRMove(visit(n->left), visit(n->right));
-// }
+void TransformVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
+    node = nodeFactory->IRConst(static_cast<int>(n->value));
+}
 
-// std::shared_ptr<Const> TransformVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
-//     return nodeFactory->IRConst(n->value);
-// }
+void TransformVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
+    node = nodeFactory->IRConst(static_cast<int>(n->value));
+}
 
-// std::shared_ptr<Const> TransformVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
-//     return nodeFactory->IRConst(n->value);
-// }
+void TransformVisitor::visit(std::shared_ptr<CharLiteralExp> n) {
+    node = nodeFactory->IRConst(static_cast<int>(n->value));
+}
 
-// std::shared_ptr<Const> TransformVisitor::visit(std::shared_ptr<CharLiteralExp> n) {
-//     return nodeFactory->IRConst(n->value);
-// }
+void TransformVisitor::visit(std::shared_ptr<SemicolonStatement> n) {
+    // node = nodeFactory->IRExp(nodeFactory->IRConst(0));
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<SemicolonStatement> n) {
-//     return nodeFactory->IRSeq(std::vector<std::shared_ptr<Stmt>>{});
-// }
+void TransformVisitor::visit(std::shared_ptr<IfStatement> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    n->exp->accept(this);
+    stmts.push_back(nodeFactory->IRCJump(std::dynamic_pointer_cast<TIR::Expr>(node), trueLabel->getName(), falseLabel->getName()));
+    stmts.push_back(trueLabel);
+    n->statement1->accept(this);
+    stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    stmts.push_back(falseLabel);
+    if (n->statement2) {
+        n->statement2->accept(this);
+        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    }
+    node = nodeFactory->IRSeq(stmts);
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<IfStatement> n) {
-//     std::vector<std::shared_ptr<Stmt>> stmts;
-//     std::shared_ptr<Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     stmt.push_back(nodeFactory->IRCJump(visit(n->exp), trueLabel->getName(), falseLabel->getName()));
-//     stmt.push_back(trueLabel);
-//     stmt.push_back(visit(n->statement1));
-//     stmt.push_back(falseLabel);
-//     if (n->statement2) stmt.push_back(visit(n->statement2));
-//     return nodeFactory->IRSeq(stmts);
-// }
+void TransformVisitor::visit(std::shared_ptr<WhileStatement> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> whileLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    stmts.push_back(whileLabel);
+    n->exp->accept(this);
+    stmts.push_back(nodeFactory->IRCJump(std::dynamic_pointer_cast<TIR::Expr>(node), trueLabel->getName(), falseLabel->getName()));
+    stmts.push_back(trueLabel);
+    n->statement->accept(this);
+    stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    stmts.push_back(nodeFactory->IRJump(nodeFactory->IRName(whileLabel->getName())));
+    stmts.push_back(falseLabel);
+    node = nodeFactory->IRSeq(stmts);
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<WhileStatement> n) {
-//     std::vector<std::shared_ptr<Stmt>> stmts;
-//     std::shared_ptr<Label> whileLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     stmts.push_back(whileLabel);
-//     stmts.push_back(nodeFactory->IRCJump(visit(n->exp), trueLabel->getName(), falseLabel->getName()));
-//     stmts.push_back(trueLabel);
-//     stmts.push_back(visit(n->statement));
-//     stmts.push_back(nodeFactory->IRJump(nodeFactory->IRName(whileLabel->getName())));
-//     stmts.push_back(falseLabel);
-//     return nodeFactory->IRSeq(stmts);
-// }
+void TransformVisitor::visit(std::shared_ptr<ForStatement> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> forLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    if (n->stmt1) {
+        n->stmt1->accept(this);
+        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    }
+    stmts.push_back(forLabel);
+    n->exp->accept(this);
+    stmts.push_back(nodeFactory->IRCJump(std::dynamic_pointer_cast<TIR::Expr>(node), trueLabel->getName(), falseLabel->getName()));
+    stmts.push_back(trueLabel);
+    if (n->stmt2) {
+        n->stmt2->accept(this);
+        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    }
+    if (n->expStmt2) {
+        n->expStmt2->accept(this);
+        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    
+    }
+    stmts.push_back(nodeFactory->IRJump(nodeFactory->IRName(forLabel->getName())));
+    stmts.push_back(falseLabel);
+    node = nodeFactory->IRSeq(stmts);
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<ForStatement> n) {
-//     std::vector<std::shared_ptr<Stmt>> stmts;
-//     std::shared_ptr<Label> forLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     if (n->stmt1) stmts.push_back(visit(n->stmt1));
-//     stmts.push_back(forLabel);
-//     stmts.push_back(nodeFactory->IRCJump(visit(n->exp), trueLabel->getName(), falseLabel->getName()));
-//     stmts.push_back(trueLabel);
-//     stmts.push_back(visit(n->stmt2));
-//     stmts.push_back(visit(n->expStmt2));
-//     stmts.push_back(nodeFactory->IRJump(nodeFactory->IRName(forLabel->getName())));
-//     stmts.push_back(falseLabel);
-//     return nodeFactory->IRSeq(stmts);
-// }
+void TransformVisitor::visit(std::shared_ptr<ReturnStatement> n) {
+    n->exp->accept(this);
+    node = nodeFactory->IRReturn(std::dynamic_pointer_cast<TIR::Expr>(node));
+}
 
-// std::shared_ptr<Return> TransformVisitor::visit(std::shared_ptr<ReturnStatement> n) {
-//     return nodeFactory->IRReturn(visit(n->exp));
-// }
+void TransformVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
+    n->exp->accept(this);
+}
 
-// std::shared_ptr<Node> TransformVisitor::visit(std::shared_ptr<ExpressionStatement> n) {
-//     return visit(n->exp);
-// }
+void TransformVisitor::visit(std::shared_ptr<BlockStatement> n) {
+    n->blockStatements->accept(this);
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<BlockStatement> n) {
-//     return visit(n->blockStatements);
-// }
+void TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    for (auto stmt : n->statements) {
+        stmt->accept(this);
+        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+    }
+    node = nodeFactory->IRSeq(stmts);
+}
 
-// std::shared_ptr<Seq> TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
-//     std::vector<std::shared_ptr<Stmt>> stmts;
-//     for (auto stmt : n->statements) {
-//         stmts.push_back(visit(stmt));
-//     }
-//     return nodeFactory->IRSeq(stmts);
-// }
+void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
+    std::vector<std::shared_ptr<TIR::Expr>> args;
+    for (auto arg : n->arguments) {
+        arg->accept(this);
+        args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
+    }
+    node = nodeFactory->IRCall(nodeFactory->IRName(n->methodName->id->name), args);
+}
 
-// std::shared_ptr<Call> TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
-//     std::vector<std::shared_ptr<Expr>> args;
-//     for (auto arg : n->arguments) {
-//         args.push_back(visit(arg));
-//     }
-//     return nodeFactory->IRCall(nodeFactory->IRName(n->methodName->id->name), args);
-// }
+void TransformVisitor::visit(std::shared_ptr<ParExp> n) {
+    n->exp->accept(this);
+}
 
-// std::shared_ptr<Expr> TransformVisitor::visit(std::shared_ptr<ParExp> n) {
-//     return visit(n->exp);
-// }
+void TransformVisitor::visit(std::shared_ptr<NewArrayExp> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> nonNegLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Temp> tn = nodeFactory->IRTemp("tn");
+    std::shared_ptr<TIR::Temp> tm = nodeFactory->IRTemp("tm");
+    n->exp->accept(this);
+    auto len = std::dynamic_pointer_cast<TIR::Const>(node);
+    stmts.push_back(nodeFactory->IRMove(tn, len));
+    stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::LT, tn, nodeFactory->IRConst(0)), errLabel->getName(), nonNegLabel->getName()));
+    stmts.push_back(errLabel);
+    stmts.push_back(nodeFactory->IRExp(nodeFactory->IRCall(nodeFactory->IRName("__exception"))));
+    stmts.push_back(nonNegLabel);
+    stmts.push_back(nodeFactory->IRMove(tm, nodeFactory->IRCall(nodeFactory->IRName("__malloc"), nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, nodeFactory->IRConst(2 * TIR::Configuration::WORD_SIZE), nodeFactory->IRBinOp(TIR::BinOp::OpType::MUL, tn, nodeFactory->IRConst(TIR::Configuration::WORD_SIZE))))));
+    stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(tm), tn));
+    size_t arrSize = len->getValue() + 1;
+    for (size_t i = 1; i <= arrSize; ++i) {
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRBinOp(TIR::BinOp::OpType::MUL, nodeFactory->IRConst(i), nodeFactory->IRConst(TIR::Configuration::WORD_SIZE)))), nodeFactory->IRConst(0)));
+    }
+    std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(TIR::Configuration::WORD_SIZE));
+    node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset);
+}
 
-// std::shared_ptr<ESeq> TransformVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
-//     std::vector<std::shared_ptr<Stmt>> stmts;
-//     std::shared_ptr<Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> nonNullLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::shared_ptr<Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-//     std::string arr = std::dynamic_pointer_cast<IdentifierExp>(n->array)->id->name;
-//     stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(arr), nodeFactory->IRName(arr)));
-//     stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(OpType::EQ, nodeFactory->IRMem(nodeFactory->IRTemp(arr)), nodeFactory->IRConst(0)), errLabel->getName(), nonNullLabel->getName()));
-//     stmts.push_back(errLabel);
-//     stmts.push_back(nodeFactory->IRCall());
-//     stmts.push_back(nonNullLabel);
-//     stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp("ti"), visit(n->index)));
-//     stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(OpType::LT, nodeFactory->IRTemp("ti"), nodeFactory->IRMem(nodeFactory->Na)), inboundLabel->getName(), errLabel->getName()));
-//     stmts.push_back(inboundLabel);
-//     std::shared_ptr<BinOp>
-//     std::shared_ptr<Mem> mem = nodeFactory->IRMem();
+void TransformVisitor::visit(std::shared_ptr<ArrayAccessExp> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> nonNullLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::string arr = std::dynamic_pointer_cast<IdentifierExp>(n->array)->id->name;
+    std::shared_ptr<TIR::Temp> ta = nodeFactory->IRTemp("ta");
+    std::shared_ptr<TIR::Temp> ti = nodeFactory->IRTemp("ti");
+    stmts.push_back(nodeFactory->IRMove(ta, nodeFactory->IRName(arr)));
+    stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::EQ, ta, nodeFactory->IRConst(0)), errLabel->getName(), nonNullLabel->getName()));
+    stmts.push_back(errLabel);
+    stmts.push_back(nodeFactory->IRExp(nodeFactory->IRCall(nodeFactory->IRName("__exception"))));
+    stmts.push_back(nonNullLabel);
+    n->index->accept(this);
+    stmts.push_back(nodeFactory->IRMove(ti, std::dynamic_pointer_cast<TIR::Expr>(node)));
+    stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::LTU, ti, nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, ta, nodeFactory->IRConst(TIR::Configuration::WORD_SIZE)))), inboundLabel->getName(), errLabel->getName()));
+    stmts.push_back(inboundLabel);
+    std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, ta, nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, nodeFactory->IRConst(TIR::Configuration::WORD_SIZE), nodeFactory->IRBinOp(TIR::BinOp::OpType::MUL, ti, nodeFactory->IRConst(TIR::Configuration::WORD_SIZE))));
+    std::shared_ptr<TIR::Mem> mem = nodeFactory->IRMem(offset);
+    node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), mem);
+}
 
+void TransformVisitor::visit(std::shared_ptr<Program> n) {
+    n->classOrInterfaceDecl->accept(this);
+}
 
-//     return ESeq* NodeFactory_c::IRESeq(Stmt* stmt, Expr* expr);
-// }
+void TransformVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
+    auto temp = nodeFactory->IRTemp(n->id->name);
+    std::shared_ptr<TIR::Expr> exp;
+    if (n->exp) {
+        n->exp->accept(this);
+        exp = std::dynamic_pointer_cast<TIR::Expr>(node);
+    }
+    else {
+        exp = nodeFactory->IRConst(0);
+    }
+    node = nodeFactory->IRMove(temp, exp);
+}
 
-// std::shared_ptr<CompUnit> TransformVisitor::visit(std::shared_ptr<Program> n) {
-//     return visit(n->classOrInterfaceDecl);
-// }
+void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
+    node = nodeFactory->IRTemp(n->id->name);
+}
 
-// std::shared_ptr<Move> TransformVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
-//     auto temp = nodeFactory->IRTemp(n->id->name);
-//     std::shared_ptr<Expr> exp = n->exp ? visit(n->exp) : nullptr;
-//     return nodeFactory->IRMove(temp, exp);
-// }
+void TransformVisitor::visit(std::shared_ptr<NotExp> n) {
+    n->exp->accept(this);
+    node = nodeFactory->IRUnaryOp(TIR::UnaryOp::OpType::NOT, std::dynamic_pointer_cast<TIR::Expr>(node));
+}
+
+void TransformVisitor::visit(std::shared_ptr<NegExp> n) {
+    n->exp->accept(this);
+    node = nodeFactory->IRUnaryOp(TIR::UnaryOp::OpType::NEG, std::dynamic_pointer_cast<TIR::Expr>(node));
+}
+
+std::shared_ptr<TIR::CompUnit> TransformVisitor::getCompUnit() const {
+    return std::dynamic_pointer_cast<TIR::CompUnit>(node);
+}

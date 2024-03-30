@@ -1,6 +1,8 @@
 #include "IRAst.hpp"
 #include "IRVisitor.hpp"
 
+using namespace TIR;
+
 IRVisitor::IRVisitor(std::shared_ptr<NodeFactory> inf) : inf(inf) {}
 
 std::shared_ptr<NodeFactory> IRVisitor::nodeFactory() {

@@ -2,6 +2,8 @@
 #include <memory>
 #include "AggregateVisitor.hpp"
 
+namespace TIR {
+
 class CheckCanonicalIRVisitor : public AggregateVisitor {
 public:
     CheckCanonicalIRVisitor();
@@ -29,4 +31,6 @@ protected:
 
     std::shared_ptr<Node> offender;
     std::shared_ptr<CheckCanonicalIRVisitor> outer;
+};
+
 };
