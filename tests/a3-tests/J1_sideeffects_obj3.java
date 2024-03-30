@@ -3,7 +3,7 @@ public class J1_sideeffects_obj3 {
     protected J1_sideeffects_obj3 subject = null;
 
     public J1_sideeffects_obj3(int a, J1_sideeffects_obj3 s) {
-	this.a = a;
+
 	subject = s;
     }
 

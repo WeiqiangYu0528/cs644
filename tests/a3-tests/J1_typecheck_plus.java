@@ -25,7 +25,7 @@ public class J1_typecheck_plus {
 	s = "null"+null;
 	s = "array"+new int[5];
 
-        return 123;
+    return 123;
     }
 
 }
