@@ -1,15 +1,13 @@
-package test;
-import java.lang.*;
-import java.lang.*;
-import java.lang.*;
-import java.io.*;
-import java.io.*;
 
-public class A <B, G extends H, I, J> extends K, Z, L, M implements N, O, P{
-    public A() {}
-	public A() {}    
-public int m() {
-      return java.util.Calendar.MONDAY;
+
+public class A{
+    public A() {
     }
-  }
-
+    public void test(Object o) {
+      String s = (String) o;
+      char[] ch = s.chars;
+      char[] ch2 = (s).chars;
+      char[] ch3 = ((String) o).chars;
+              // return Arrays.equals(chars, ((String)o).chars);
+    }
+}
