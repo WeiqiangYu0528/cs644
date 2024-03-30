@@ -23,7 +23,6 @@ class Visitor {
         virtual void visit(std::shared_ptr<IdentifierType> n);
         virtual void visit(std::shared_ptr<FieldAccessExp> n);
         virtual void visit(std::shared_ptr<NewArrayExp> n);
-        // virtual void visit(std::shared_ptr<CompoundType> n);
         virtual void visit(std::shared_ptr<NegExp> n);
         virtual void visit(std::shared_ptr<ParExp> n);
         virtual void visit(std::shared_ptr<LessExp> n);
