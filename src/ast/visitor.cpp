@@ -69,15 +69,14 @@ void Visitor::visit(std::shared_ptr<IdentifierType> n) {
 
 void Visitor::visit(std::shared_ptr<FieldAccessExp> n) { 
     n->exp->accept(this);
+    n->field->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<NewArrayExp> n) {
     n->exp->accept(this);
     n->type->accept(this); 
 }
-// void Visitor::visit(std::shared_ptr<CompoundType> n) { 
-//     std::cout << "Visiting CompoundType" << std::endl;
-// }
+
 void Visitor::visit(std::shared_ptr<NegExp> n) {
     n->exp->accept(this);
 }
@@ -152,12 +151,14 @@ void Visitor::visit(std::shared_ptr<Assignment> n) {
 }
 
 void Visitor::visit(std::shared_ptr<MethodInvocation> n) {
-    if (n->primary != nullptr)
+    if (n->primary != nullptr) {
         n->primary->accept(this);
-
-    if (n->methodName != nullptr)
-        n->methodName->accept(this);
-
+        n->primaryMethodName->accept(this);
+    }
+    if (n->ambiguousName != nullptr) {
+        n->ambiguousName->accept(this);
+        n->ambiguousMethodName->accept(this);
+    }
     for (auto& arg : n->arguments) {
         arg->accept(this);
     }
@@ -216,13 +217,13 @@ void Visitor::visit(std::shared_ptr<Constructor> n) {
 }
 
 void Visitor::visit(std::shared_ptr<Method> n) {
-    n->returnType->accept(this);
+    n->type->accept(this);
     for (auto fp : n->formalParameters) fp->accept(this);
     if (n->block) n->block->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<Field> n) {
-    n->returnType->accept(this);
+    n->type->accept(this);
     if (n->initializer) n->initializer->accept(this);
 }
 

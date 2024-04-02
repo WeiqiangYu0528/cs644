@@ -75,9 +75,7 @@ void PrintVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
 void PrintVisitor::visit(std::shared_ptr<NewArrayExp> n) { 
     std::cout << "Visiting NewArray" << std::endl;
 }
-// void PrintVisitor::visit(std::shared_ptr<CompoundType> n) { 
-//     std::cout << "Visiting CompoundType" << std::endl;
-// }
+
 void PrintVisitor::visit(std::shared_ptr<NegExp> n) {
     std::cout << "Visiting NegExp" << std::endl;
 }

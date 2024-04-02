@@ -26,6 +26,11 @@ class Type : public AstNode {
         DataType type;
         Type(DataType t);
         ~Type() = default;
+        static bool isSameType(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b) {
+            if (!a || !b) return false;
+            return a->type == b->type;
+        }
+        virtual std::string typeToString() = 0;
         virtual void accept(Visitor* v) = 0;
 };
 
@@ -43,6 +48,7 @@ class MemberDecl : public AstNode {
         MemberDecl(MemberType mt, std::vector<Modifiers> m);
         virtual ~MemberDecl() = default;
         virtual void accept(Visitor* v) = 0;
+        virtual void setModifiers(std::vector<Modifiers>& m) = 0;
 };
 
 class Identifier : public AstNode, public std::enable_shared_from_this<Identifier> {
@@ -57,6 +63,7 @@ class IdentifierType : public Type, public std::enable_shared_from_this<Identifi
         std::shared_ptr<Identifier> id;
         bool simple;
         IdentifierType(std::shared_ptr<Identifier> i, bool s = false);
+        std::string typeToString() override;
         void accept(Visitor* v) override;
 };
 
@@ -64,6 +71,7 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
     public:
         std::shared_ptr<Type> dataType;
         ArrayType(std::shared_ptr<Type> t);
+        std::string typeToString() override;
         void accept(Visitor* v) override;
 };
 
@@ -214,16 +222,16 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
 class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAccessExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::shared_ptr<Identifier> id;
-        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i);
+        std::shared_ptr<IdentifierExp> field;
+        FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
         void accept(Visitor* v) override;
 };
 
 class NewArrayExp: public Exp, public std::enable_shared_from_this<NewArrayExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::shared_ptr<Type> type;
-        NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
+        std::shared_ptr<ArrayType> type;
+        NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<ArrayType> t);
         void accept(Visitor* v) override;
 };
 
@@ -339,13 +347,18 @@ public:
 class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
 public:
     std::shared_ptr<Exp> primary;
-    std::shared_ptr<Identifier> primaryMethodName;
-    std::shared_ptr<IdentifierType> methodName;
+    std::shared_ptr<IdentifierExp> primaryMethodName;
+    std::shared_ptr<IdentifierType> ambiguousName;
+    std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<Identifier> primaryMethodName,
-        std::shared_ptr<IdentifierType> methodName, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
         std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
+    std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
     void accept(Visitor* v) override;
 };
 
@@ -360,36 +373,42 @@ public:
 class ByteType : public Type, public std::enable_shared_from_this<ByteType> {
 public:
     ByteType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class ShortType : public Type, public std::enable_shared_from_this<ShortType> {
 public:
     ShortType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class CharType : public Type, public std::enable_shared_from_this<CharType> {
 public:
     CharType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class IntType : public Type, public std::enable_shared_from_this<IntType> {
 public:
     IntType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class BooleanType : public Type, public std::enable_shared_from_this<BooleanType> {
 public:
     BooleanType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
 public:
     VoidType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
@@ -501,25 +520,36 @@ class FormalParameter : public AstNode, public std::enable_shared_from_this<Form
 
 class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
     public:
-        std::shared_ptr<Type> returnType;
+        bool isStatic;
+        bool isFinal;
+        bool isProtected;
+        std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> fieldName;
         std::shared_ptr<Exp> initializer;
 
-        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, 
+        Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, 
         std::shared_ptr<Exp> i);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
-        std::shared_ptr<Type> returnType;
+        bool isStatic;
+        bool isNative;
+        bool isPublic;
+        bool isFinal;
+        bool isAbstract;
+        std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
         std::shared_ptr<BlockStatement> block;
 
-        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+        Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
+        std::string getSignature() const;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
@@ -531,6 +561,7 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
+        void setModifiers(std::vector<Modifiers>& m) override;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
@@ -543,6 +574,15 @@ class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_th
         ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
         std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d);
         void accept(Visitor* v) override;
+        bool isAbstract ()
+        {
+            return modifier == "abstract";
+        }
+
+        bool isFinal ()
+        {
+            return modifier == "final";
+        }
 };
 
 class InterfaceDecl: public ClassOrInterfaceDecl, public std::enable_shared_from_this<InterfaceDecl> {

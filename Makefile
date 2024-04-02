@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-Iinclude -Wall -std=c++20
+CXXFLAGS=-Iinclude -Wall -std=c++20 -g
 LIBS=
 
 BISON=bison

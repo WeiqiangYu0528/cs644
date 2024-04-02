@@ -27,9 +27,10 @@ public:
     /** return value from this frame */
     int ret;
 
-private:
     /** local registers (register name -> value) */
     std::unordered_map<std::string, int> regs;
+
+private:
     Simulator& simulator;
 
 public:
@@ -120,9 +121,11 @@ private:
     std::set<std::string> libraryFunctions;
 
 public:
+    bool isStaticInit;
     constexpr static int DEFAULT_HEAP_SIZE = 2048;
     /** map from address to instruction */
     std::unordered_map<int, std::shared_ptr<Node>> indexToInsn;
+    std::unordered_map<std::string, int> staticFields;
 
     /**
      * Construct an IR interpreter with a default heap size
@@ -211,6 +214,8 @@ public:
      * @return the IR node at the named label
      */
     int findLabel(const std::string& name);
+
+    void initStaticFields();
 };
 
 };

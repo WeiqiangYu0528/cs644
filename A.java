@@ -1,15 +1,12 @@
-package test;
-import java.lang.*;
-import java.lang.*;
-import java.lang.*;
-import java.io.*;
-import java.io.*;
-
-public class A <B, G extends H, I, J> extends K, Z, L, M implements N, O, P{
-    public A() {}
-	public A() {}    
-public int m() {
-      return java.util.Calendar.MONDAY;
+public class A{
+    public A() {
     }
-  }
-
+    public static int test() {
+        int a = 19;
+        if (a == 0)
+            a = 1;
+        else 
+            a = 2;
+        return a;
+    }
+}

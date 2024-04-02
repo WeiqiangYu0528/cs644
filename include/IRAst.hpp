@@ -8,6 +8,7 @@
 #include "IRVisitor.hpp"
 #include "InsnMapsBuilder.hpp"
 #include "CheckCanonicalIRVisitor.hpp"
+#include "Configuration.hpp"
 
 namespace TIR {
 
@@ -313,12 +314,38 @@ public:
     std::shared_ptr<Node> buildInsnMaps(std::shared_ptr<InsnMapsBuilder> v) override;
 };
 
+class Move : public Stmt {
+private:
+    std::shared_ptr<Expr> target;
+    std::shared_ptr<Expr> src;
+
+public:
+    Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash = false);
+
+    std::shared_ptr<Expr> getTarget() const;
+
+    std::shared_ptr<Expr> getSource() const;
+
+    virtual std::string getLabel() const override;
+
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
+        result = v->bind(result, v->visit(target));
+        result = v->bind(result, v->visit(src));
+        return result;
+    }
+
+    virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
+};
+
 /**
  * An intermediate representation for a compilation unit
  */
 class CompUnit : public Node_c {
 private:
     std::string name;
+    std::shared_ptr<FuncDecl> staticInitFunc;
+    std::vector<std::shared_ptr<Move>> fields;
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions;
 
 public:
@@ -328,9 +355,17 @@ public:
 
     void appendFunc(std::shared_ptr<FuncDecl> func);
 
+    void setStaticInitFunc(std::shared_ptr<FuncDecl> func);
+
+    void setFields(std::vector<std::shared_ptr<Move>>& fields);
+
+    void setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions);
+
     std::string getName() const;
 
-    std::unordered_map<std::string, std::shared_ptr<FuncDecl>> getFunctions() const;
+    const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& getFunctions() const;
+
+    const std::vector<std::shared_ptr<Move>>& getFields() const;
 
     std::shared_ptr<FuncDecl> getFunction(const std::string& name) const;
 
@@ -505,31 +540,6 @@ public:
         result = v->bind(result, v->visit(expr));
         return result;
     }
-
-    virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
-};
-
-class Move : public Stmt {
-private:
-    std::shared_ptr<Expr> target;
-    std::shared_ptr<Expr> src;
-
-public:
-    Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash = false);
-
-    std::shared_ptr<Expr> getTarget() const;
-
-    std::shared_ptr<Expr> getSource() const;
-
-    virtual std::string getLabel() const override;
-
-    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
-        bool result = v->unit();
-        result = v->bind(result, v->visit(target));
-        result = v->bind(result, v->visit(src));
-        return result;
-    }
-
 
     virtual std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 };

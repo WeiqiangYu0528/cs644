@@ -12,10 +12,13 @@ ExecutionFrame::ExecutionFrame(int ip, Simulator& simulator) : ip(ip), ret(distr
 }
 
 int ExecutionFrame::get(const std::string& tempName) {
+    if (simulator.staticFields.contains(tempName))
+        return simulator.staticFields[tempName];
     if (!regs.contains(tempName)) {
         /* Referencing a temp before having written to it - initialize
             with garbage */
-        put(tempName, distr(gen));
+        if (simulator.isStaticInit) put(tempName, 0);
+        else put(tempName, distr(gen));
     }
     return regs[tempName];
 }
@@ -111,7 +114,7 @@ void ExprStack::pushValue(int value) {
 Simulator::Simulator(std::shared_ptr<CompUnit> compUnit) : Simulator(compUnit, DEFAULT_HEAP_SIZE) {
 }
 
-Simulator::Simulator(std::shared_ptr<CompUnit> compUnit, int heapSize) : compUnit(compUnit), heapSizeMax(heapSize), exprStack(std::make_shared<ExprStack>()) {
+Simulator::Simulator(std::shared_ptr<CompUnit> compUnit, int heapSize) : compUnit(compUnit), heapSizeMax(heapSize), exprStack(std::make_shared<ExprStack>()), isStaticInit(false) {
     libraryFunctions.insert("__malloc");
     libraryFunctions.insert("__debexit");
     libraryFunctions.insert("__exception");
@@ -125,14 +128,14 @@ Simulator::Simulator(std::shared_ptr<CompUnit> compUnit, int heapSize) : compUni
 
 int Simulator::malloc(int size) {
     if (size < 0) throw std::runtime_error("Invalid size");
-    if (size % Configuration::WORD_SIZE != 0)
-        throw std::runtime_error("Can only allocate in chunks of "
-                + std::to_string(Configuration::WORD_SIZE) + " bytes!");
+    // if (size % Configuration::WORD_SIZE != 0)
+    //     throw std::runtime_error("Can only allocate in chunks of "
+    //             + std::to_string(Configuration::WORD_SIZE) + " bytes!");
 
     int retval = mem.size();
     if (retval + size > heapSizeMax) throw std::runtime_error("Out of heap!");
     for (int i = 0; i < size; i++) {
-        mem.push_back(distr(gen));
+        mem.push_back(0);
     }
     return retval;
 }
@@ -160,10 +163,11 @@ void Simulator::store(int addr, int value) {
 }
 
 int Simulator::getMemoryIndex(int addr) {
-    if (addr % Configuration::WORD_SIZE != 0)
-        throw std::runtime_error("Unaligned memory access: " + std::to_string(addr) + " (word size="
-                + std::to_string(Configuration::WORD_SIZE) + ")");
-    return addr / Configuration::WORD_SIZE;
+    // if (addr % Configuration::WORD_SIZE != 0)
+    //     throw std::runtime_error("Unaligned memory access: " + std::to_string(addr) + " (word size="
+    //             + std::to_string(Configuration::WORD_SIZE) + ")");
+    return addr;
+    // return addr / Configuration::WORD_SIZE;
 }
 
 int Simulator::call(std::shared_ptr<ExecutionFrame> parent, const std::string& name, std::vector<int>& args) {
@@ -377,7 +381,8 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
         if (!label.empty()) frame->setIP(findLabel(label));
     }
     else if (auto temp = std::dynamic_pointer_cast<Return>(insn)) {
-        frame->ret = exprStack->popValue();
+        if (temp->getRet()) frame->ret = exprStack->popValue();
+        if (isStaticInit) staticFields = frame->regs;
         frame->setIP(-1);
     }
 }
@@ -386,4 +391,10 @@ int Simulator::findLabel(const std::string& name) {
     if (!nameToIndex.contains(name))
         throw std::runtime_error("Could not find label '" + name + "'!");
     return nameToIndex[name];
+}
+
+void Simulator::initStaticFields() {
+    isStaticInit = true;
+    call(Configuration::STATIC_INIT_FUNC);
+    isStaticInit = false;
 }

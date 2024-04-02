@@ -154,16 +154,32 @@ void CompUnit::appendFunc(std::shared_ptr<FuncDecl> func) {
     functions[func->name] = func;
 }
 
+void CompUnit::setStaticInitFunc(std::shared_ptr<FuncDecl> func) {
+    this->staticInitFunc = func;
+}
+
+void CompUnit::setFields(std::vector<std::shared_ptr<Move>>& fields) {
+    this->fields = fields;
+}
+
+void CompUnit::setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions) {
+    this->functions = functions;
+}
+
 std::string CompUnit::getName() const {
     return name;
 }
 
-std::unordered_map<std::string, std::shared_ptr<FuncDecl>> CompUnit::getFunctions() const {
+const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& CompUnit::getFunctions() const {
     return functions;
 }
 
+const std::vector<std::shared_ptr<Move>>& CompUnit::getFields() const {
+    return fields;
+}
+
 std::shared_ptr<FuncDecl> CompUnit::getFunction(const std::string& name) const {
-    return functions.at(name);
+    return name == Configuration::STATIC_INIT_FUNC ? staticInitFunc : functions.at(name);
 }
 
 std::string CompUnit::getLabel() const {
@@ -174,6 +190,7 @@ std::shared_ptr<Node> CompUnit::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
 
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> results;
+    v->visit(shared_from_this(), staticInitFunc);
     for (auto [key, func] : functions) {
         std::shared_ptr<FuncDecl> newFunc = std::dynamic_pointer_cast<FuncDecl>(v->visit(shared_from_this(), func));
         if (newFunc != func) modified = true;

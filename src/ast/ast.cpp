@@ -118,11 +118,19 @@ void CastExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
+std::string IdentifierType::typeToString() {
+    return id->name;
+}
+
 IdentifierType::IdentifierType(std::shared_ptr<Identifier> i, bool s) : Type(DataType::OBJECT), id(i), simple(s) {
 }
 
 void IdentifierType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string ArrayType::typeToString() {
+    return dataType->typeToString() + "[]";
 }
 
 ArrayType::ArrayType(std::shared_ptr<Type> t) : Type(DataType::ARRAY), dataType(t) {
@@ -132,27 +140,19 @@ void ArrayType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<Identifier> i) : exp(e), id(i) {
+FieldAccessExp::FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f) : exp(e), field(f) {
 }
 
 void FieldAccessExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-NewArrayExp::NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t) : exp(e), type(t) {
+NewArrayExp::NewArrayExp(std::shared_ptr<Exp> e, std::shared_ptr<ArrayType> t) : exp(e), type(t) {
 }
 
 void NewArrayExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
-
-// CompoundType::CompoundType(std::shared_ptr<Type> t1, std::shared_ptr<IdentifierType> t2) : Type(DataType::OBJECT), type(t1), subType(t2) {
-//     std::cout << "CompoundType constructor" << std::endl;
-// }
-
-// void CompoundType::accept(Visitor* v) {
-//     v->visit(shared_from_this());
-// }
 
 NegExp::NegExp(std::shared_ptr<Exp> e) : exp(e) {
 }
@@ -274,10 +274,20 @@ void MethodInvocation::accept(Visitor* v) {
 }
 
 MethodInvocation::MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<Identifier> primaryMethodName,
-        std::shared_ptr<IdentifierType> methodName, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
         std::vector<std::shared_ptr<Exp>> arguments)
-        : primary(primary), primaryMethodName(primaryMethodName), methodName(methodName), arguments(arguments) {
+        : primary(primary), primaryMethodName(primaryMethodName), arguments(arguments) {
+}
+
+MethodInvocation::MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName, 
+        std::shared_ptr<IdentifierExp> ambiguousMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments)
+        : ambiguousName(ambiguousName), ambiguousMethodName(ambiguousMethodName), arguments(arguments) {
+}
+
+MethodInvocation::MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments)
+        : ambiguousMethodName(ambiguousMethodName), arguments(arguments) {
 }
 
 void ClassInstanceCreationExp::accept(Visitor* v) {
@@ -289,11 +299,19 @@ ClassInstanceCreationExp::ClassInstanceCreationExp(std::shared_ptr<IdentifierTyp
 {
 }
 
+std::string IntType::typeToString() {
+    return "int";
+}
+
 void IntType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 IntType::IntType() : Type(DataType::INT) {
+}
+
+std::string CharType::typeToString() {
+    return "char";
 }
 
 void CharType::accept(Visitor* v) {
@@ -303,11 +321,19 @@ void CharType::accept(Visitor* v) {
 CharType::CharType() : Type(DataType::CHAR) {
 }
 
+std::string ShortType::typeToString() {
+    return "short";
+}
+
 void ShortType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 ShortType::ShortType() : Type(DataType::SHORT) {
+}
+
+std::string VoidType::typeToString() {
+    return "void";
 }
 
 void VoidType::accept(Visitor* v) {
@@ -317,11 +343,19 @@ void VoidType::accept(Visitor* v) {
 VoidType::VoidType() : Type(DataType::VOID) {
 }
 
+std::string BooleanType::typeToString() {
+    return "boolean";
+}
+
 void BooleanType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 BooleanType::BooleanType() : Type(DataType::BOOLEAN) {
+}
+
+std::string ByteType::typeToString() {
+    return "byte";
 }
 
 void ByteType::accept(Visitor* v) {
@@ -363,21 +397,73 @@ void FormalParameter::accept(Visitor* v) {
 MemberDecl::MemberDecl(MemberType mt, std::vector<Modifiers> m) : memberType(mt), modifiers(m) {
 }
 
-Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
-: MemberDecl(mt, m), returnType(rt), fieldName(fn), initializer(i) {
+Field::Field(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> fn, std::shared_ptr<Exp> i)
+: MemberDecl(mt, m), isStatic(false), isFinal(false), isProtected(false), type(t), fieldName(fn), initializer(i) {
 }
 
 void Field::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
-Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> rt, std::shared_ptr<Identifier> mn, 
+void Field::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
+    for (Modifiers modifier : m) {
+        if (modifier == Modifiers::STATIC) {
+            isStatic = true;
+        }
+        else if (modifier == Modifiers::FINAL) {
+            isFinal = true;
+        } 
+        else if (modifier == Modifiers::PROTECTED) {
+            isProtected = true;
+        }
+    }
+}
+
+Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
-: MemberDecl(mt, m), returnType(rt), methodName(mn), formalParameters(fp), block(b) {
+: MemberDecl(mt, m), isStatic(false), isNative(false), isPublic(false), isFinal(false), isAbstract(false), type(t), methodName(mn), formalParameters(fp), block(b) {
+}
+
+std::string Method::getSignature() const {
+    std::string signature =  methodName->name + "(";
+    for (int i = 0; i < formalParameters.size(); ++i) {
+        signature += formalParameters[i]->type->typeToString();
+        if (i != formalParameters.size() - 1) {
+            signature += ",";
+        }
+    }
+    signature += ")";
+    return signature;
 }
 
 void Method::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+void Method::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
+    for (Modifiers modifier : m) {
+        if (modifier == Modifiers::STATIC) {
+            isStatic = true;
+        }
+        if (modifier == Modifiers::ABSTRACT)
+        {
+            isAbstract = true;
+        }
+        if (modifier == Modifiers::FINAL)
+        {
+            isFinal = true;
+        }
+        if (modifier == Modifiers::PUBLIC)
+        {
+            isPublic = true;
+        }
+        if (modifier == Modifiers::NATIVE)
+        {
+            isNative = true;
+        }
+    }
 }
 
 Constructor::Constructor(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Identifier> cn, 
@@ -387,6 +473,10 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement
 
 void Constructor::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+void Constructor::setModifiers(std::vector<Modifiers>& m) {
+    modifiers = m;
 }
 
 ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
