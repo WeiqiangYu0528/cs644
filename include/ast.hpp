@@ -38,6 +38,7 @@ class Statement : public AstNode
     public:
         virtual ~Statement() = default;
         virtual void accept(Visitor *v) = 0;
+        virtual std::string getStmtName() = 0;
 };
 
 class MemberDecl : public AstNode {
@@ -408,6 +409,10 @@ class SemicolonStatement : public Statement,
 {
 public:
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "SemicolonStatement";
+    }
 };
 
 class BlockStatements : public Statement, 
@@ -417,6 +422,10 @@ public:
     std::vector<std::shared_ptr<Statement>> statements;
     void addStatement(std::shared_ptr<Statement> stmt);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "BlockStatements";
+    }
 };
 
 class BlockStatement : public Statement,
@@ -426,6 +435,10 @@ public:
     std::shared_ptr<BlockStatements> blockStatements;
     BlockStatement(std::shared_ptr<BlockStatements> sl);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "BlockStatement";
+    }
 };
 
 // This is for if/then and if/else
@@ -437,6 +450,10 @@ public:
     std::shared_ptr<Statement> statement1, statement2;
     IfStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "IfStatement";
+    }
 };
 
 class WhileStatement : public Statement,
@@ -447,6 +464,10 @@ public:
     std::shared_ptr<Statement> statement;
     WhileStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement>);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "WhileStatement";
+    }
 };
 
 class LocalVariableDeclarationStatement : public Statement, 
@@ -458,6 +479,10 @@ public:
     std::shared_ptr<Exp> exp;
     LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "LocalVariableDeclarationStatement";
+    }
 
     void setType(std::shared_ptr<Type> t)
     {
@@ -472,6 +497,10 @@ public:
     std::shared_ptr<Exp> exp;
     ExpressionStatement(std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "ExpressionStatement";
+    }
 };
 
 class ForStatement : public Statement, public std::enable_shared_from_this<ForStatement> {
@@ -489,6 +518,11 @@ public:
     void setStmt2(std::shared_ptr<Statement> s) {
         stmt2 = s;
     }
+
+    inline std::string getStmtName() override
+    {
+        return "ForStatement";
+    }
 };
 
 class ReturnStatement : public Statement, 
@@ -498,6 +532,10 @@ public:
     std::shared_ptr<Exp> exp;
     ReturnStatement(std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "ReturnStatement";
+    }
 };
 
 class FormalParameter : public AstNode, public std::enable_shared_from_this<FormalParameter> {
