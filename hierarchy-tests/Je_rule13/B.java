@@ -1,3 +1,3 @@
 public interface B{
-public char test(int x);
+public char test(int x){}
 }

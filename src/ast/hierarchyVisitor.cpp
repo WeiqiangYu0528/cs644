@@ -327,7 +327,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
                                 // Check if the parameter types are the same
                                 if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
                                     bool isSameParameters = true;
-                                    for (int i = 0; i < parentMethod->formalParameters.size(); i++) {
+                                    for (size_t i = 0; i < parentMethod->formalParameters.size(); i++) {
                                         if (parentMethod->formalParameters[i]->type->type != method->formalParameters[i]->type->type) {
                                             isSameParameters = false;
                                             break;
@@ -361,7 +361,7 @@ void HierarchyVisitor::visit(std::shared_ptr<ClassDecl> n) {
                                 // Check if the parameter types are the same
                                 if (parentMethod->formalParameters.size() == method->formalParameters.size()) {
                                     bool isSameParameters = true;
-                                    for (int i = 0; i < parentMethod->formalParameters.size(); i++) {
+                                    for (size_t i = 0; i < parentMethod->formalParameters.size(); i++) {
                                         if (parentMethod->formalParameters[i]->type->type != method->formalParameters[i]->type->type) {
                                             isSameParameters = false;
                                             break;
@@ -506,7 +506,7 @@ void HierarchyVisitor::visit(std::shared_ptr<Method> n)
                 {
                     if (superMethod->formalParameters.size() == n->formalParameters.size()) {
                         bool isSameParameters = true;
-                        for (int i = 0; i < superMethod->formalParameters.size(); i++) {
+                        for (size_t i = 0; i < superMethod->formalParameters.size(); i++) {
                             if (superMethod->formalParameters[i]->type->type != n->formalParameters[i]->type->type) {
                                 isSameParameters = false;
                                 break;
