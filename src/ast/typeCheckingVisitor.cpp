@@ -825,6 +825,7 @@ AmbiguousName TypeCheckingVisitor::visitNewArrayExp(std::shared_ptr<NewArrayExp>
 AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n) {
     AmbiguousName ambiguousName;
     // not finished yet
+
     auto indexType = GetExpInfo(n->index);
     std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
     if (!s.contains(indexType.expType)) {
@@ -833,9 +834,9 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
         ambiguousName.type = AmbiguousNamesType::ERROR;
         return ambiguousName;
     }
-    
-    if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
-        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
+
+
+    auto processExpType = [&](auto& ambiguousName, auto& currentExpInfo, auto& d2e, bool& error) {
         SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
         if (currentExpInfo.arrayType == DataType::OBJECT) {
             currentExpInfo.expType = ExpType::Object;
@@ -850,7 +851,17 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
             ambiguousName.type = AmbiguousNamesType::ERROR;
             return ambiguousName;
         }
+        return ambiguousName;
+    };
+
+    if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
+        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
     } 
+    else if (auto left = std::dynamic_pointer_cast<ParExp>(n->array)) {
+        ambiguousName = visitParExp(left);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
+    }
     else {
         currentExpInfo.expType = ExpType::Any;
     }    
