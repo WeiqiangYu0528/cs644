@@ -2,6 +2,15 @@ import os
 import subprocess
 import argparse
 
+error_code = {
+    'J1_' : 0,
+    'J2_' : 0,
+    'Jw_' : 43,
+    'Je_' : 42,
+    'J1e' : 13,
+    None : 0,
+}
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--single', metavar='dir', type=str)
@@ -57,7 +66,7 @@ def main(start_dir):
     for item, files in items_to_process:
         add_jsl_files(files, jsl_dir)
         return_code = execute_joosc(files).returncode
-        expected_return_code = 0 if item.startswith(('J1_', 'J2_')) else 42
+        expected_return_code = error_code[item[:3]]
         if return_code != expected_return_code:
             type_linking, hierarchy = check_error_type(files)
             item_string = os.path.join(start_dir, item)
@@ -86,12 +95,13 @@ def single(dir_or_file):
     add_jsl_files(files, jsl_dir)
     result = execute_joosc(files)
     print("[", ", ".join(f'"{s}"' for s in files), "]", sep="")
-    expected_return_code = 0 if 'J1_' in dir_or_file or 'J2_' in dir_or_file else 42
-    print("return:", result.returncode, "expected_return:", expected_return_code)
+    t = next((item for item in ['J1_', 'J2_', 'Jw_', 'Je_'] if item in dir_or_file), None)
+    print("return:", result.returncode, "expected_return:", error_code[t])
     if result.stdout:
         print(result.stdout)
     if result.stderr:
         print(result.stderr)
+
 
 if __name__ == "__main__":
     args = parse_arguments()

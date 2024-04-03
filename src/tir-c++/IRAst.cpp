@@ -35,34 +35,6 @@ bool BinOp::isConstant() const {
     return left->isConstant() && right->isConstant();
 }
 
-UnaryOp::UnaryOp(OpType type, std::shared_ptr<Expr> expr) : expr(expr), type(type) {
-}
-
-UnaryOp::OpType UnaryOp::getOpType() const {
-    return type;
-}
-
-std::shared_ptr<Expr> UnaryOp::getExpr() const {
-    return expr;
-}
-
-std::string UnaryOp::getLabel() const {
-    return OpTypeToString.at(type);
-}
-
-std::shared_ptr<Node> UnaryOp::visitChildren(std::shared_ptr<IRVisitor> v) {
-    std::shared_ptr<Expr> exp = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), expr));
-    
-    if (exp != expr)
-        return v->nodeFactory()->IRUnaryOp(type, exp);
-
-    return shared_from_this();
-}
-
-bool UnaryOp::isConstant() const {
-    return expr->isConstant();
-}
-
 Call::Call(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) : target(target), args(args) {
 }
 
@@ -497,10 +469,6 @@ bool Seq::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
 
 std::shared_ptr<BinOp> NodeFactory_c::IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) {
     return std::make_shared<BinOp>(type, left, right);
-}
-
-std::shared_ptr<UnaryOp> NodeFactory_c::IRUnaryOp(UnaryOp::OpType type, std::shared_ptr<Expr> expr) {
-    return std::make_shared<UnaryOp>(type, expr);
 }
 
 std::shared_ptr<Call> NodeFactory_c::IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) {

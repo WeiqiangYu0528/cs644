@@ -39,6 +39,7 @@ class Statement : public AstNode
     public:
         virtual ~Statement() = default;
         virtual void accept(Visitor *v) = 0;
+        virtual std::string getStmtName() = 0;
 };
 
 class MemberDecl : public AstNode {
@@ -344,24 +345,6 @@ public:
     void accept(Visitor* v) override;
 };
 
-class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
-public:
-    std::shared_ptr<Exp> primary;
-    std::shared_ptr<IdentifierExp> primaryMethodName;
-    std::shared_ptr<IdentifierType> ambiguousName;
-    std::shared_ptr<IdentifierExp> ambiguousMethodName;
-    std::vector<std::shared_ptr<Exp>> arguments;
-    MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<IdentifierExp> primaryMethodName,
-        std::vector<std::shared_ptr<Exp>> arguments);
-    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
-    std::shared_ptr<IdentifierExp> ambiguousMethodName,
-    std::vector<std::shared_ptr<Exp>> arguments);
-    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
-    std::vector<std::shared_ptr<Exp>> arguments);
-    void accept(Visitor* v) override;
-};
-
 class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
 public:
     std::shared_ptr<IdentifierType> classType;
@@ -417,6 +400,10 @@ class SemicolonStatement : public Statement,
 {
 public:
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "SemicolonStatement";
+    }
 };
 
 class BlockStatements : public Statement, 
@@ -426,6 +413,10 @@ public:
     std::vector<std::shared_ptr<Statement>> statements;
     void addStatement(std::shared_ptr<Statement> stmt);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "BlockStatements";
+    }
 };
 
 class BlockStatement : public Statement,
@@ -435,6 +426,10 @@ public:
     std::shared_ptr<BlockStatements> blockStatements;
     BlockStatement(std::shared_ptr<BlockStatements> sl);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "BlockStatement";
+    }
 };
 
 // This is for if/then and if/else
@@ -446,6 +441,10 @@ public:
     std::shared_ptr<Statement> statement1, statement2;
     IfStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement> s1, std::shared_ptr<Statement> s2);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "IfStatement";
+    }
 };
 
 class WhileStatement : public Statement,
@@ -456,6 +455,10 @@ public:
     std::shared_ptr<Statement> statement;
     WhileStatement(std::shared_ptr<Exp> e, std::shared_ptr<Statement>);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "WhileStatement";
+    }
 };
 
 class LocalVariableDeclarationStatement : public Statement, 
@@ -467,6 +470,10 @@ public:
     std::shared_ptr<Exp> exp;
     LocalVariableDeclarationStatement(std::shared_ptr<Identifier> i, std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "LocalVariableDeclarationStatement";
+    }
 
     void setType(std::shared_ptr<Type> t)
     {
@@ -481,6 +488,10 @@ public:
     std::shared_ptr<Exp> exp;
     ExpressionStatement(std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "ExpressionStatement";
+    }
 };
 
 class ForStatement : public Statement, public std::enable_shared_from_this<ForStatement> {
@@ -498,6 +509,11 @@ public:
     void setStmt2(std::shared_ptr<Statement> s) {
         stmt2 = s;
     }
+
+    inline std::string getStmtName() override
+    {
+        return "ForStatement";
+    }
 };
 
 class ReturnStatement : public Statement, 
@@ -507,6 +523,10 @@ public:
     std::shared_ptr<Exp> exp;
     ReturnStatement(std::shared_ptr<Exp> e);
     void accept(Visitor *v) override;
+    inline std::string getStmtName() override
+    {
+        return "ReturnStatement";
+    }
 };
 
 class FormalParameter : public AstNode, public std::enable_shared_from_this<FormalParameter> {
@@ -540,6 +560,7 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         bool isPublic;
         bool isFinal;
         bool isAbstract;
+        std::string className;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
@@ -550,6 +571,25 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         void accept(Visitor* v) override;
         void setModifiers(std::vector<Modifiers>& m) override;
         std::string getSignature() const;
+};
+
+class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
+public:
+    std::shared_ptr<Exp> primary;
+    std::shared_ptr<IdentifierExp> primaryMethodName;
+    std::shared_ptr<IdentifierType> ambiguousName;
+    std::shared_ptr<IdentifierExp> ambiguousMethodName;
+    std::shared_ptr<Method> method;
+    std::vector<std::shared_ptr<Exp>> arguments;
+    MethodInvocation(std::shared_ptr<Exp> primary, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
+    std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {

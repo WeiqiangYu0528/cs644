@@ -67,4 +67,5 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<TIR::CompUnit> getCompUnit() const;
         std::shared_ptr<TIR::Expr> getExpr() const;
         std::shared_ptr<TIR::Stmt> getStmt() const;
+        std::shared_ptr<TIR::ESeq> getCastExpr(int mask) const;
 };

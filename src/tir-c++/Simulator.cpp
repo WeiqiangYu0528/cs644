@@ -299,22 +299,6 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
         }
         exprStack->pushValue(result);
     }
-    else if (auto temp = std::dynamic_pointer_cast<UnaryOp>(insn)) {
-        int top = exprStack->popValue();
-        int result;
-        switch (temp->getOpType()) {
-        using enum UnaryOp::OpType;
-        case NEG:
-            result = -top;
-            break;
-        case NOT:
-            result = !top;
-            break;
-        default:
-            throw std::runtime_error("Invalid unary operation");
-        }
-        exprStack->pushValue(result);
-    }
     else if (auto temp = std::dynamic_pointer_cast<Mem>(insn)) {
         int addr = exprStack->popValue();
         exprStack->pushAddr(read(addr), addr);
@@ -382,7 +366,10 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
     }
     else if (auto temp = std::dynamic_pointer_cast<Return>(insn)) {
         if (temp->getRet()) frame->ret = exprStack->popValue();
-        if (isStaticInit) staticFields = frame->regs;
+        if (isStaticInit) {
+            for (auto& [name, value] : staticFields)
+                staticFields[name] = frame->regs[name];
+        }
         frame->setIP(-1);
     }
 }

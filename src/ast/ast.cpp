@@ -426,7 +426,7 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement
 }
 
 std::string Method::getSignature() const {
-    std::string signature =  methodName->name + "(";
+    std::string signature = className + "." + methodName->name + "(";
     for (int i = 0; i < formalParameters.size(); ++i) {
         signature += formalParameters[i]->type->typeToString();
         if (i != formalParameters.size() - 1) {

@@ -14,16 +14,22 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
     for (auto fieldDecl: n->declarations[0]) {
         auto field = std::dynamic_pointer_cast<Field>(fieldDecl);
+        std::string fieldName{className + "." + field->fieldName->name};
         if (field->isStatic && field->type->type != DataType::OBJECT) {
             field->accept(this);
-            fields.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(className + "." + field->fieldName->name), std::dynamic_pointer_cast<TIR::Expr>(node)));
+            fields.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), std::dynamic_pointer_cast<TIR::Expr>(node)));
         }
     }
     for (auto methodDecl: n->declarations[1]) {
         auto method = std::dynamic_pointer_cast<Method>(methodDecl);
         if (method->isStatic && !method->isNative && method->type->type != DataType::OBJECT) {
+            bool isPrimitive = true;
+            for (auto fp : method->formalParameters) {
+                if (fp->type->type == DataType::OBJECT) isPrimitive = false;
+            }
+            if (!isPrimitive) continue;
             method->accept(this);
-            methods[className + "." + method->methodName->name] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+            methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
         }
     }
     std::shared_ptr<TIR::CompUnit> compUnit = nodeFactory->IRCompUnit(n->id->name, methods);
@@ -54,7 +60,7 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
     if (n->type->type == DataType::VOID && block->getStmts().back()->getLabel() != "RETURN") {
         stmts.push_back(nodeFactory->IRReturn(nullptr));
     }
-    node = nodeFactory->IRFuncDecl(className + "." + n->methodName->name, n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
+    node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
 }
 
 void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
@@ -270,19 +276,19 @@ void TransformVisitor::visit(std::shared_ptr<ForStatement> n) {
     std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     if (n->stmt1) {
         n->stmt1->accept(this);
-        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+        stmts.push_back(getStmt());
     }
     stmts.push_back(forLabel);
     n->exp->accept(this);
-    stmts.push_back(nodeFactory->IRCJump(std::dynamic_pointer_cast<TIR::Expr>(node), trueLabel->getName(), falseLabel->getName()));
+    stmts.push_back(nodeFactory->IRCJump(getExpr(), trueLabel->getName(), falseLabel->getName()));
     stmts.push_back(trueLabel);
     if (n->stmt2) {
         n->stmt2->accept(this);
-        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+        stmts.push_back(getStmt());
     }
     if (n->expStmt2) {
         n->expStmt2->accept(this);
-        stmts.push_back(std::dynamic_pointer_cast<TIR::Stmt>(node));
+        stmts.push_back(getStmt());
     
     }
     stmts.push_back(nodeFactory->IRJump(nodeFactory->IRName(forLabel->getName())));
@@ -318,15 +324,12 @@ void TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
 
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::vector<std::shared_ptr<TIR::Expr>> args;
-    std::string prefix = n->ambiguousName ? n->ambiguousName->id->name : className;
-    std::string methodName = prefix + "." + n->ambiguousMethodName->id->name;
     for (auto arg : n->arguments) {
-        // if (arg->)
         arg->accept(this);
         args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
     }
 
-    node = nodeFactory->IRCall(nodeFactory->IRName(methodName), args);
+    node = nodeFactory->IRCall(nodeFactory->IRName(n->method->getSignature()), args);
 }
 
 void TransformVisitor::visit(std::shared_ptr<ParExp> n) {
@@ -422,16 +425,33 @@ void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
 
 void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
     n->exp->accept(this);
+    int mask;
+    switch (n->type->type) {
+        case DataType::BYTE:
+            mask = 0XFF;
+            node = getCastExpr(mask);
+            break;
+        case DataType::SHORT:
+            mask = 0XFFFF;
+            node = getCastExpr(mask);
+            break;
+        case DataType::CHAR:
+            mask = 0XFFFF;
+            node = nodeFactory->IRBinOp(TIR::BinOp::OpType::AND, getExpr(), nodeFactory->IRConst(mask));
+            break;
+        default:
+            break;
+    }
 }
 
 void TransformVisitor::visit(std::shared_ptr<NotExp> n) {
     n->exp->accept(this);
-    node = nodeFactory->IRUnaryOp(TIR::UnaryOp::OpType::NOT, std::dynamic_pointer_cast<TIR::Expr>(node));
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::XOR, nodeFactory->IRConst(1), getExpr());
 }
 
 void TransformVisitor::visit(std::shared_ptr<NegExp> n) {
     n->exp->accept(this);
-    node = nodeFactory->IRUnaryOp(TIR::UnaryOp::OpType::NEG, std::dynamic_pointer_cast<TIR::Expr>(node));
+    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::MUL, nodeFactory->IRConst(-1), getExpr());
 }
 
 void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
@@ -488,4 +508,17 @@ std::shared_ptr<TIR::Stmt> TransformVisitor::getStmt() const {
         ret = nodeFactory->IRExp(expr);
     }
     return ret;
+}
+
+std::shared_ptr<TIR::ESeq> TransformVisitor::getCastExpr(int mask) const {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp("maskedValue");
+    stmts.push_back(nodeFactory->IRMove(temp, nodeFactory->IRBinOp(TIR::BinOp::OpType::AND, getExpr(), nodeFactory->IRConst(mask)))); 
+    stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::GT, temp, nodeFactory->IRConst(mask / 2)) , trueLabel->getName(), falseLabel->getName()));
+    stmts.push_back(trueLabel);
+    stmts.push_back(nodeFactory->IRMove(temp, nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(mask + 1))));
+    stmts.push_back(falseLabel);
+    return nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), temp);
 }

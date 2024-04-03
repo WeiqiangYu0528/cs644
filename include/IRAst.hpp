@@ -149,47 +149,6 @@ public:
 };
 
 /**
- * Unary operators
- */
-class UnaryOp : public Expr_c {
-private:
-    std::shared_ptr<Expr> expr;
-
-public:
-   /**
-     * An intermediate representation for an unary operation
-     * OP(exp)
-     */
-    enum class OpType {
-        NEG, NOT
-    };
-
-    std::unordered_map<OpType, std::string> OpTypeToString = {
-        {OpType::NEG, "NEG"},
-        {OpType::NOT, "NOT"}
-    };
-    OpType type;
-
-    UnaryOp(OpType type, std::shared_ptr<Expr> expr);
-
-    OpType getOpType() const;
-
-    std::shared_ptr<Expr> getExpr() const;
-
-    std::string getLabel() const override;
-
-    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
-
-    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
-        bool result = v->unit();
-        result = v->bind(result, v->visit(expr));
-        return result;
-    }
-
-    bool isConstant() const override;
-};
-
-/**
  * An intermediate representation for a function call
  * CALL(e_target, e_1, ..., e_n)
  */
@@ -621,8 +580,6 @@ class NodeFactory {
 public:
     virtual std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) = 0;
 
-    virtual std::shared_ptr<UnaryOp> IRUnaryOp(UnaryOp::OpType type, std::shared_ptr<Expr> expr) = 0;
-
     virtual std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) = 0;
 
     template<typename... Exprs>
@@ -673,8 +630,6 @@ public:
 class NodeFactory_c : public NodeFactory {
 public:
     std::shared_ptr<BinOp> IRBinOp(BinOp::OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) override;
-
-    std::shared_ptr<UnaryOp> IRUnaryOp(UnaryOp::OpType type, std::shared_ptr<Expr> expr) override;
 
     std::shared_ptr<Call> IRCall(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) override;
 
