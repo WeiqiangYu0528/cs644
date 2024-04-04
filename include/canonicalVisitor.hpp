@@ -20,6 +20,7 @@ class CanonicalVisitor {
         CanonicalVisitor(/*Everything I need to populate private fields*/);
         void visit(std::shared_ptr<CompUnit> cu);
         void visit(std::shared_ptr<FuncDecl> fd);
+        VisitResult visit(std::shared_ptr<Stmt> stmt);
         VisitResult visit(std::shared_ptr<Seq> seq);
         VisitResult visit(std::shared_ptr<CJump> cjump);
         VisitResult visit(std::shared_ptr<Exp> exp);
@@ -29,6 +30,13 @@ class CanonicalVisitor {
         VisitResult visit(std::shared_ptr<Return> ret);
 
         VisitResult visit(std::shared_ptr<Expr> expr);
+        VisitResult visit(std::shared_ptr<Const> _const);
+        VisitResult visit(std::shared_ptr<Temp> temp);
+        VisitResult visit(std::shared_ptr<Name> name);
+        VisitResult visit(std::shared_ptr<Mem> mem);
+        VisitResult visit(std::shared_ptr<ESeq> eseq);
+        VisitResult visit(std::shared_ptr<BinOp> binop);
+        VisitResult visit(std::shared_ptr<Call> call);
 
 
 
