@@ -2,20 +2,33 @@
 #include "IRAst.hpp"
 
 class CanonicalVisitor {
-    private:
+    protected:
+        
+
     public:
+        //calling visit on a Stmt only populates stmts
+        //calling visit on an Expr populates stmts and pureExpr
+        struct VisitResult {
+            std::vector<std::shared_ptr<Stmt>> stmts;
+            std::shared_ptr<Expr> pureExpr;
+
+            VisitResult(std::vector<std::shared_ptr<Stmt>> s) : stmts(s) {}
+            VisitResult(std::shared_ptr<Expr> e) : pureExpr(e) {}
+            VisitResult(std::vector<std::shared_ptr<Stmt>> s, std::shared_ptr<Expr> e) : stmts(s), pureExpr(e) {}
+        };
+
         CanonicalVisitor(/*Everything I need to populate private fields*/);
         void visit(std::shared_ptr<CompUnit> cu);
         void visit(std::shared_ptr<FuncDecl> fd);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Seq> seq);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<CJump> cjump);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Exp> exp);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Jump> jump);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Label> label);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Move> move);
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Return> ret);
+        VisitResult visit(std::shared_ptr<Seq> seq);
+        VisitResult visit(std::shared_ptr<CJump> cjump);
+        VisitResult visit(std::shared_ptr<Exp> exp);
+        VisitResult visit(std::shared_ptr<Jump> jump);
+        VisitResult visit(std::shared_ptr<Label> label);
+        VisitResult visit(std::shared_ptr<Move> move);
+        VisitResult visit(std::shared_ptr<Return> ret);
 
-        //std::pair<std::vector<std::shared_ptr<Stmt>>, std::shared_ptr<Expr>> visit(std::shared_ptr<Expr> expr);
+        VisitResult visit(std::shared_ptr<Expr> expr);
 
 
 
