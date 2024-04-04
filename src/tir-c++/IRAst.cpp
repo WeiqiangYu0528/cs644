@@ -77,6 +77,29 @@ bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inExpr();
 }
 
+Call_s::Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
+}
+
+std::shared_ptr<Temp> Call_s::getTarget() const {
+    return target;
+}
+
+std::vector<std::shared_ptr<Temp>> Call_s::getArgs() const {
+    return args;
+}
+
+int Call_s::getNumArgs() const {
+    return args.size();
+}
+
+std::string Call_s::getLabel() const {
+    return "CALL_s";
+}
+
+bool Call_s::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
+    return !v->inExpr();
+}
+
 CJump::CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel) : CJump(cond, trueLabel, nullptr) {
 }
 
