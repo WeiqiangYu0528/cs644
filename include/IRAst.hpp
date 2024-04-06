@@ -196,54 +196,6 @@ public:
 };
 
 /**
- * An intermediate representation for a function call
- * CALL(e_target, e_1, ..., e_n)
- */
-class Call_s : public Stmt {
-protected:
-    std::shared_ptr<Temp> target;
-    std::vector<std::shared_ptr<Temp>> args;
-
-public:
-    /**
-     *
-     * @param target address of the code for this function call
-     * @param args arguments of this function call
-     */
-    template<typename... Args>
-    Call_s(std::shared_ptr<Temp> target, Args... args) : Call_s(target, std::vector<std::shared_ptr<Temp>>{args...}) {
-    }
-    /**
-     *
-     * @param target address of the code for this function call
-     * @param numRets number of return values for this function call
-     * @param args arguments of this function call
-     */
-    Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args);
-
-    std::shared_ptr<Temp> getTarget() const;
-
-    std::vector<std::shared_ptr<Temp>> getArgs() const;
-
-    int getNumArgs() const;
-
-    std::string getLabel() const override;
-
-    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
-
-    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
-        bool result = v->unit();
-        result = v->bind(result, v->visit(target));
-        for (std::shared_ptr<Expr> arg : args)
-            result = v->bind(result, v->visit(arg));
-        return result;
-    }
-
-    bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
-    
-};
-
-/**
  * An intermediate representation for a conditional transfer of control
  * CJUMP(expr, trueLabel, falseLabel)
  */
@@ -624,7 +576,7 @@ public:
 };
 
 /**
- * An intermediate representation for a function call in statement form
+ * An intermediate representation for a function call
  * CALL(e_target, e_1, ..., e_n)
  */
 class Call_s : public Stmt {
@@ -633,6 +585,14 @@ protected:
     std::vector<std::shared_ptr<Temp>> args;
 
 public:
+    /**
+     *
+     * @param target address of the code for this function call
+     * @param args arguments of this function call
+     */
+    //template<typename... Args>
+    //Call_s(std::shared_ptr<Expr> target, Args... args) : Call_s(target, std::vector<std::shared_ptr<Expr>>{args...}) {
+    //}
     /**
      *
      * @param target address of the code for this function call
@@ -649,10 +609,19 @@ public:
 
     std::string getLabel() const override;
 
+    std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
+
+    bool aggregateChildren(std::shared_ptr<AggregateVisitor> v) override {
+        bool result = v->unit();
+        result = v->bind(result, v->visit(target));
+        for (std::shared_ptr<Expr> arg : args)
+            result = v->bind(result, v->visit(arg));
+        return result;
+    }
+
     bool isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const override;
     
 };
-
 
 class NodeFactory {
 public:
