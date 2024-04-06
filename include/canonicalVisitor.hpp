@@ -1,10 +1,11 @@
 #pragma once
 #include "IRAst.hpp"
 
-class CanonicalVisitor {
-    protected:
-        
+using namespace TIR;
 
+class CanonicalVisitor {
+    private:
+        static int labelCounter;
     public:
         //calling visit on a Stmt only populates stmts
         //calling visit on an Expr populates stmts and pureExpr
@@ -23,7 +24,7 @@ class CanonicalVisitor {
         VisitResult visit(std::shared_ptr<Stmt> stmt);
         VisitResult visit(std::shared_ptr<Seq> seq);
         VisitResult visit(std::shared_ptr<CJump> cjump);
-        VisitResult visit(std::shared_ptr<Exp> exp);
+        VisitResult visit(std::shared_ptr<TIR::Exp> exp);
         VisitResult visit(std::shared_ptr<Jump> jump);
         VisitResult visit(std::shared_ptr<Label> label);
         VisitResult visit(std::shared_ptr<Move> move);

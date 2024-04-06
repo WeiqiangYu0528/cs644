@@ -1,19 +1,16 @@
 #include <cassert>
 #include "canonicalVisitor.hpp"
 
+using namespace TIR;
+
+int CanonicalVisitor::labelCounter = 0;
+
 CanonicalVisitor::CanonicalVisitor() {}
 
 void CanonicalVisitor::visit(std::shared_ptr<CompUnit> cu) {
     for (auto pair : cu->getFunctions()) {
-        visit(pair.second); //cu represents Program, has many functions.
+        visit(pair.second);
     }
-    //Now each FuncDecl should:
-    //all SEQ and ESEQ are flattened into a single SEQ (per FuncDecl)
-    //expressions have no side effects, and statements have <= 1 side effect each
-    //CALLs are statements
-    //CJUMP false case is fall-through
-
-    //Now we should make FuncDecls all flattened into a single SEQ
 }
 
 void CanonicalVisitor::visit(std::shared_ptr<FuncDecl> fd) {
@@ -21,9 +18,6 @@ void CanonicalVisitor::visit(std::shared_ptr<FuncDecl> fd) {
     assert(seq);
     auto flatSeq = visit(seq);
     fd->body = std::make_shared<Seq>(flatSeq.stmts);
-    //Now this SEQ should be flattened into a single SEQ
-    //all expressions should have no side effecst, and statements should have <= 1 side effect each
-    //  WHAT ABOUT SEQ? SHOULD SEQ NOT EXIST IF MORE THAN ONE OF ITS STATEMENTS HAS A SIDE EFFECT?
 }
 
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Stmt> stmt) {
@@ -77,16 +71,16 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Seq> seq) 
     return CanonicalVisitor::VisitResult(stmts);
 }
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<CJump> cjump) {
-    std::cerr << "Unimplemented cjump visit method" << std::endl;
-    return CanonicalVisitor::VisitResult({cjump});
-    //UNIMPLEMENTED/////////////////
+    CanonicalVisitor::VisitResult vr = visit(cjump->getCond());
+    std::shared_ptr<CJump> _cjump = std::make_shared<CJump>(vr.pureExpr, cjump->getTrueLabel(), cjump->getFalseLabel());
+    vr.stmts.push_back(_cjump);
+    return CanonicalVisitor::VisitResult(vr.stmts);
 }
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Exp> exp) {
     CanonicalVisitor::VisitResult vr = visit(exp->getExpr());
-    return CanonicalVisitor::VisitResult(vr.stmts); 
-    //keep the side effects, discard the expression result
+    return CanonicalVisitor::VisitResult(vr.stmts);
 }
-CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Jump> jump) {    
+CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Jump> jump) { 
     CanonicalVisitor::VisitResult vr = visit(jump->getTarget());
     std::shared_ptr<Jump> _jump = std::make_shared<Jump>(vr.pureExpr);
     vr.stmts.push_back(_jump);
@@ -96,7 +90,6 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Label> lab
     return CanonicalVisitor::VisitResult({label});
 }
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Move> move) {
-    //if move's target is type Temp,
     if (auto temp = std::dynamic_pointer_cast<Temp>(move->getTarget())) {
         CanonicalVisitor::VisitResult vr = visit(move->getSource());
         std::shared_ptr<Move> _move = std::make_shared<Move>(temp, vr.pureExpr);
@@ -107,12 +100,11 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Move> move
         assert(mem);
         CanonicalVisitor::VisitResult vr1 = visit(mem->getExpr());
         CanonicalVisitor::VisitResult vr2 = visit(move->getSource());
-        std::shared_ptr<Temp> _temp = std::make_shared<Temp>("some temp name");
+        std::shared_ptr<Temp> _temp = std::make_shared<Temp>(std::to_string(labelCounter++));
         std::shared_ptr<Move> _move1 = std::make_shared<Move>(_temp, vr1.pureExpr);
         std::shared_ptr<Mem> _mem = std::make_shared<Mem>(_temp);
         std::shared_ptr<Move> _move2 = std::make_shared<Move>(_mem, vr2.pureExpr);
 
-        //reuse vr1.stmts vector
         vr1.stmts.push_back(_move1);
         vr1.stmts.insert(vr1.stmts.end(), vr2.stmts.begin(), vr2.stmts.end());
         vr1.stmts.push_back(_move2);
@@ -126,10 +118,8 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Return> re
     return CanonicalVisitor::VisitResult(vr.stmts);
 }
 
-//returns pair of side effects and pure Expr - widely used
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Expr> expr) {
     //this selects the other expr types
-    std::cout << "this ran at some point!" << std::endl;
     if (auto binop = std::dynamic_pointer_cast<BinOp>(expr)) {
         return visit(binop);
     } else if (auto call = std::dynamic_pointer_cast<Call>(expr)) {
@@ -149,16 +139,6 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Expr> expr
         assert(false);
         return CanonicalVisitor::VisitResult(expr); //just to avoid the compiler warnings
     }
-
-    /*
-    BinOp
-    Call
-    Const
-    ESeq
-    Mem
-    Name
-    Temp
-    */
 } 
 
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Const> _const) {
@@ -189,7 +169,7 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<BinOp> bin
     CanonicalVisitor::VisitResult vr1 = visit(binop->getLeft());
     CanonicalVisitor::VisitResult vr2 = visit(binop->getRight());
     //reuse vr1.stmts
-    std::shared_ptr<Temp> temp = std::make_shared<Temp>("some other temp");
+    std::shared_ptr<Temp> temp = std::make_shared<Temp>(std::to_string(labelCounter++));
     std::shared_ptr<Move> move = std::make_shared<Move>(temp, vr1.pureExpr);
     vr1.stmts.push_back(move);
     vr1.stmts.insert(vr1.stmts.end(), vr2.stmts.begin(), vr2.stmts.end());
@@ -201,14 +181,14 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Call> call
     std::vector<std::shared_ptr<Stmt>> stmts;
     std::vector<std::shared_ptr<Temp>> temps;
     CanonicalVisitor::VisitResult vr = visit(call->getTarget());
-    std::shared_ptr<Temp> temp, temp0 = std::make_shared<Temp>("temp0");
+    std::shared_ptr<Temp> temp, temp0 = std::make_shared<Temp>(std::to_string(labelCounter++));
     std::shared_ptr<Move> move = std::make_shared<Move>(temp0, vr.pureExpr);
     stmts.insert(stmts.end(), vr.stmts.begin(), vr.stmts.end());
     stmts.push_back(move);
 
     for (auto expr : call->getArgs()) {
         vr = visit(expr);
-        temp = std::make_shared<Temp>("USE GLOBAL KEY OR SOMETHING");
+        temp = std::make_shared<Temp>(std::to_string(labelCounter++));
         temps.push_back(temp);
         move = std::make_shared<Move>(temp, vr.pureExpr);
         stmts.insert(stmts.end(), vr.stmts.begin(), vr.stmts.end());
@@ -217,7 +197,7 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Call> call
     
     std::shared_ptr<Call_s> call_s = std::make_shared<Call_s>(temp0, temps);
     stmts.push_back(call_s);
-    temp = std::make_shared<Temp>("Whichever string we use to signify RET");
+    temp = std::make_shared<Temp>("RET");
     
     return CanonicalVisitor::VisitResult(stmts, temp);
 }
