@@ -13,6 +13,8 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
+#include "canonicalVisitor.hpp"
+#include "utils.h"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
@@ -398,6 +400,12 @@ int main(int argc, char* argv[])
         staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
+        
+        PrintCompUnit(compUnit, "compunit");
+        std::shared_ptr<CanonicalVisitor> cv = std::make_shared<CanonicalVisitor>();
+        cv->visit(compUnit);
+        PrintCompUnit(compUnit, "compunit2");        
+
         TIR::Simulator sim(compUnit);
         sim.staticFields = staticFieldsMap;
         sim.initStaticFields();
