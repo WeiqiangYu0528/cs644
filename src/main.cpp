@@ -13,6 +13,7 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
+#include "Tiling.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
@@ -398,6 +399,11 @@ int main(int argc, char* argv[])
         staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
+        std::vector<std::string> assemblyInstructions;
+        for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
+            Tiling tiler;
+            tiler.tileFunction(funcDecl, assemblyInstructions);
+        }
         TIR::Simulator sim(compUnit);
         sim.staticFields = staticFieldsMap;
         sim.initStaticFields();
