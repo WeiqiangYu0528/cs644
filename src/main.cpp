@@ -13,6 +13,7 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
+#include "Tiling.hpp"
 #include "canonicalVisitor.hpp"
 #include "utils.h"
 #include "IRCfgVisitor.hpp"
@@ -401,36 +402,11 @@ int main(int argc, char* argv[])
         staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
-
-        {
-            TIR::Simulator sim(compUnit);
-            sim.staticFields = staticFieldsMap;
-            sim.initStaticFields();
-            long result = sim.call(compUnit->getName() + ".test()");
-            std::cout << "Before: program evaluates to " << result << std::endl;
-        }
-
-        std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
-        cvisitor->visit(compUnit);
-        {
-            TIR::Simulator sim(compUnit);
-            sim.staticFields = staticFieldsMap;
-            sim.initStaticFields();
-            long result = sim.call(compUnit->getName() + ".test()");
-            std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-        }
-
-        std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
-        cfv->visit(compUnit);
-        std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
-        std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
-        {
-            TIR::Simulator sim(compUnit);
-            sim.staticFields = staticFieldsMap;
-            sim.initStaticFields();
-            long result = sim.call(compUnit->getName() + ".test()");
-            std::cout << "After CFG: program evaluates to " << result << std::endl;
-        }
+        TIR::Simulator sim(compUnit);
+        sim.staticFields = staticFieldsMap;
+        sim.initStaticFields();
+        long result = sim.call(compUnit->getName() + ".test()");
+        std::cout << "program evaluates to " << result << std::endl;
         // for (std::shared_ptr<Program> program : asts) {
         //     TransformVisitor tvisitor(program->scope, nodeFactory);
         //     program->accept(&tvisitor);
