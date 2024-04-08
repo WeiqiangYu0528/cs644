@@ -77,22 +77,17 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call>& node, std::vector<std::s
 // return(e)
 void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<std::string>& assembly) {
     assembly.push_back("mov eax, " + tileExp(node->getRet()));
+    assembly.push_back("ret");
 }
 
 std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node) {
     // Exp only have const(n), temp(t), op(e1, e2), mem(e), name(l)
-    std::string res;
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
         return tileConst(constNode);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
         return "mov eax, " + tempNode->getName();
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
-        res += tileBinOp(binOpNode);
-        res += " ";
-        res += tileExp(binOpNode->getLeft());
-        res += " ";
-        res += tileExp(binOpNode->getRight());
-        return res;
+        return tileBinOp(binOpNode) + " " + tileExp(binOpNode->getLeft()) + " " + tileExp(binOpNode->getRight());
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
         return tileMem(memNode);
     } else if (auto nameNode = std::dynamic_pointer_cast<TIR::Name>(node)) {

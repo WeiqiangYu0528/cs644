@@ -2,11 +2,10 @@ public class A{
     public A() {
     }
     public static int test() {
-        int a = 19;
-        if (a == 0)
-            a = 1;
-        else 
-            a = 2;
-        return a;
+        return A.add(2, 6);
+    }
+
+    public static int add(int a, int b) {
+        return a + b;
     }
 }
