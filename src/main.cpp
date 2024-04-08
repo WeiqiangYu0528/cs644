@@ -14,6 +14,8 @@
 #include "IRAst.hpp"
 #include "Simulator.hpp"
 
+#include "canonicalVisitor.hpp"
+
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
         {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY},
@@ -398,6 +400,12 @@ int main(int argc, char* argv[])
         staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
+
+        std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
+        cvisitor->visit(compUnit);
+        /*std::shared_ptr<CheckCanonicalIRVisitor> cv = std::make_shared<CheckCanonicalIRVisitor>();
+        std::cout << "Canonical? " << (cv->visit(compUnit) ? "Yes" : "No") << std::endl;*/
+
         TIR::Simulator sim(compUnit);
         sim.staticFields = staticFieldsMap;
         sim.initStaticFields();

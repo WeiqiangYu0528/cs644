@@ -6,6 +6,8 @@
 // #include "CheckCanonicalIRVisitor.hpp"
 // #include "Simulator.hpp"
 
+// #include "canonicalVisitor.hpp"
+
 // using namespace TIR;
 
 // int main() {
@@ -52,6 +54,9 @@
 //     std::shared_ptr<CompUnit> compUnit = std::make_shared<CompUnit>("test");
 //     compUnit->appendFunc(aFunc);
 //     compUnit->appendFunc(bFunc);
+
+//     std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
+//     cvisitor->visit(compUnit);
 
 //     // IR interpreter demo
 //     {
