@@ -38,7 +38,7 @@ namespace TIR {
             void Print();
             void collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<Stmt>>& stmts);
             void optimizeJumps(std::vector<std::shared_ptr<Stmt>>& stmts);
-            std::vector<std::shared_ptr<Stmt>> collectTraces();
+            std::vector<std::shared_ptr<Stmt>> collectTraces();            
     };
 
 }

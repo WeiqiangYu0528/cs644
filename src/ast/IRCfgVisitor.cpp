@@ -3,8 +3,6 @@
 using namespace TIR;
 
 CfgVisitor::CfgVisitor() {
-    currentBlock = nullptr;
-    lastBlock = nullptr;
 }
 
 
@@ -16,12 +14,15 @@ void CfgVisitor::visit(std::shared_ptr<CompUnit> cu) {
 
 void CfgVisitor::visit(std::shared_ptr<FuncDecl> fd) {
     std::shared_ptr<Seq> seq = std::dynamic_pointer_cast<Seq>(fd->body);
-    // assert(seq);
-    // auto flatSeq = visit(seq);
-    // fd->body = std::make_shared<Seq>(flatSeq.stmts);
+    visit(seq);
+    auto stmts = visit(seq);
+    fd->body = std::make_shared<Seq>(stmts);
 }
 
-void CfgVisitor::visit(std::shared_ptr<Seq>& seq) {
+std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) {
+    currentBlock = nullptr;
+    lastBlock = nullptr;
+    cfg = CFG();
     startNewBlock();
     for (auto& stmt : seq->getStmts()) {
         visit(stmt);
@@ -30,7 +31,10 @@ void CfgVisitor::visit(std::shared_ptr<Seq>& seq) {
     connectBlocks();
     cfg.Print();
     auto stmts = cfg.collectTraces();
-    seq = std::make_shared<TIR::Seq>(stmts);
+    // seq = std::make_shared<TIR::Seq>(stmts);
+    // std::shared_ptr<CheckCanonicalIRVisitor> ccv = std::make_shared<CheckCanonicalIRVisitor>();
+    // std::cout << "Canonical? " << (ccv->visit(seq) ? "Yes" : "No") << std::endl;
+    return stmts;
 }
 
 
@@ -47,8 +51,6 @@ void CfgVisitor::visit(std::shared_ptr<Stmt> stmt) {
         visit(ret);
     } else if (auto call = std::dynamic_pointer_cast<Call_s>(stmt)) {
         visit(call);
-    } else if (auto seq = std::dynamic_pointer_cast<Seq>(stmt)) {
-        visit(seq);
     } else {
         throw std::runtime_error("unknown stmt");
     }
@@ -59,29 +61,29 @@ void CfgVisitor::visit(std::shared_ptr<Label> label) {
         endCurrentBlock();
         startNewBlock();
     }
-    currentBlock->statements.push_back(label);
+    addStatment(label);
     labelToBlock[label->getName()] = currentBlock;
 }
 
 void CfgVisitor::visit(std::shared_ptr<Jump> jump) {
-    currentBlock->statements.push_back(jump);
+    addStatment(jump);
     auto name = std::dynamic_pointer_cast<Name>(jump->getTarget());
     pendingJumps.emplace_back(currentBlock, name->getName());
     endCurrentBlock();
 }
 
 void CfgVisitor::visit(std::shared_ptr<CJump> cjump) {
-    currentBlock->statements.push_back(cjump);
+    addStatment(cjump);
     pendingCJumps.emplace_back(currentBlock, make_pair(cjump->getTrueLabel(), cjump->getFalseLabel()));
     endCurrentBlock();
 }
 
 void CfgVisitor::visit(std::shared_ptr<Move> move) {
-    currentBlock->statements.push_back(move);
+    addStatment(move);
 }
 
 void CfgVisitor::visit(std::shared_ptr<Return> ret) {
-    currentBlock->statements.push_back(ret);
+    addStatment(ret);
     endCurrentBlock();
 }
 
@@ -96,6 +98,13 @@ void CfgVisitor::startNewBlock() {
 void CfgVisitor::endCurrentBlock() {
     currentBlock = nullptr;
 }
+
+void CfgVisitor::addStatment(std::shared_ptr<Stmt> stmt) {
+    if(!currentBlock)
+        startNewBlock();
+    currentBlock->statements.push_back(stmt);
+}
+
 
 void CfgVisitor::connectBlocks() {
     for (const auto& jump : pendingJumps) {

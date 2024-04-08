@@ -17,7 +17,7 @@ namespace TIR {
         void visit(std::shared_ptr<CompUnit> cu);
         void visit(std::shared_ptr<FuncDecl> fd);
         
-        void visit(std::shared_ptr<Seq>& seq);
+        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Seq>& seq);
         void visit(std::shared_ptr<Stmt> stmt);
         void visit(std::shared_ptr<Move> move);
         void visit(std::shared_ptr<Jump> jump);
@@ -29,5 +29,6 @@ namespace TIR {
         void endCurrentBlock();
         void startNewBlock();
         void connectBlocks();
+        void addStatment(std::shared_ptr<Stmt> stmt);
     };
 }
