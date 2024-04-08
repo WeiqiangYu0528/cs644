@@ -13,6 +13,7 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
+#include "Tiling.hpp"
 
 #include "canonicalVisitor.hpp"
 
