@@ -15,6 +15,7 @@
 #include "Simulator.hpp"
 #include "canonicalVisitor.hpp"
 #include "utils.h"
+#include "IRCfgVisitor.hpp"
 
 #include "canonicalVisitor.hpp"
 
@@ -408,11 +409,56 @@ int main(int argc, char* argv[])
         /*std::shared_ptr<CheckCanonicalIRVisitor> cv = std::make_shared<CheckCanonicalIRVisitor>();
         std::cout << "Canonical? " << (cv->visit(compUnit) ? "Yes" : "No") << std::endl;*/
 
-        TIR::Simulator sim(compUnit);
-        sim.staticFields = staticFieldsMap;
-        sim.initStaticFields();
-        long result = sim.call(compUnit->getName() + ".test()");
-        std::cout << "program evaluates to " << result << std::endl;
+        // std::vector<std::shared_ptr<TIR::Stmt>> stmts {
+        //     std::make_shared<TIR::Label>("l0"),
+        //     std::make_shared<TIR::CJump>(std::make_shared<TIR::Temp>("a"), "l2", "l3"),
+        //     std::make_shared<TIR::Label>("l1"),
+        //     std::make_shared<TIR::Move>(std::make_shared<TIR::Temp>("x"), std::make_shared<TIR::Temp>("y")),
+        //     std::make_shared<TIR::Label>("l2"),
+        //     std::make_shared<TIR::Move>(std::make_shared<TIR::Temp>("x"), 
+        //         std::make_shared<TIR::BinOp>(TIR::BinOp::OpType::ADD, std::make_shared<TIR::Temp>("y"), std::make_shared<TIR::Temp>("z"))),
+        //     std::make_shared<TIR::Jump>(std::make_shared<TIR::Name>("l1")),
+        //     std::make_shared<TIR::Label>("l3"),
+        //     std::make_shared<TIR::Call_s>(std::make_shared<TIR::Temp>("test"), std::vector<std::shared_ptr<TIR::Temp>>()),
+        //     std::make_shared<TIR::Return>(std::make_shared<TIR::Temp>("a"))
+        // };
+
+
+        // std::shared_ptr<TIR::Seq> seq = std::make_shared<TIR::Seq>(stmts);
+
+        // std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
+        // cfv->visit(seq);
+
+        std::vector<std::shared_ptr<TIR::Stmt>> stmts {
+            std::make_shared<TIR::Label>("l0"),
+            std::make_shared<TIR::CJump>(std::make_shared<TIR::Temp>("a"), "l2", ""),
+            std::make_shared<TIR::Label>("l3"),
+            std::make_shared<TIR::Call_s>(std::make_shared<TIR::Temp>("test"), std::vector<std::shared_ptr<TIR::Temp>>()),
+            std::make_shared<TIR::Return>(std::make_shared<TIR::Temp>("a")),            
+            std::make_shared<TIR::Label>("l1"),
+            std::make_shared<TIR::Move>(std::make_shared<TIR::Temp>("x"), std::make_shared<TIR::Temp>("y")),
+            std::make_shared<TIR::Label>("l2"),
+            std::make_shared<TIR::Move>(std::make_shared<TIR::Temp>("x"), 
+                std::make_shared<TIR::BinOp>(TIR::BinOp::OpType::ADD, std::make_shared<TIR::Temp>("y"), std::make_shared<TIR::Temp>("z"))),
+            std::make_shared<TIR::Jump>(std::make_shared<TIR::Name>("l1")),
+
+        };
+        std::shared_ptr<TIR::Seq> seq = std::make_shared<TIR::Seq>(stmts);
+
+        for (auto s: seq->getStmts())
+            std::cout << s->getLabel() << std::endl;
+        
+        std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
+        std::cout << "Canonical? " << (ccv->visit(seq) ? "Yes" : "No") << std::endl;
+
+
+
+
+        // TIR::Simulator sim(compUnit);
+        // sim.staticFields = staticFieldsMap;
+        // sim.initStaticFields();
+        // long result = sim.call(compUnit->getName() + ".test()");
+        // std::cout << "program evaluates to " << result << std::endl;
         // for (std::shared_ptr<Program> program : asts) {
         //     TransformVisitor tvisitor(program->scope, nodeFactory);
         //     program->accept(&tvisitor);
