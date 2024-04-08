@@ -6,7 +6,7 @@ using namespace TIR;
 std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_int_distribution<> distr(0, INT_MAX);
-int debugLevel = 2;
+int debugLevel = 0;
 
 ExecutionFrame::ExecutionFrame(int ip, Simulator& simulator) : ip(ip), ret(distr(gen)), simulator(simulator) {
 }
