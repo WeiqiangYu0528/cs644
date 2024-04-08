@@ -8,11 +8,7 @@ namespace TIR {
         CFG cfg;
         std::shared_ptr<BasicBlock> currentBlock;
         std::shared_ptr<BasicBlock> lastBlock; 
-
-        std::unordered_map<std::string, std::shared_ptr<BasicBlock>> labelToBlock;
-        std::vector<std::pair<std::shared_ptr<BasicBlock>, std::string>> pendingJumps;
-        std::vector<std::pair<std::shared_ptr<BasicBlock>, std::pair<std::string, std::string>>> pendingCJumps;
-
+        
         CfgVisitor();
         void visit(std::shared_ptr<CompUnit> cu);
         void visit(std::shared_ptr<FuncDecl> fd);

@@ -14,9 +14,13 @@ void CfgVisitor::visit(std::shared_ptr<CompUnit> cu) {
 
 void CfgVisitor::visit(std::shared_ptr<FuncDecl> fd) {
     std::shared_ptr<Seq> seq = std::dynamic_pointer_cast<Seq>(fd->body);
-    visit(seq);
+    // std::cout << fd->getLabel() << std::endl;
     auto stmts = visit(seq);
+    // std::cout << "====================================================" << std::endl;
     fd->body = std::make_shared<Seq>(stmts);
+    
+    // seq = std::dynamic_pointer_cast<Seq>(fd->body);
+    // visit(seq);
 }
 
 std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) {
@@ -24,13 +28,41 @@ std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) 
     lastBlock = nullptr;
     cfg = CFG();
     startNewBlock();
+    
+    // for (auto& stmt : seq->getStmts()) {
+    //     std::cout << stmt->getLabel();
+    //     if (auto cjump = std::dynamic_pointer_cast<CJump>(stmt)) {
+    //         std::cout << " " << cjump->getTrueLabel();
+    //         if(cjump->hasFalseLabel()) 
+    //             std::cout << " " << cjump->getFalseLabel();
+    //     } 
+    //     if (auto jump = std::dynamic_pointer_cast<Jump>(stmt)) {
+    //         std::cout << " " << jump->getTarget()->getLabel();
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
     for (auto& stmt : seq->getStmts()) {
         visit(stmt);
     }
     endCurrentBlock();
     connectBlocks();
-    cfg.Print();
+    // cfg.Print();
     auto stmts = cfg.collectTraces();
+
+    // for (auto& stmt : stmts) {
+    //     std::cout << stmt->getLabel();
+    //     if (auto cjump = std::dynamic_pointer_cast<CJump>(stmt)) {
+    //         std::cout << " " << cjump->getTrueLabel();
+    //         if(cjump->hasFalseLabel()) 
+    //             std::cout << " " << cjump->getFalseLabel();
+    //     } 
+    //     if (auto jump = std::dynamic_pointer_cast<Jump>(stmt)) {
+    //         std::cout << " " << jump->getTarget()->getLabel();
+    //     }
+    //     std::cout << std::endl;
+    // }
+
     // seq = std::make_shared<TIR::Seq>(stmts);
     // std::shared_ptr<CheckCanonicalIRVisitor> ccv = std::make_shared<CheckCanonicalIRVisitor>();
     // std::cout << "Canonical? " << (ccv->visit(seq) ? "Yes" : "No") << std::endl;
@@ -62,19 +94,19 @@ void CfgVisitor::visit(std::shared_ptr<Label> label) {
         startNewBlock();
     }
     addStatment(label);
-    labelToBlock[label->getName()] = currentBlock;
+    cfg.labelToBlock[label->getName()] = currentBlock;
 }
 
 void CfgVisitor::visit(std::shared_ptr<Jump> jump) {
     addStatment(jump);
     auto name = std::dynamic_pointer_cast<Name>(jump->getTarget());
-    pendingJumps.emplace_back(currentBlock, name->getName());
+    cfg.pendingJumps.emplace_back(currentBlock, name->getName());
     endCurrentBlock();
 }
 
 void CfgVisitor::visit(std::shared_ptr<CJump> cjump) {
     addStatment(cjump);
-    pendingCJumps.emplace_back(currentBlock, make_pair(cjump->getTrueLabel(), cjump->getFalseLabel()));
+    cfg.pendingCJumps.emplace_back(currentBlock, make_pair(cjump->getTrueLabel(), cjump->getFalseLabel()));
     endCurrentBlock();
 }
 
@@ -107,16 +139,16 @@ void CfgVisitor::addStatment(std::shared_ptr<Stmt> stmt) {
 
 
 void CfgVisitor::connectBlocks() {
-    for (const auto& jump : pendingJumps) {
+    for (const auto& jump : cfg.pendingJumps) {
         auto from = jump.first;
-        auto to = labelToBlock[jump.second];
+        auto to = cfg.labelToBlock[jump.second];
         cfg.addEdge(from, to);
     }
 
-    for (const auto& cjump : pendingCJumps) {
+    for (const auto& cjump : cfg.pendingCJumps) {
         auto from = cjump.first;
-        auto trueTo = labelToBlock[cjump.second.first];
-        auto falseTo = labelToBlock[cjump.second.second];
+        auto trueTo = cfg.labelToBlock[cjump.second.first];
+        auto falseTo = cfg.labelToBlock[cjump.second.second];
         cfg.addEdge(from, trueTo);
         if(!cjump.second.second.empty())
             cfg.addEdge(from, falseTo);

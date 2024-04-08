@@ -11,9 +11,6 @@ for filename in os.listdir(directory):
         result = subprocess.run(command, shell=True, capture_output=True, text=True)        
         canonical_status = "Canonical? Yes" if "Canonical? Yes" in result.stdout else "Error"
         
-        match = re.search(r'Before: program evaluates to (\d+)', result.stdout)
-        before_eval_status = ("Before: evaluates to: " + match.group(1)) if match else "Error"
-
         match = re.search(r'After CanonicalVisitor: program evaluates to (\d+)', result.stdout)
         canonicalvisitor_eval_status = ("CanonicalVisitor: evaluates to: " + match.group(1)) if match else "Error"
 
@@ -21,4 +18,4 @@ for filename in os.listdir(directory):
         cfg_eval_status = ("CFG: evaluates to: " + match.group(1)) if match else "Error"
 
 
-        print(f'{filename}\033[40G{canonical_status}\033[80G{before_eval_status}\033[120G{canonicalvisitor_eval_status}\033[160G{cfg_eval_status}')
+        print(f'{filename}\033[40G{canonical_status}\033[60G{canonicalvisitor_eval_status}\033[100G{cfg_eval_status}')

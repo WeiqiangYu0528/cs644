@@ -19,7 +19,7 @@ namespace TIR {
         edges.push_back(edge);
     }
 
-    void CFG::Print() {
+    void CFG::Print(const std::string filename) {
         std::ostringstream dotGraph;
         dotGraph << "digraph CFG {" << std::endl;
 
@@ -29,7 +29,16 @@ namespace TIR {
             if (!block->statements.empty()) {
                 t << "\\n"; 
                 for (const auto& stmt : block->statements) {
-                    t << stmt->getLabel() << "\\n";
+                    t << stmt->getLabel();
+                    if (auto cjump = std::dynamic_pointer_cast<CJump>(stmt)) {
+                        t << " " << cjump->getTrueLabel();
+                        if(cjump->hasFalseLabel()) 
+                            t << " " << cjump->getFalseLabel();
+                    }              
+                    if (auto jump = std::dynamic_pointer_cast<Jump>(stmt)) {
+                        t << " " << jump->getTarget()->getLabel();
+                    }                           
+                    t << "\\n";
                 }
             }
             dotGraph << "    \"" << block.get() << "\" [label=\"" << t.str() << "\"];" << std::endl;
@@ -41,8 +50,8 @@ namespace TIR {
         }
         dotGraph << "}" << std::endl;
 
-        std::string dotFile = "cfg.dot";
-        std::string pngFile = "cfg.png";
+        std::string dotFile = filename + ".dot";
+        std::string pngFile = filename + ".png";
         std::ofstream out(dotFile);
         out << dotGraph.str();
         out.close();
@@ -125,7 +134,17 @@ namespace TIR {
         // Convert CJUMP and add necessary JUMP
         for (auto it = stmts.begin(); it != stmts.end(); ++it) {
             if (auto cjump = std::dynamic_pointer_cast<CJump>(*it)) {
-                *it = std::make_shared<CJump>(cjump->getCond(), cjump->getTrueLabel(), "");
+                if(cjump->hasFalseLabel()) {
+                    *it = std::make_shared<CJump>(cjump->getCond(), cjump->getTrueLabel(), "");
+                    auto trueBlock = labelToBlock[cjump->getTrueLabel()];
+                    auto falseBlock = labelToBlock[cjump->getFalseLabel()];
+                    if(trueBlock->outgoing.size() > 0 && trueBlock->outgoing[0]->to == falseBlock) {
+                        trueBlock->statements.push_back(
+                            std::make_shared<Jump>(std::make_shared<Name>(cjump->getFalseLabel()))
+                        );
+                    }
+                }
+
             }
         }
       
