@@ -239,13 +239,6 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
     }
 }
 
-// void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
-//     n->left->accept(this);
-//     auto left = getExpr();
-//     n->right->accept(this);
-//     auto right = getExpr();
-//     node = nodeFactory->IRMove(left, right);
-// }
 
 void TransformVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
     node = nodeFactory->IRConst(static_cast<int>(n->value));

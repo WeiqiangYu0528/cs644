@@ -17,6 +17,8 @@
 
 #include "canonicalVisitor.hpp"
 
+#include "canonicalVisitor.hpp"
+
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
         {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY},
