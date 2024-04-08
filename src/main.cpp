@@ -413,8 +413,8 @@ int main(int argc, char* argv[])
 
         std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
         cvisitor->visit(compUnit);
-        /*std::shared_ptr<CheckCanonicalIRVisitor> cv = std::make_shared<CheckCanonicalIRVisitor>();
-        std::cout << "Canonical? " << (cv->visit(compUnit) ? "Yes" : "No") << std::endl;*/
+        std::shared_ptr<CheckCanonicalIRVisitor> cv = std::make_shared<CheckCanonicalIRVisitor>();
+        std::cout << "Canonical? " << (cv->visit(compUnit) ? "Yes" : "No") << std::endl;
 
 
         TIR::Simulator sim(compUnit);

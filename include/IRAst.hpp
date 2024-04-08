@@ -581,8 +581,8 @@ public:
  */
 class Call_s : public Stmt {
 protected:
-    std::shared_ptr<Temp> target;
-    std::vector<std::shared_ptr<Temp>> args;
+    std::shared_ptr<Expr> target;
+    std::vector<std::shared_ptr<Expr>> args;
 
 public:
     /**
@@ -599,11 +599,11 @@ public:
      * @param numRets number of return values for this function call
      * @param args arguments of this function call
      */
-    Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args);
+    Call_s(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args);
 
-    std::shared_ptr<Temp> getTarget() const;
+    std::shared_ptr<Expr> getTarget() const;
 
-    std::vector<std::shared_ptr<Temp>> getArgs() const;
+    std::vector<std::shared_ptr<Expr>> getArgs() const;
 
     int getNumArgs() const;
 

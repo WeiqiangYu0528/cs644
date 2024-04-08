@@ -183,25 +183,43 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<BinOp> bin
 
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Call> call) {
     std::vector<std::shared_ptr<Stmt>> stmts;
-    std::vector<std::shared_ptr<Temp>> temps;
+    std::vector<std::shared_ptr<Expr>> temps;
     CanonicalVisitor::VisitResult vr = visit(call->getTarget());
-    std::shared_ptr<Temp> temp, temp0 = std::make_shared<Temp>(std::to_string(labelCounter++));
-    std::shared_ptr<Move> move = std::make_shared<Move>(temp0, vr.pureExpr);
     stmts.insert(stmts.end(), vr.stmts.begin(), vr.stmts.end());
-    stmts.push_back(move);
+
+    std::shared_ptr<Temp> temp0 = std::make_shared<Temp>(std::to_string(labelCounter++));
+
+    
+
+    std::shared_ptr<Name> name = std::dynamic_pointer_cast<Name>(vr.pureExpr);
+    bool isLibraryFunction = Configuration::getLibraryFunctions().contains(name->getName());
+    if (isLibraryFunction) {
+        std::shared_ptr<Exp> exp = std::make_shared<Exp>(name);
+        stmts.push_back(exp);
+    } else {
+        std::shared_ptr<Move> move = std::make_shared<Move>(temp0, vr.pureExpr);
+        stmts.push_back(move);
+    }
 
     for (auto expr : call->getArgs()) {
         vr = visit(expr);
-        temp = std::make_shared<Temp>(std::to_string(labelCounter++));
+        std::shared_ptr<Temp> temp = std::make_shared<Temp>(std::to_string(labelCounter++));
         temps.push_back(temp);
-        move = std::make_shared<Move>(temp, vr.pureExpr);
+        std::shared_ptr<Move> move = std::make_shared<Move>(temp, vr.pureExpr);
         stmts.insert(stmts.end(), vr.stmts.begin(), vr.stmts.end());
         stmts.push_back(move);
     }
-    
-    std::shared_ptr<Call_s> call_s = std::make_shared<Call_s>(temp0, temps);
+
+    std::shared_ptr<Call_s> call_s;
+
+    if (isLibraryFunction) {
+        call_s = std::make_shared<Call_s>(name, temps);
+    } else {
+        call_s = std::make_shared<Call_s>(temp0, temps);
+    }
+
     stmts.push_back(call_s);
-    temp = std::make_shared<Temp>(Configuration::ABSTRACT_RET);
+    std::shared_ptr<Temp> temp = std::make_shared<Temp>(Configuration::ABSTRACT_RET);
 
     return CanonicalVisitor::VisitResult(stmts, temp);
 }
