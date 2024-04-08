@@ -38,8 +38,19 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
 
 void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
     std::string res;
-    res += "mov " + tileEdst(node->getTarget()) + ", " + tileExp(node->getSource()); 
+    res += "mov eax , "; 
+    // check the postfix of the target to determine the memory address, 
+    // if it is _ARG0, then we should use ebp+4 and add it to res
+    // args: calculate the address by ebp + 4 * (n + 1)  n = 1..N
+    // localvar: calculate the address by ebp - 4 * m  m = 1..M
+    std::string temp = tileExp(node->getSource());
+    if (temp.find("_ARG") != std::string::npos) {
+        res += "[ebp+" + std::to_string(std::stoi(temp.substr(4))*4+8) + "]";
+    } else if (temp.find("_LOCAL") != std::string::npos) {
+        res += "[ebp-" + std::to_string(std::stoi(temp.substr(5))*4) + "]";
+    }
     assembly.push_back(res);
+    // assembly.push_back("mov [ebp-4], eax");
 }
 
 // edst = temp(t) | mem(e)
@@ -53,6 +64,7 @@ std::string Tiling::tileEdst(const std::shared_ptr<TIR::Expr>& node) {
 
 // jump(e)
 void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::string>& assembly) {
+    // TODO Fix jump
     std::string res = "jmp " + tileExp(node->getTarget());
     assembly.push_back(res);
 }
