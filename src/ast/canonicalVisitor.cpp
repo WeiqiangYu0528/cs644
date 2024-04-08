@@ -114,6 +114,9 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Move> move
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Return> ret) {
     CanonicalVisitor::VisitResult vr = visit(ret->getRet());
     std::shared_ptr<Return> _ret = std::make_shared<Return>(vr.pureExpr);
+    std::shared_ptr<Temp> temp = std::make_shared<Temp>("RET");
+    std::shared_ptr<Move> move = std::make_shared<Move>(temp, vr.pureExpr);
+    vr.stmts.push_back(move);
     vr.stmts.push_back(_ret);
     return CanonicalVisitor::VisitResult(vr.stmts);
 }
