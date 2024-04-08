@@ -1,4 +1,5 @@
 #include <cassert>
+#include "Configuration.hpp"
 #include "canonicalVisitor.hpp"
 
 using namespace TIR;
@@ -114,9 +115,9 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Move> move
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Return> ret) {
     CanonicalVisitor::VisitResult vr = visit(ret->getRet());
     std::shared_ptr<Return> _ret = std::make_shared<Return>(vr.pureExpr);
-    std::shared_ptr<Temp> temp = std::make_shared<Temp>("RET");
-    std::shared_ptr<Move> move = std::make_shared<Move>(temp, vr.pureExpr);
-    vr.stmts.push_back(move);
+    // std::shared_ptr<Temp> temp = std::make_shared<Temp>("RET");
+    // std::shared_ptr<Move> move = std::make_shared<Move>(temp, vr.pureExpr);
+    // vr.stmts.push_back(move);
     vr.stmts.push_back(_ret);
     return CanonicalVisitor::VisitResult(vr.stmts);
 }
@@ -200,7 +201,7 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Call> call
     
     std::shared_ptr<Call_s> call_s = std::make_shared<Call_s>(temp0, temps);
     stmts.push_back(call_s);
-    temp = std::make_shared<Temp>("RET");
-    
+    temp = std::make_shared<Temp>(Configuration::ABSTRACT_RET);
+
     return CanonicalVisitor::VisitResult(stmts, temp);
 }
