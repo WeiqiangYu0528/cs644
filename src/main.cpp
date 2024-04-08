@@ -445,7 +445,8 @@ int main(int argc, char* argv[])
                 assemblyInstructions.push_back("_start:"); // Entry point label
                 firstFunction = false;
             } else {
-                assemblyInstructions.push_back(funcDecl->getName() + ":");
+                assemblyInstructions.push_back(funcName + ":");
+                // std::cout << funcDecl->getName() << std::endl;
             }
             for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts()) {
                 if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
@@ -456,6 +457,7 @@ int main(int argc, char* argv[])
             for (auto instr : assemblyInstructions) {
                 std::cout << instr << std::endl;
             }
+            std::cout << "END OF THIS PART" << std::endl;
         }
     }
 

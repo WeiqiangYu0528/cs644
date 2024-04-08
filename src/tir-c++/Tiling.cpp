@@ -1,4 +1,5 @@
 #include "Tiling.hpp"
+#include <map>
 // ISA: X86
 // Opcodes:
 //      mov | add | sub | mul | div | inc | dec | test | cmp | and | or | xor | not | shl
@@ -37,7 +38,7 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
 
 void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
     std::string res;
-    res += "mov eax, " + tileEdst(node->getTarget()) + " "+ node->getSource()->getLabel();
+    res += "mov " + tileEdst(node->getTarget()) + ", " + tileExp(node->getSource()); 
     assembly.push_back(res);
 }
 
@@ -85,7 +86,7 @@ std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node) {
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
         return tileConst(constNode);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        return "mov eax, " + tempNode->getName();
+        return tempNode->getName();
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
         return tileBinOp(binOpNode) + " " + tileExp(binOpNode->getLeft()) + " " + tileExp(binOpNode->getRight());
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
