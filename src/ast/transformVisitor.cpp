@@ -57,8 +57,8 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
     n->block->accept(this);
     auto block = std::dynamic_pointer_cast<TIR::Seq>(node);
     stmts.push_back(block);
-    if (n->type->type == DataType::VOID && block->getStmts().back()->getLabel() != "RETURN") {
-        stmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+    if (n->type->type == DataType::VOID && (block->getStmts().empty() || block->getStmts().back()->getLabel() != "RETURN")) {
+        stmts.push_back(nodeFactory->IRReturn(nullptr));
     }
     node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
 }

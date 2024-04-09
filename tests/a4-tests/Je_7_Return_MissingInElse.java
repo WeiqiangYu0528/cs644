@@ -13,7 +13,8 @@ public class Je_7_Return_MissingInElse {
     
     public String test(int foo) {
 	if (foo == 1) return "1";
-	else if (foo == 2) return "2";
+	else 
+	if (foo == 2) return "2";
 	else {
 	    foo = 3;
 	}
