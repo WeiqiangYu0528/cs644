@@ -91,7 +91,7 @@ void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<st
     assembly.push_back(tileExp(node->getRet()));
     assembly.push_back("mov eax, ebx");
     assembly.push_back("mov esp, ebp");
-    assembly.push_back("mov pop, ebp");
+    assembly.push_back("pop ebp");
     assembly.push_back("ret");
 }
 
