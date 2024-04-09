@@ -47,6 +47,20 @@ std::unordered_map<std::string, std::vector<std::string>>& edges) {
     return false;
 }
 
+void generateAssemblyFile(const std::string& filename, const std::vector<std::string>& assemblyCodes) {
+    std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    for (const auto& line : assemblyCodes) {
+        outFile << line << "\n";
+    }
+
+    outFile.close();
+}
+
 template <typename T> 
 bool detectCycle(std::vector<std::shared_ptr<T>> decls) {
     //prepare the graph
@@ -440,6 +454,8 @@ int main(int argc, char* argv[])
         }
 
         {
+        // generate .s file for compUnit
+
         std::vector<std::string> assemblyCodes;
         // static data
         assemblyCodes.push_back("section .data");
@@ -450,15 +466,18 @@ int main(int argc, char* argv[])
             std::cout << instr << std::endl;
         }
         std::cout << "END OF THIS PART" << std::endl;
+        assemblyCodes.push_back("section .text");
+        assemblyCodes.push_back("global _start");
         Tiling tiler;
         bool firstFunction = true;
+        
         for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
             std::vector<std::string> assemblyInstructions;
             if (firstFunction) {
                 assemblyInstructions.push_back("_start:"); // Entry point label
                 firstFunction = false;
             } else {
-                assemblyInstructions.push_back(funcName + ":");
+                assemblyInstructions.push_back(funcDecl->getName() + ":");
                 // std::cout << funcDecl->getName() << std::endl;
             }
             for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts()) {
@@ -467,10 +486,11 @@ int main(int argc, char* argv[])
                 }
                 tiler.tileStmt(stmt, assemblyInstructions);
             }
+            assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
             for (auto instr : assemblyInstructions) {
                 std::cout << instr << std::endl;
             }
-            std::cout << "END OF THIS PART" << std::endl;
+            generateAssemblyFile("output.s", assemblyCodes);
         }
     }
 

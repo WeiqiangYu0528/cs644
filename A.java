@@ -3,6 +3,7 @@ public class A{
     public A() {
     }
     public static int test() {
+        int a = 0;
         return A.add(2, 6);
     }
 
