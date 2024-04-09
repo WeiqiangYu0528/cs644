@@ -411,7 +411,7 @@ int main(int argc, char* argv[])
                 TIR::Simulator sim(compUnit);
                 sim.staticFields = staticFieldsMap;
                 sim.initStaticFields();
-                long result = sim.call(compUnit->getName() + ".test()");
+                long result = sim.call(compUnit->getName() + "_test");
                 std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
                 staticFieldsMap = sim.staticFields;
             }
@@ -430,8 +430,9 @@ int main(int argc, char* argv[])
                 TIR::Simulator sim(compUnit);
                 sim.staticFields = staticFieldsMap;
                 sim.initStaticFields();
-                long result = sim.call(compUnit->getName() + ".test()");
+                long result = sim.call(compUnit->getName() + "_test");
                 std::cout << "After CFG: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
             }
         }
         catch (std::exception& e) {
