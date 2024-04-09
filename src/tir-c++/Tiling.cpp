@@ -72,13 +72,15 @@ void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::s
 // cjump(e, l)
 void Tiling::tileCJump(const std::shared_ptr<TIR::CJump>& node, std::vector<std::string>& assembly) {
     // TODO Fix cjump
-    std::string res = "cmp eax, " + tileExp(node->getCond()) + " , 0" + node->getLabel();
+    std::string res = "cmp " + tileExp(node->getCond()) + ", 0";
     assembly.push_back(res);
+    std::string jumpInstruction = "jne " + node->getLabel();
+    assembly.push_back(jumpInstruction);
 }
 
 // label(l)
 void Tiling::tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std::string>& assembly) {
-    assembly.push_back(node->getName() + ":");
+    assembly.push_back("label" + node->getName() + ": \n");
 }
 
 // call(e)

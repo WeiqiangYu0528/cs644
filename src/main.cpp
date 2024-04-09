@@ -403,6 +403,7 @@ int main(int argc, char* argv[])
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
 
+        
         try{
             std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
             cvisitor->visit(compUnit);
@@ -412,6 +413,7 @@ int main(int argc, char* argv[])
                 sim.initStaticFields();
                 long result = sim.call(compUnit->getName() + ".test()");
                 std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
             }
         }
         catch (std::exception& e) {
@@ -437,6 +439,16 @@ int main(int argc, char* argv[])
         }
 
         {
+        std::vector<std::string> assemblyCodes;
+        // static data
+        assemblyCodes.push_back("section .data");
+        for (auto& [key, value] : staticFieldsMap) {
+            assemblyCodes.push_back(key + ": dd " + std::to_string(value));
+        }
+        for (auto instr : assemblyCodes) {
+            std::cout << instr << std::endl;
+        }
+        std::cout << "END OF THIS PART" << std::endl;
         Tiling tiler;
         bool firstFunction = true;
         for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
