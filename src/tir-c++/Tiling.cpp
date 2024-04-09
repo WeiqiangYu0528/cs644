@@ -91,7 +91,10 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call>& node, std::vector<std::s
 
 // return(e)
 void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<std::string>& assembly) {
-    assembly.push_back("mov eax, " + tileExp(node->getRet()));
+    assembly.push_back(tileExp(node->getRet()));
+    assembly.push_back("mov eax, ebx");
+    assembly.push_back("mov esp, ebp");
+    assembly.push_back("mov pop ebp");
     assembly.push_back("ret");
 }
 
