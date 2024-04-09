@@ -1,4 +1,5 @@
 public class A{
+    public static int myStaticMember = 0;
     public A() {
     }
     public static int test() {
