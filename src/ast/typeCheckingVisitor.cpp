@@ -75,6 +75,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Method> n) {
+    n->className = scope->current->getClassOrInterfaceDecl()->id->name;
     scope->current->beginScope(ScopeType::LOCALVARIABLE);
     if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
     SetCurrentExpTypebyAmbiguousName(n->type);
@@ -781,7 +782,10 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
             ambiguousName.symbolTable = scope->current;
         }
     }
-    if (method) SetCurrentExpTypebyAmbiguousName(method->type);
+    if (method) {
+        SetCurrentExpTypebyAmbiguousName(method->type);
+        n->method = method;
+    }
     else currentExpInfo.expType = ExpType::Any;
 
     std::shared_ptr<SymbolTable> methodSt;
@@ -882,7 +886,7 @@ AmbiguousName TypeCheckingVisitor::visitAssignment(std::shared_ptr<Assignment> n
     scope->current->endScope(ScopeType::ASSIGNMENT);
         
     auto right_type = GetExpInfo(n->right);
-    
+
     ambiguousName = AssignmentTypeCheckingLogic(left_type, right_type);
     currentExpInfo = left_type;
     return ambiguousName;

@@ -1,3 +1,3 @@
 public interface C {
-	public int test(int y);
+	public int test(int y){}
 }

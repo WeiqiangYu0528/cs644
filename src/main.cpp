@@ -10,7 +10,10 @@
 #include "typeCheckingVisitor.hpp"
 #include "typeLinkingVisitor.hpp"
 #include "hierarchyVisitor.hpp"
-#include "cfgVisitor.hpp"
+#include "transformVisitor.hpp"
+#include "IRAst.hpp"
+#include "Simulator.hpp"
+#include "Tiling.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
         {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY},
@@ -373,15 +376,67 @@ int main(int argc, char* argv[])
         }
     }
 
-
     if (!error) {
+        std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
+        std::vector<std::shared_ptr<TIR::Stmt>> staticFields;
+        std::unordered_map<std::string, int> staticFieldsMap;
+        std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> staticMethodMap;
+        std::shared_ptr<TIR::CompUnit> compUnit;
         for (std::shared_ptr<Program> program : asts) {
-            std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
-            CFGVisitor cfgvisitor(program->scope);
-            program->accept(&cfgvisitor);
-            //break;
+            TransformVisitor tvisitor(program->scope, nodeFactory);
+            program->accept(&tvisitor);
+            std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
+            if (compUnit == nullptr) compUnit = cu;
+            for (auto fieldDecl : cu->getFields()) {
+                auto field = std::dynamic_pointer_cast<TIR::Temp>(fieldDecl->getTarget());
+                staticFieldsMap[field->getName()] = 0;
+                staticFields.push_back(fieldDecl);
+            }
+            for (auto& [k, v] : cu->getFunctions()) {
+                staticMethodMap[k] = v;
+            }
         }
+        staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+        compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
+        compUnit->setFunctions(staticMethodMap);
+        std::vector<std::string> assemblyInstructions;
+        for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
+            Tiling tiler;
+            tiler.tileFunction(funcDecl, assemblyInstructions);
+        }
+        TIR::Simulator sim(compUnit);
+        sim.staticFields = staticFieldsMap;
+        sim.initStaticFields();
+        long result = sim.call(compUnit->getName() + ".test()");
+        std::cout << "program evaluates to " << result << std::endl;
+        // for (std::shared_ptr<Program> program : asts) {
+        //     TransformVisitor tvisitor(program->scope, nodeFactory);
+        //     program->accept(&tvisitor);
+        //     TIR::Simulator sim(tvisitor.getCompUnit());
+        //     long result = sim.call("a", 2, 1);
+        //     std::cout << "a(-1,1) evaluates to " << result << std::endl;
+        //     break;
+        // }
     }
+
+    // if (!error) {
+    //     for (std::shared_ptr<Program> program : asts) {
+    //         std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
+    //         CFGVisitor cfgvisitor;
+    //         program->accept(&cfgvisitor);
+    //         // std::vector<ControlFlowGraph> cfgs = cfgvisitor.cfgs;
+    //         // for (size_t i = 0; i < cfgs.size(); ++i) {
+    //         //     // cfgvisitor.printCFG(cfgs[i]);
+    //         //     if (!cfgs[i].checkReachability()) {
+    //         //         std::cerr << "Error: Fails to satisfy reachability dataflow analysis" << std::endl;
+    //         //         error = true;
+    //         //         break;
+    //         //     }
+    //         // }
+    //         // if (program->scope->current->getClassOrInterfaceDecl()->id->name == "String")
+    //         // break;
+    //     }
+    // }
 
     if (error)
         return 42;
