@@ -69,7 +69,7 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
     }
     if (!cfg.checkDeadAssignments()) {
         std::cerr << "Warning: Dead assignment found" << std::endl;
-        exit(43);
+        // exit(43);
     }
     cfgs.push_back(cfg);
 }
@@ -118,7 +118,7 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         }
         if (!cfg.checkDeadAssignments()) {
             std::cerr << "Warning: Dead assignment found" << std::endl;
-            exit(43);
+            // exit(43);
         }
         cfgs.push_back(cfg);
     }
