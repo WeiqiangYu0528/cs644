@@ -31,26 +31,26 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
         tileLabel(label, assembly);
     } else if (auto ret = std::dynamic_pointer_cast<TIR::Return>(stmt)) {
         tileReturn(ret, assembly);
-    } else if (auto call = std::dynamic_pointer_cast<TIR::Call>(stmt)) {
+    } else if (auto call = std::dynamic_pointer_cast<TIR::Call_s>(stmt)) {
         tileCall(call, assembly);
     }
 }
 
 void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
-    std::string res;
-    res += "mov eax , "; 
-    // check the postfix of the target to determine the memory address, 
-    // if it is _ARG0, then we should use ebp+4 and add it to res
-    // args: calculate the address by ebp + 4 * (n + 1)  n = 1..N
-    // localvar: calculate the address by ebp - 4 * m  m = 1..M
-    std::string temp = tileExp(node->getSource());
-    if (temp.find("_ARG") != std::string::npos) {
-        res += "[ebp+" + std::to_string(std::stoi(temp.substr(4))*4+8) + "]";
-    } else if (temp.find("_LOCAL") != std::string::npos) {
-        res += "[ebp-" + std::to_string(std::stoi(temp.substr(5))*4) + "]";
-    }
-    assembly.push_back(res);
-    // assembly.push_back("mov [ebp-4], eax");
+    // std::string res;
+    // res += "mov eax , "; 
+    // // check the postfix of the target to determine the memory address, 
+    // // if it is _ARG0, then we should use ebp+4 and add it to res
+    // // args: calculate the address by ebp + 4 * (n + 1)  n = 1..N
+    // // localvar: calculate the address by ebp - 4 * m  m = 1..M
+    // std::string temp = tileExp(node->getSource());
+    // if (temp.find("_ARG") != std::string::npos) {
+    //     res += "[ebp+" + std::to_string(std::stoi(temp.substr(4))*4+8) + "]";
+    // } else if (temp.find("_LOCAL") != std::string::npos) {
+    //     res += "[ebp-" + std::to_string(std::stoi(temp.substr(5))*4) + "]";
+    // }
+    // assembly.push_back(res);
+    // // assembly.push_back("mov [ebp-4], eax");
 }
 
 // edst = temp(t) | mem(e)
@@ -84,9 +84,17 @@ void Tiling::tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std:
 }
 
 // call(e)
-void Tiling::tileCall(const std::shared_ptr<TIR::Call>& node, std::vector<std::string>& assembly) {
-    std::string res = "mov eax, " + tileExp(node->getTarget());
-    assembly.push_back(res);
+void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std::string>& assembly) {
+    const auto& args = node->getArgs();
+    for (int i = args.size() - 1; i >= 0; --i) {
+        std::string argAssembly = tileExp(args[i]);
+        assembly.push_back(argAssembly);
+        assembly.push_back("push ebx");
+    }
+
+    std::string target = tileExp(node->getTarget());
+    assembly.push_back(target);
+    assembly.push_back("call ebx");
 }
 
 // return(e)
@@ -104,7 +112,7 @@ std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node) {
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
         assembly = tileConst(constNode);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        return tempNode->getName();
+        assembly = tileTemp(tempNode);
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
         assembly = tileBinOp(binOpNode);
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
@@ -162,3 +170,16 @@ std::string Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node) {
 std::string Tiling::tileName(const std::shared_ptr<TIR::Name>& node) {
     return node->getName();
 }
+
+std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node) {
+    std::string assembly;
+    if (!tempToStackOffset.contains(node->getName())) {
+        assembly += "sub esp, 4\n"; 
+        currentStackOffset -= 4;
+        tempToStackOffset[node->getName()] = currentStackOffset;
+    }
+    assembly += std::string("mov ebx, ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "]" + "\n";
+    return assembly;
+}
+
+// "mov ebx, " + "[ebp" + std::to_string(it->second) + "]";

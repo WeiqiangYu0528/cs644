@@ -480,10 +480,12 @@ int main(int argc, char* argv[])
                 assemblyInstructions.push_back(funcDecl->getName() + ":");
                 // std::cout << funcDecl->getName() << std::endl;
             }
+            tiler.currentStackOffset = 0;
+            tiler.tempToStackOffset.clear();
             for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts()) {
-                if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
-                    assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
-                }
+                // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
+                //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
+                // }
                 tiler.tileStmt(stmt, assemblyInstructions);
             }
             assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
