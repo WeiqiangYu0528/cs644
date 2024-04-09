@@ -13,12 +13,10 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
-
 #include "canonicalVisitor.hpp"
 #include "utils.h"
 #include "IRCfgVisitor.hpp"
 #include <Tiling.hpp>
-
 #include "cfgVisitor.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {

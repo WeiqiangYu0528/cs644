@@ -57,8 +57,8 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
     n->block->accept(this);
     auto block = std::dynamic_pointer_cast<TIR::Seq>(node);
     stmts.push_back(block);
-    if (n->type->type == DataType::VOID && (block->getStmts().empty() || block->getStmts().back()->getLabel() != "RETURN")) {
-        stmts.push_back(nodeFactory->IRReturn(nullptr));
+    if (n->type->type == DataType::VOID && block->getStmts().back()->getLabel() != "RETURN") {
+        stmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
     }
     node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
 }
@@ -239,13 +239,6 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
     }
 }
 
-// void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
-//     n->left->accept(this);
-//     auto left = getExpr();
-//     n->right->accept(this);
-//     auto right = getExpr();
-//     node = nodeFactory->IRMove(left, right);
-// }
 
 void TransformVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
     node = nodeFactory->IRConst(static_cast<int>(n->value));
