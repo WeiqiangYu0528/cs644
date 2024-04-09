@@ -473,16 +473,25 @@ int main(int argc, char* argv[])
         bool firstFunction = true;
         
         for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
+            tiler.currentStackOffset = 0;
+            tiler.tempToStackOffset.clear();            
             std::vector<std::string> assemblyInstructions;
             if (firstFunction) {
                 assemblyInstructions.push_back("_start:"); // Entry point label
                 firstFunction = false;
             } else {
                 assemblyInstructions.push_back(funcDecl->getName() + ":");
+                assemblyInstructions.push_back("push ebp");
+                assemblyInstructions.push_back("mov ebp, esp");
+                for(int i = 0; i < funcDecl->getNumParams(); i++)
+                    tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+                
+                // if (!tempToStackOffset.contains(node->getName())) {
+                //     tempToStackOffset[node->getName()] = currentStackOffset;
+                // }
                 // std::cout << funcDecl->getName() << std::endl;
             }
-            tiler.currentStackOffset = 0;
-            tiler.tempToStackOffset.clear();
+    
             for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts()) {
                 // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
                 //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
