@@ -77,6 +77,48 @@ bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inExpr();
 }
 
+Call_s::Call_s(std::shared_ptr<Name> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
+}
+
+std::shared_ptr<Name> Call_s::getTarget() const {
+    return target;
+}
+
+std::vector<std::shared_ptr<Temp>> Call_s::getArgs() const {
+    return args;
+}
+
+int Call_s::getNumArgs() const {
+    return args.size();
+}
+
+std::string Call_s::getLabel() const {
+    return "CALL_s";
+}
+
+std::shared_ptr<Node> Call_s::visitChildren(std::shared_ptr<IRVisitor> v) {
+
+    bool modified = false;
+
+    std::shared_ptr<Expr> t = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), target));
+    if (t != target) modified = true;
+
+    std::vector<std::shared_ptr<Expr>> results(args.size());
+    for (std::shared_ptr<Expr> arg : args) {
+        std::shared_ptr<Expr> newExpr = std::dynamic_pointer_cast<Expr>(v->visit(shared_from_this(), arg));
+        if (newExpr != arg) modified = true;
+        results.push_back(newExpr);
+    }
+
+    if (modified) return v->nodeFactory()->IRCall(t, results);
+
+    return shared_from_this();
+}
+
+bool Call_s::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
+    return !v->inExpr();
+}
+
 CJump::CJump(std::shared_ptr<Expr> cond, const std::string& trueLabel) : CJump(cond, trueLabel, nullptr) {
 }
 

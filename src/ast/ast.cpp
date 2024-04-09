@@ -130,7 +130,7 @@ void IdentifierType::accept(Visitor* v) {
 }
 
 std::string ArrayType::typeToString() {
-    return dataType->typeToString() + "[]";
+    return "array_" + dataType->typeToString();
 }
 
 ArrayType::ArrayType(std::shared_ptr<Type> t) : Type(DataType::ARRAY), dataType(t) {
@@ -426,14 +426,10 @@ std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement
 }
 
 std::string Method::getSignature() const {
-    std::string signature = className + "." + methodName->name + "(";
+    std::string signature = className + "_" + methodName->name;
     for (int i = 0; i < formalParameters.size(); ++i) {
-        signature += formalParameters[i]->type->typeToString();
-        if (i != formalParameters.size() - 1) {
-            signature += ",";
-        }
+        signature += "_" + formalParameters[i]->type->typeToString();
     }
-    signature += ")";
     return signature;
 }
 

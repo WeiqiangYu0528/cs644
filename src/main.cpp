@@ -13,7 +13,11 @@
 #include "transformVisitor.hpp"
 #include "IRAst.hpp"
 #include "Simulator.hpp"
-#include "Tiling.hpp"
+
+#include "canonicalVisitor.hpp"
+#include "utils.h"
+#include "IRCfgVisitor.hpp"
+#include <Tiling.hpp>
 
 #include "cfgVisitor.hpp"
 
@@ -44,6 +48,20 @@ std::unordered_map<std::string, std::vector<std::string>>& edges) {
     }
     pathVisited.erase(current);
     return false;
+}
+
+void generateAssemblyFile(const std::string& filename, const std::vector<std::string>& assemblyCodes) {
+    std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    for (const auto& line : assemblyCodes) {
+        outFile << line << "\n";
+    }
+
+    outFile.close();
 }
 
 template <typename T> 
@@ -413,16 +431,97 @@ int main(int argc, char* argv[])
         staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
-        std::vector<std::string> assemblyInstructions;
-        for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
-            Tiling tiler;
-            tiler.tileFunction(funcDecl, assemblyInstructions);
+
+        
+        try{
+            std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
+            cvisitor->visit(compUnit);
+            {
+                TIR::Simulator sim(compUnit);
+                sim.staticFields = staticFieldsMap;
+                sim.initStaticFields();
+                long result = sim.call(compUnit->getName() + "_test");
+                std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
+            }
         }
-        TIR::Simulator sim(compUnit);
-        sim.staticFields = staticFieldsMap;
-        sim.initStaticFields();
-        long result = sim.call(compUnit->getName() + ".test()");
-        std::cout << "program evaluates to " << result << std::endl;
+        catch (std::exception& e) {
+            std::cout << "Error in CanonicalVisitor" << std::endl;
+        }
+
+
+        try{
+            std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
+            cfv->visit(compUnit);
+            std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
+            std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
+            {
+                TIR::Simulator sim(compUnit);
+                sim.staticFields = staticFieldsMap;
+                sim.initStaticFields();
+                long result = sim.call(compUnit->getName() + "_test");
+                std::cout << "After CFG: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
+            }
+        }
+        catch (std::exception& e) {
+            std::cout << "Error in CFG" << std::endl;
+        }
+
+        {
+        // generate .s file for compUnit
+
+        std::vector<std::string> assemblyCodes;
+        // static data
+        assemblyCodes.push_back("section .data");
+        for (auto& [key, value] : staticFieldsMap) {
+            assemblyCodes.push_back(key + ": dd " + std::to_string(value));
+        }
+        for (auto instr : assemblyCodes) {
+            std::cout << instr << std::endl;
+        }
+        std::cout << "END OF THIS PART" << std::endl;
+        assemblyCodes.push_back("section .text");
+        assemblyCodes.push_back("global _start");
+        Tiling tiler;
+        bool firstFunction = true;
+        
+        for (auto& [funcName, funcDecl] : compUnit->getFunctions()) {
+            tiler.currentStackOffset = 0;
+            tiler.tempToStackOffset.clear();            
+            std::vector<std::string> assemblyInstructions;
+            if (firstFunction) {
+                assemblyInstructions.push_back("_start:"); // Entry point label
+                firstFunction = false;
+            } else {
+                assemblyInstructions.push_back(funcDecl->getName() + ":");
+                assemblyInstructions.push_back("push ebp");
+                assemblyInstructions.push_back("mov ebp, esp");
+                for(int i = 0; i < funcDecl->getNumParams(); i++)
+                    tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+                
+                // if (!tempToStackOffset.contains(node->getName())) {
+                //     tempToStackOffset[node->getName()] = currentStackOffset;
+                // }
+                // std::cout << funcDecl->getName() << std::endl;
+            }
+    
+            for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts()) {
+                // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
+                //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
+                // }
+                tiler.tileStmt(stmt, assemblyInstructions);
+            }
+            assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
+            for (auto instr : assemblyInstructions) {
+                std::cout << instr << std::endl;
+            }
+            generateAssemblyFile("output.s", assemblyCodes);
+        }
+    }
+
+
+
         // for (std::shared_ptr<Program> program : asts) {
         //     TransformVisitor tvisitor(program->scope, nodeFactory);
         //     program->accept(&tvisitor);
