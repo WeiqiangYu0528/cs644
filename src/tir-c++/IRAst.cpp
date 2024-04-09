@@ -77,10 +77,10 @@ bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inExpr();
 }
 
-Call_s::Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
+Call_s::Call_s(std::shared_ptr<Name> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
 }
 
-std::shared_ptr<Temp> Call_s::getTarget() const {
+std::shared_ptr<Name> Call_s::getTarget() const {
     return target;
 }
 
