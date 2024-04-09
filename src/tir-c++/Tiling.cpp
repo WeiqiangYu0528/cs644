@@ -175,9 +175,9 @@ std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, bool read) 
         offset_string = std::string("+") + offset_string;
 
     if(read)
-        assembly += std::string("mov ebx, ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "]" + "\n";
+        assembly += std::string("mov ebx, ") + "[ebp" + offset_string  + "]" + "\n";
     else
-        assembly += std::string("mov ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "], ";
+        assembly += std::string("mov ") + "[ebp" + offset_string  + "], ";
     return assembly;
 }
 
