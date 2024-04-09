@@ -20,7 +20,7 @@ mov ebx, 2
 sub esp, 4
 mov [ebp-8], ebx
 
-mov ebx, 6
+mov ebx, 8
 sub esp, 4
 mov [ebp-12], ebx
 
@@ -32,11 +32,13 @@ mov ebx, [ebp-8]
 push ebx
 call A_add_int_int
 sub esp, 4
+mov [ebp-16], eax
+
 mov ebx, [ebp-16]
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 A_add_int_int:
 push ebp
@@ -60,5 +62,5 @@ add ebx, ecx
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret

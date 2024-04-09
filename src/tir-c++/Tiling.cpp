@@ -88,6 +88,12 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
 
 // return(e)
 void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<std::string>& assembly) {
+    if(auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node->getRet())) {
+        if(!tempToStackOffset.contains(tempNode->getName())){
+            assembly.push_back(tileExp(node->getRet(), false) + "eax" + "\n");
+        }
+    }
+    
     assembly.push_back(tileExp(node->getRet()));
     assembly.push_back("mov eax, ebx");
     assembly.push_back("mov esp, ebp");

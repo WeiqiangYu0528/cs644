@@ -103,7 +103,7 @@ mov ebx, 1
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 label7:
 call __exception
@@ -116,7 +116,7 @@ mov ebx, 0
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 jmp label6
 label14:
@@ -258,7 +258,7 @@ mov ebx, 0
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 jmp label18
 Arrays_equals_array_char_array_char:
@@ -359,7 +359,7 @@ mov ebx, 1
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 label28:
 call __exception
@@ -372,7 +372,7 @@ mov ebx, 0
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 jmp label27
 label35:
@@ -514,7 +514,7 @@ mov ebx, 0
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 jmp label39
 A_test:
@@ -528,7 +528,7 @@ mov ebx, 2
 sub esp, 4
 mov [ebp-8], ebx
 
-mov ebx, 6
+mov ebx, 8
 sub esp, 4
 mov [ebp-12], ebx
 
@@ -540,11 +540,13 @@ mov ebx, [ebp-8]
 push ebx
 call A_add_int_int
 sub esp, 4
+mov [ebp-16], eax
+
 mov ebx, [ebp-16]
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
 A_add_int_int:
 push ebp
@@ -568,5 +570,5 @@ add ebx, ecx
 
 mov eax, ebx
 mov esp, ebp
-mov pop, ebp
+pop ebp
 ret
