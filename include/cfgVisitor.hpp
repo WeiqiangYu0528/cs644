@@ -8,13 +8,13 @@ class CFGVisitor : public Visitor {
     private:
         ControlFlowGraph cfg;
         DataType currentMethodReturnType;
-        std::shared_ptr<BasicBlock> currentBlock;
-        std::shared_ptr<Node> currentNode;
+        std::shared_ptr<_BasicBlock> currentBlock;
+        std::shared_ptr<_Node> currentNode;
         bool isInsideIf;
         bool isInsideReturn;
         bool loopIndefinite;
         void addStatement(std::shared_ptr<Statement> stmt);
-        std::shared_ptr<BasicBlock> newBlock();
+        std::shared_ptr<_BasicBlock> newBlock();
         void createNewNode(const std::string& name);
     public:
         std::shared_ptr<Scope> scope;

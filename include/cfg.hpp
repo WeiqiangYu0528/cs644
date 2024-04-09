@@ -2,18 +2,18 @@
 #include <set>
 #include "ast.hpp"
 
-class Edge;
+class _Edge;
 class Link;
 
-class BasicBlock {
+class _BasicBlock {
 public:
     std::vector<std::shared_ptr<Statement>> statements;
-    std::vector<std::shared_ptr<Edge>> incoming;
-    std::vector<std::shared_ptr<Edge>> outgoing;
-    BasicBlock();
+    std::vector<std::shared_ptr<_Edge>> incoming;
+    std::vector<std::shared_ptr<_Edge>> outgoing;
+    _BasicBlock();
 };
 
-class Node {
+class _Node {
 public:
     std::string name;
     std::string def;
@@ -21,43 +21,43 @@ public:
     bool init;
     std::vector<std::shared_ptr<Link>> incoming;
     std::vector<std::shared_ptr<Link>> outgoing;
-    Node(const std::string& n) : name(n), init(false) {}
+    _Node(const std::string& n) : name(n), init(false) {}
 };
 
-class Edge {
+class _Edge {
 public:
-    std::shared_ptr<BasicBlock> from;
-    std::shared_ptr<BasicBlock> to;
-    Edge(std::shared_ptr<BasicBlock> f, std::shared_ptr<BasicBlock> t) : from(f), to(t) {}
+    std::shared_ptr<_BasicBlock> from;
+    std::shared_ptr<_BasicBlock> to;
+    _Edge(std::shared_ptr<_BasicBlock> f, std::shared_ptr<_BasicBlock> t) : from(f), to(t) {}
 };
 
 class Link {
 public:
-    std::shared_ptr<Node> from;
-    std::shared_ptr<Node> to;
-    Link(std::shared_ptr<Node> f, std::shared_ptr<Node> t) : from(f), to(t) {}
+    std::shared_ptr<_Node> from;
+    std::shared_ptr<_Node> to;
+    Link(std::shared_ptr<_Node> f, std::shared_ptr<_Node> t) : from(f), to(t) {}
 };
 
 class ControlFlowGraph {
     public:
-        std::shared_ptr<BasicBlock> start;
-        std::shared_ptr<Node> startNode;
-        std::shared_ptr<Node> endNode;
-        std::vector<std::shared_ptr<BasicBlock>> blocks;
-        std::vector<std::shared_ptr<Node>> nodes;
-        std::vector<std::shared_ptr<Edge>> edges;
+        std::shared_ptr<_BasicBlock> start;
+        std::shared_ptr<_Node> startNode;
+        std::shared_ptr<_Node> endNode;
+        std::vector<std::shared_ptr<_BasicBlock>> blocks;
+        std::vector<std::shared_ptr<_Node>> nodes;
+        std::vector<std::shared_ptr<_Edge>> edges;
         std::vector<std::shared_ptr<Link>> links;
         ControlFlowGraph();
-        void addEdge(std::shared_ptr<BasicBlock> from, std::shared_ptr<BasicBlock> to);
-        void addLink(std::shared_ptr<Node> from, std::shared_ptr<Node> to);
-        std::shared_ptr<Node> removeLastLink();
+        void addEdge(std::shared_ptr<_BasicBlock> from, std::shared_ptr<_BasicBlock> to);
+        void addLink(std::shared_ptr<_Node> from, std::shared_ptr<_Node> to);
+        std::shared_ptr<_Node> removeLastLink();
         bool checkReachability();
         bool checkMissingReturn();
-        bool checkPathForReturn(const std::shared_ptr<BasicBlock>& block, std::vector<std::shared_ptr<BasicBlock>>& visited);
+        bool checkPathForReturn(const std::shared_ptr<_BasicBlock>& block, std::vector<std::shared_ptr<_BasicBlock>>& visited);
         bool checkDeadAssignments();
-        std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> liveVariableAnalysis();
-        bool hasReturnInBlock(const std::shared_ptr<BasicBlock>& block);
-        bool isTerminalBlock(const std::shared_ptr<BasicBlock>& block);
+        std::unordered_map<std::shared_ptr<_Node>, std::set<std::string>> liveVariableAnalysis();
+        bool hasReturnInBlock(const std::shared_ptr<_BasicBlock>& block);
+        bool isTerminalBlock(const std::shared_ptr<_BasicBlock>& block);
         void Print();
         void PrintNodes();
         void removeUnusedNodes();

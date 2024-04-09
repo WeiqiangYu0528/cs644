@@ -7,32 +7,32 @@
 #include <unordered_set>
 #include <queue>
 
-BasicBlock::BasicBlock() {
+_BasicBlock::_BasicBlock() {
 }
 
 ControlFlowGraph::ControlFlowGraph() {
-    start = std::make_shared<BasicBlock>();
-    startNode = std::make_shared<Node>("Start");
-    endNode = std::make_shared<Node>("End");
+    start = std::make_shared<_BasicBlock>();
+    startNode = std::make_shared<_Node>("Start");
+    endNode = std::make_shared<_Node>("End");
     blocks.push_back(start);
     nodes.push_back(startNode);
 }
 
-void ControlFlowGraph::addEdge(std::shared_ptr<BasicBlock> from, std::shared_ptr<BasicBlock> to) {
-    auto edge = std::make_shared<Edge>(from, to);
+void ControlFlowGraph::addEdge(std::shared_ptr<_BasicBlock> from, std::shared_ptr<_BasicBlock> to) {
+    auto edge = std::make_shared<_Edge>(from, to);
     from->outgoing.push_back(edge);
     to->incoming.push_back(edge);
     edges.push_back(edge);
 }
 
-void ControlFlowGraph::addLink(std::shared_ptr<Node> from, std::shared_ptr<Node> to) {
+void ControlFlowGraph::addLink(std::shared_ptr<_Node> from, std::shared_ptr<_Node> to) {
     auto link = std::make_shared<Link>(from, to);
     from->outgoing.push_back(link);
     to->incoming.push_back(link);
     links.push_back(link);
 }
 
-std::shared_ptr<Node> ControlFlowGraph::removeLastLink() {
+std::shared_ptr<_Node> ControlFlowGraph::removeLastLink() {
     auto link = links.back();
     auto from = link->from;
     link->from->outgoing.pop_back();
@@ -74,8 +74,8 @@ void ControlFlowGraph::Print() {
 }
 
 bool ControlFlowGraph::checkReachability() {
-    std::unordered_set<std::shared_ptr<BasicBlock>> visited;
-    std::queue<std::shared_ptr<BasicBlock>> queue;
+    std::unordered_set<std::shared_ptr<_BasicBlock>> visited;
+    std::queue<std::shared_ptr<_BasicBlock>> queue;
 
     queue.push(start);
 
@@ -114,7 +114,7 @@ bool ControlFlowGraph::checkReachability() {
 }
 
 // bool ControlFlowGraph::checkReachability() {
-//     std::unordered_map<std::shared_ptr<BasicBlock>, bool> in, out;
+//     std::unordered_map<std::shared_ptr<_BasicBlock>, bool> in, out;
     
 //     for (auto& block : blocks) {
 //         in[block] = false;
@@ -157,7 +157,7 @@ bool ControlFlowGraph::checkReachability() {
 //     return true;
 // }
 
-bool ControlFlowGraph::isTerminalBlock(const std::shared_ptr<BasicBlock>& block) {
+bool ControlFlowGraph::isTerminalBlock(const std::shared_ptr<_BasicBlock>& block) {
     
 }
 
@@ -170,7 +170,7 @@ void ControlFlowGraph::removeUnusedNodes() {
                 auto sourceBlock = incomingEdge->from;
                 sourceBlock->outgoing.erase(
                     std::remove_if(sourceBlock->outgoing.begin(), sourceBlock->outgoing.end(),
-                                   [&](const std::shared_ptr<Edge>& e) { return e->to == block; }),
+                                   [&](const std::shared_ptr<_Edge>& e) { return e->to == block; }),
                     sourceBlock->outgoing.end());
                 edges.erase(
                     std::remove(edges.begin(), edges.end(), incomingEdge),
@@ -188,7 +188,7 @@ void ControlFlowGraph::mergeUnusedNodes() {
 
     while (merged) {
         merged = false;
-        std::list<std::shared_ptr<BasicBlock>> blocksToRemove;
+        std::list<std::shared_ptr<_BasicBlock>> blocksToRemove;
 
         for (auto blockIt = blocks.begin(); blockIt != blocks.end(); ++blockIt) {
             auto& block = *blockIt;
@@ -214,11 +214,11 @@ void ControlFlowGraph::mergeUnusedNodes() {
             }
         }
         for (auto& toRemove : blocksToRemove) {
-            auto removeEdges = [this, &toRemove](const std::shared_ptr<BasicBlock>& block, bool outgoing) {
+            auto removeEdges = [this, &toRemove](const std::shared_ptr<_BasicBlock>& block, bool outgoing) {
                 auto& edgeList = outgoing ? block->outgoing : block->incoming;
                 edgeList.erase(
                     std::remove_if(edgeList.begin(), edgeList.end(), 
-                                   [&toRemove, outgoing](const std::shared_ptr<Edge>& e) {
+                                   [&toRemove, outgoing](const std::shared_ptr<_Edge>& e) {
                                        return outgoing ? e->to == toRemove : e->from == toRemove;
                                    }), 
                     edgeList.end());
@@ -232,7 +232,7 @@ void ControlFlowGraph::mergeUnusedNodes() {
             blocks.erase(std::remove(blocks.begin(), blocks.end(), toRemove), blocks.end());        
             edges.erase(
                 std::remove_if(edges.begin(), edges.end(),
-                               [&toRemove](const std::shared_ptr<Edge>& e) {
+                               [&toRemove](const std::shared_ptr<_Edge>& e) {
                                    return e->from == toRemove || e->to == toRemove;
                                }),
                 edges.end());
@@ -240,12 +240,12 @@ void ControlFlowGraph::mergeUnusedNodes() {
     }
 }
 
-bool ControlFlowGraph::hasReturnInBlock(const std::shared_ptr<BasicBlock>& block) {
+bool ControlFlowGraph::hasReturnInBlock(const std::shared_ptr<_BasicBlock>& block) {
     return !block->statements.empty() && std::dynamic_pointer_cast<ReturnStatement>(block->statements.back()) != nullptr;
 }
 
 
-bool ControlFlowGraph::checkPathForReturn(const std::shared_ptr<BasicBlock>& block, std::vector<std::shared_ptr<BasicBlock>>& visited) {
+bool ControlFlowGraph::checkPathForReturn(const std::shared_ptr<_BasicBlock>& block, std::vector<std::shared_ptr<_BasicBlock>>& visited) {
     if (std::find(visited.begin(), visited.end(), block) != visited.end()) {
         return true;
     }
@@ -286,9 +286,9 @@ bool ControlFlowGraph::checkMissingReturn() {
     }
     return true;
 }
-std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> ControlFlowGraph::liveVariableAnalysis() {
-    std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> liveAtEntry;
-    std::vector<std::shared_ptr<Node>> worklist = nodes;
+std::unordered_map<std::shared_ptr<_Node>, std::set<std::string>> ControlFlowGraph::liveVariableAnalysis() {
+    std::unordered_map<std::shared_ptr<_Node>, std::set<std::string>> liveAtEntry;
+    std::vector<std::shared_ptr<_Node>> worklist = nodes;
     bool changed = true;
 
     while (changed) {
@@ -321,7 +321,7 @@ std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> ControlFlowGrap
 
 bool ControlFlowGraph::checkDeadAssignments() {
     // First, perform live variable analysis
-    std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> liveAtEntry = liveVariableAnalysis();
+    std::unordered_map<std::shared_ptr<_Node>, std::set<std::string>> liveAtEntry = liveVariableAnalysis();
 
     // Now, check for dead assignments
     for (auto& node : nodes) {
@@ -337,8 +337,8 @@ bool ControlFlowGraph::checkDeadAssignments() {
 }
 
 // bool ControlFlowGraph::checkDeadAssignments() {
-//     std::vector<std::shared_ptr<Node>> worklist = nodes;
-//     std::unordered_map<std::shared_ptr<Node>, std::set<std::string>> liveAtEntry;
+//     std::vector<std::shared_ptr<_Node>> worklist = nodes;
+//     std::unordered_map<std::shared_ptr<_Node>, std::set<std::string>> liveAtEntry;
 //     while (!worklist.empty()) {
 //         auto node = worklist.back();
 //         worklist.pop_back();
@@ -408,13 +408,13 @@ void ControlFlowGraph::PrintNodes() {
     std::remove(dotFile.c_str());
 }
 
-// void ControlFlowGraph::DFS(std::shared_ptr<Node> node, std::set<std::shared_ptr<Node>>& visited, std::vector<std::shared_ptr<Node>>& postOrder) {
+// void ControlFlowGraph::DFS(std::shared_ptr<_Node> node, std::set<std::shared_ptr<_Node>>& visited, std::vector<std::shared_ptr<_Node>>& postOrder) {
 //     // Mark the current node as visited
 //     visited.insert(node);
 
 //     // Recur for all the vertices adjacent to this vertex
 //     for (std::shared_ptr<Link> link : node->outgoing) {
-//         std::shared_ptr<Node> child = link->to;
+//         std::shared_ptr<_Node> child = link->to;
 //         if (visited.find(child) == visited.end()) {
 //             DFS(child, visited, postOrder);
 //         }
@@ -424,9 +424,9 @@ void ControlFlowGraph::PrintNodes() {
 //     postOrder.push_back(node);
 // }
 
-// std::vector<std::shared_ptr<Node>> ControlFlowGraph::generateReversePostOrder(std::shared_ptr<Node> endNode, std::vector<std::shared_ptr<Node>>& nodes) {
-//     std::set<std::shared_ptr<Node>> visited;
-//     std::vector<std::shared_ptr<Node>> postOrder;
+// std::vector<std::shared_ptr<_Node>> ControlFlowGraph::generateReversePostOrder(std::shared_ptr<_Node> endNode, std::vector<std::shared_ptr<_Node>>& nodes) {
+//     std::set<std::shared_ptr<_Node>> visited;
+//     std::vector<std::shared_ptr<_Node>> postOrder;
 
 //     // Call the recursive helper function to store the post-order traversal starting from the end node
 //     DFS(endNode, visited, postOrder);

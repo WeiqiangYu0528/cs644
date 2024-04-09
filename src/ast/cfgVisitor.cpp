@@ -5,15 +5,15 @@
 CFGVisitor::CFGVisitor(std::shared_ptr<Scope> s) : scope(s), isInsideIf(false), isInsideReturn(false), loopIndefinite(false) {
 }
 
-std::shared_ptr<BasicBlock> CFGVisitor::newBlock() {
-    auto newBlock = std::make_shared<BasicBlock>();
+std::shared_ptr<_BasicBlock> CFGVisitor::newBlock() {
+    auto newBlock = std::make_shared<_BasicBlock>();
     cfg.blocks.push_back(newBlock);
     return newBlock;
 }
 
 void CFGVisitor::createNewNode(const std::string& name) {
     if (!isInsideIf) {
-        auto newNode = std::make_shared<Node>(name);
+        auto newNode = std::make_shared<_Node>(name);
         cfg.nodes.push_back(newNode);
         if (!isInsideReturn) cfg.addLink(currentNode, newNode);
         else isInsideReturn = false;
@@ -27,7 +27,7 @@ void CFGVisitor::createNewNode(const std::string& name) {
 
 void CFGVisitor::addStatement(std::shared_ptr<Statement> stmt) {
      if (!currentBlock) {
-        currentBlock = std::make_shared<BasicBlock>();
+        currentBlock = std::make_shared<_BasicBlock>();
         cfg.blocks.push_back(currentBlock);
     }
     currentBlock->statements.push_back(stmt);
@@ -151,7 +151,7 @@ void CFGVisitor::visit(std::shared_ptr<IfStatement> n) {
     auto ifNode = currentNode;
 
     auto thenBlock = newBlock();
-    std::shared_ptr<BasicBlock> elseBlock = nullptr;
+    std::shared_ptr<_BasicBlock> elseBlock = nullptr;
     auto continueBlock = newBlock();
     cfg.addEdge(currentBlock, thenBlock);
 
