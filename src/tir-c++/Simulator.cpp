@@ -303,7 +303,7 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
         int addr = exprStack->popValue();
         exprStack->pushAddr(read(addr), addr);
     }
-    else if (auto temp = std::dynamic_pointer_cast<Call>(insn)) {
+    else if (auto temp = std::dynamic_pointer_cast<Call_s>(insn)) {
         int argsCount = temp->getNumArgs();
         std::vector<int> args(argsCount);
         for (int i = argsCount - 1; i >= 0; --i)

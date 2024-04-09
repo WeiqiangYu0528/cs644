@@ -331,7 +331,7 @@ void TransformVisitor::visit(std::shared_ptr<ForStatement> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<ReturnStatement> n) {
-    std::shared_ptr<TIR::Expr> expr;
+    std::shared_ptr<TIR::Expr> expr = nodeFactory->IRConst(0);
     if (n->exp) {
         n->exp->accept(this);
         expr = std::dynamic_pointer_cast<TIR::Expr>(node);
