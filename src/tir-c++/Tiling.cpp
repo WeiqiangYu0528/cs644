@@ -37,20 +37,10 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
 }
 
 void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
-    // std::string res;
-    // res += "mov eax , "; 
-    // // check the postfix of the target to determine the memory address, 
-    // // if it is _ARG0, then we should use ebp+4 and add it to res
-    // // args: calculate the address by ebp + 4 * (n + 1)  n = 1..N
-    // // localvar: calculate the address by ebp - 4 * m  m = 1..M
-    // std::string temp = tileExp(node->getSource());
-    // if (temp.find("_ARG") != std::string::npos) {
-    //     res += "[ebp+" + std::to_string(std::stoi(temp.substr(4))*4+8) + "]";
-    // } else if (temp.find("_LOCAL") != std::string::npos) {
-    //     res += "[ebp-" + std::to_string(std::stoi(temp.substr(5))*4) + "]";
-    // }
-    // assembly.push_back(res);
-    // // assembly.push_back("mov [ebp-4], eax");
+    std::string res;
+    res += tileExp(node->getSource());
+    res += tileExp(node->getTarget(), false) + "ebx" + "\n";
+    assembly.push_back(res);
 }
 
 // edst = temp(t) | mem(e)
@@ -65,7 +55,7 @@ std::string Tiling::tileEdst(const std::shared_ptr<TIR::Expr>& node) {
 // jump(e)
 void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::string>& assembly) {
     // TODO Fix jump
-    std::string res = "jmp " + tileExp(node->getTarget());
+    std::string res = "jmp label" + tileExp(node->getTarget());
     assembly.push_back(res);
 }
 
@@ -93,8 +83,7 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
     }
 
     std::string target = tileExp(node->getTarget());
-    assembly.push_back(target);
-    assembly.push_back("call ebx");
+    assembly.push_back("call " + target);
 }
 
 // return(e)
@@ -106,13 +95,13 @@ void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<st
     assembly.push_back("ret");
 }
 
-std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node) {
+std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node, bool read) {
     // Exp only have const(n), temp(t), op(e1, e2), mem(e), name(l)
     std::string assembly;
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
         assembly = tileConst(constNode);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        assembly = tileTemp(tempNode);
+        assembly = tileTemp(tempNode, read);
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
         assembly = tileBinOp(binOpNode);
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
@@ -125,8 +114,10 @@ std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node) {
 
 std::string Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp) {    
     std::string assembly;
-    assembly += "mov ebx, " + tileExp(binOp->getLeft()) + "\n";
-    assembly += "mov ecx, " + tileExp(binOp->getRight()) + "\n";
+
+    assembly += tileExp(binOp->getRight());
+    assembly += "mov ecx, ebx\n";
+    assembly += tileExp(binOp->getLeft());
     assembly += opTypeToAssembly(binOp->getOpType()) + " ebx, ecx" + "\n";
     return assembly;
 }
@@ -171,14 +162,17 @@ std::string Tiling::tileName(const std::shared_ptr<TIR::Name>& node) {
     return node->getName();
 }
 
-std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node) {
+std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, bool read) {
     std::string assembly;
     if (!tempToStackOffset.contains(node->getName())) {
         assembly += "sub esp, 4\n"; 
         currentStackOffset -= 4;
         tempToStackOffset[node->getName()] = currentStackOffset;
     }
-    assembly += std::string("mov ebx, ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "]" + "\n";
+    if(read)
+        assembly += std::string("mov ebx, ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "]" + "\n";
+    else
+        assembly += std::string("mov ") + "[ebp" + std::to_string(tempToStackOffset[node->getName()])  + "], ";
     return assembly;
 }
 
