@@ -53,7 +53,7 @@ bool DFS(std::string current, std::unordered_set<std::string> &visited, std::uno
 
 void generateAssemblyFile(const std::string &filename, const std::vector<std::string> &assemblyCodes)
 {
-    std::ofstream outFile(filename);
+    std::ofstream outFile("output/" + filename);
     if (!outFile.is_open())
     {
         std::cerr << "Error opening file for writing: " << filename << std::endl;
@@ -583,7 +583,7 @@ int main(int argc, char *argv[])
             Tiling tiler;
 
             assemblyCodes.push_back("_start:"); // Entry point label
-            assemblyCodes.push_back("call A_test");
+            assemblyCodes.push_back("call " + compUnit->getName() + "_test");
             assemblyCodes.push_back("mov ebx, eax");
             assemblyCodes.push_back("mov eax, 1");
             assemblyCodes.push_back("int 0x80");
@@ -591,6 +591,7 @@ int main(int argc, char *argv[])
             for (auto &[funcName, funcDecl] : compUnit->getFunctions())
             {
                 if (funcName != "Arrays_equals_array_boolean_array_boolean" && funcName != "Arrays_equals_array_char_array_char") {
+                std::cout << funcName << std::endl;
                 tiler.currentStackOffset = 0;
                 tiler.tempToStackOffset.clear();
                 // std::vector<std::string> assemblyInstructions;

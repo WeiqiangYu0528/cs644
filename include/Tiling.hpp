@@ -18,12 +18,11 @@ public:
     void tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std::string>& assembly);
     void tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<std::string>& assembly);
 
-    std::string tileEdst(const std::shared_ptr<TIR::Expr>& node);
-    std::string tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp);
+    // void tileEdst(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly);
+    void tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std::string>& assembly);
+    void tileExp(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly, const std::string& register_ = "");
+    void tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::string>& assembly);
+    void tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, const std::string& register_ = "");
+    void tileConst(const std::shared_ptr<TIR::Const>& node, std::vector<std::string>& assembly);
     std::string opTypeToAssembly(const TIR::BinOp::OpType& opType);
-    std::string tileExp(const std::shared_ptr<TIR::Expr>& node, bool read=true);
-    std::string tileMem(const std::shared_ptr<TIR::Mem>& node);
-    std::string tileTemp(const std::shared_ptr<TIR::Temp>& node, bool read=true);
-    std::string tileConst(const std::shared_ptr<TIR::Const>& node);
-    std::string tileName(const std::shared_ptr<TIR::Name>& node);
 };

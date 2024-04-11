@@ -19,62 +19,72 @@
 //           o = overflow
 //           no = not overflow
 
-std::unordered_set<TIR::BinOp::OpType> cmpOp {TIR::BinOp::OpType::EQ, TIR::BinOp::OpType::NEQ, TIR::BinOp::OpType::LT, TIR::BinOp::OpType::LTU, TIR::BinOp::OpType::GT, TIR::BinOp::OpType::LEQ, TIR::BinOp::OpType::GEQ};
-
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
     // stmt have move(e_dst, e), jump(e), cjump(e, l), label(l), return(e), call(e)
     // e is expression and should be handled by tileExp(e)
     if (auto move = std::dynamic_pointer_cast<TIR::Move>(stmt)) {
+        std::cout << "visit move" << std::endl;
         tileMove(move, assembly);
     } else if (auto jump = std::dynamic_pointer_cast<TIR::Jump>(stmt)) {
+        std::cout << "visit jump" << std::endl;
         tileJump(jump, assembly);
     } else if (auto cJump = std::dynamic_pointer_cast<TIR::CJump>(stmt)) {
+        std::cout << "visit cjump" << std::endl;
         tileCJump(cJump, assembly);
     } else if (auto label = std::dynamic_pointer_cast<TIR::Label>(stmt)) {
+        std::cout << "visit label" << std::endl;
         tileLabel(label, assembly);
     } else if (auto ret = std::dynamic_pointer_cast<TIR::Return>(stmt)) {
+        std::cout << "visit return" << std::endl;
         tileReturn(ret, assembly);
     } else if (auto call = std::dynamic_pointer_cast<TIR::Call_s>(stmt)) {
+        std::cout << "visit call" << std::endl;
         tileCall(call, assembly);
     }
 }
 
 void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
-    std::string res;
-    res += tileExp(node->getSource());
-    res += tileExp(node->getTarget(), false) + "ebx";
-    assembly.push_back(res);
+    tileExp(node->getSource(), assembly);
+    tileExp(node->getTarget(), assembly, "ebx");
 }
 
 // edst = temp(t) | mem(e)
-std::string Tiling::tileEdst(const std::shared_ptr<TIR::Expr>& node) {
-    if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        return tempNode->getName();
-    } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
-        return tileMem(memNode) + tileExp(memNode->getExpr());
-    }
-}
+// void Tiling::tileEdst(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly) {
+//     if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
+//         return tempNode->getName();
+//     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
+//         return tileMem(memNode, assembly) + tileExp(memNode->getExpr(), assembly);
+//     }
+// }
 
 // jump(e)
 void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::string>& assembly) {
     // TODO Fix jump
-    std::string res = "jmp label" + tileExp(node->getTarget());
-    assembly.push_back(res);
+    assembly.push_back("jmp label" + std::dynamic_pointer_cast<TIR::Name>(node->getTarget())->getName());
 }
 
 // cjump(e, l)
 void Tiling::tileCJump(const std::shared_ptr<TIR::CJump>& node, std::vector<std::string>& assembly) {
     // jmp | jz | jnz | jg 
-    assembly.push_back(tileExp(node->getCond()));
+    std::string jump;
+    tileExp(node->getCond(), assembly);
     if (auto binop = std::dynamic_pointer_cast<TIR::BinOp>(node->getCond())) {
-        if (cmpOp.contains(binop->getOpType())) {
-            assembly.push_back("setl bl");
-            assembly.push_back("movzx ebx, bl");
+        if (binop->getOpType() == TIR::BinOp::OpType::EQ) jump = "je";
+        else if (binop->getOpType() == TIR::BinOp::OpType::NEQ) jump = "jne";
+        else if (binop->getOpType() == TIR::BinOp::OpType::LT) jump = "jl";
+        else if (binop->getOpType() == TIR::BinOp::OpType::LTU) jump = "jb";
+        else if (binop->getOpType() == TIR::BinOp::OpType::LEQ) jump = "jle";
+        else if (binop->getOpType() == TIR::BinOp::OpType::GT) jump = "jg";
+        else if (binop->getOpType() == TIR::BinOp::OpType::GEQ) jump = "jge";
+        else {
+            assembly.push_back("cmp ebx, 1");
+            jump = "je";
         }
+    } else {
+        assembly.push_back("cmp ebx, 1");
+        jump = "je";
     }
-    std::string res = "cmp ebx, 0";
-    assembly.push_back(res);
-    std::string jumpInstruction = "jne label" + node->getTrueLabel();
+    std::string jumpInstruction = jump + " label" + node->getTrueLabel();
     assembly.push_back(jumpInstruction);
 }
 
@@ -87,55 +97,79 @@ void Tiling::tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std:
 void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std::string>& assembly) {
     const auto& args = node->getArgs();
     for (int i = args.size() - 1; i >= 0; --i) {
-        std::string argAssembly = tileExp(args[i]);
-        assembly.push_back(argAssembly);
+        tileExp(args[i], assembly);
         assembly.push_back("push ebx");
     }
 
-    std::string target = tileExp(node->getTarget());
-    assembly.push_back("call " + target);
+    assembly.push_back("call " + std::dynamic_pointer_cast<TIR::Name>(node->getTarget())->getName());
 }
 
 // return(e)
 void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<std::string>& assembly) {
     if(auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node->getRet())) {
         if(!tempToStackOffset.contains(tempNode->getName())){
-            assembly.push_back(tileExp(node->getRet(), false) + "eax");
+            tileExp(node->getRet(), assembly, "eax");
         }
     }
     
-    assembly.push_back(tileExp(node->getRet()));
+    tileExp(node->getRet(), assembly);
     assembly.push_back("mov eax, ebx");
     assembly.push_back("mov esp, ebp");
     assembly.push_back("pop ebp");
     assembly.push_back("ret");
 }
 
-std::string Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node, bool read) {
+void Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly, const std::string& register_) {
     // Exp only have const(n), temp(t), op(e1, e2), mem(e), name(l)
-    std::string assembly;
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
-        assembly = tileConst(constNode);
+        std::cout << "visit const" << std::endl;
+        tileConst(constNode, assembly);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        assembly = tileTemp(tempNode, read);
+        std::cout << "visit temp" << std::endl;
+        tileTemp(tempNode, assembly, register_);
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
-        assembly = tileBinOp(binOpNode);
+        std::cout << "visit binop" << std::endl;
+        tileBinOp(binOpNode, assembly);
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
-        assembly = tileMem(memNode);
-    } else if (auto nameNode = std::dynamic_pointer_cast<TIR::Name>(node)) {
-        assembly = tileName(nameNode);
+        std::cout << "visit mem" << std::endl;
+        tileMem(memNode, assembly);
     }
-    return assembly;
 }
 
-std::string Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp) {    
-    std::string assembly;
-
-    assembly += tileExp(binOp->getRight());
-    assembly += "mov ecx, ebx";
-    assembly += tileExp(binOp->getLeft());
-    assembly += opTypeToAssembly(binOp->getOpType()) + " ebx, ecx";
-    return assembly;
+void Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std::string>& assembly) {    
+    tileExp(binOp->getRight(), assembly);
+    assembly.push_back("mov ecx, ebx");
+    tileExp(binOp->getLeft(), assembly);
+    auto op = binOp->getOpType();
+    assembly.push_back(opTypeToAssembly(op) + " ebx, ecx");
+    if (op == TIR::BinOp::OpType::LT) {
+        assembly.push_back("setl bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::LTU) {
+        assembly.push_back("setb bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::LEQ) {
+        assembly.push_back("setle bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::GT) {
+        assembly.push_back("setg bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::GEQ) {
+        assembly.push_back("setge bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::EQ) {
+        assembly.push_back("sete bl");
+        assembly.push_back("movzx ebx, bl");
+    }
+    else if (op == TIR::BinOp::OpType::NEQ) {
+        assembly.push_back("setne bl");
+        assembly.push_back("movzx ebx, bl");
+    }
 }
 
 // ADD, SUB, MUL, DIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, EQ, NEQ, LT, LTU, GT, LEQ, GEQ
@@ -162,26 +196,19 @@ std::string Tiling::opTypeToAssembly(const TIR::BinOp::OpType& opType) {
     }
 }
 
-std::string Tiling::tileConst(const std::shared_ptr<TIR::Const>& node) {
-    return std::string("mov ebx, " + std::to_string(node->getValue()));
+void Tiling::tileConst(const std::shared_ptr<TIR::Const>& node, std::vector<std::string>& assembly) {
+    assembly.push_back("mov ebx, " + std::to_string(node->getValue()));
 }
 
 // mem(e)
-std::string Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node) {
-    std::string assembly;
-    assembly += tileExp(node->getExpr());
-    assembly += "mov ebx, [ebx]\n";
-    return assembly;
+void Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::string>& assembly) {
+    tileExp(node->getExpr(), assembly);
+    assembly.push_back("mov ebx, [ebx]");
 }
 
-std::string Tiling::tileName(const std::shared_ptr<TIR::Name>& node) {
-    return node->getName();
-}
-
-std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, bool read) {
-    std::string assembly;
+void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, const std::string& register_) {
     if (!tempToStackOffset.contains(node->getName())) {
-        assembly += "sub esp, 4\n"; 
+        assembly.push_back("sub esp, 4");
         currentStackOffset -= 4;
         tempToStackOffset[node->getName()] = currentStackOffset;
     }
@@ -190,11 +217,10 @@ std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, bool read) 
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
 
-    if(read)
-        assembly += std::string("mov ebx, ") + "[ebp" + offset_string  + "]\n";
+    if(register_ == "")
+        assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
     else
-        assembly += std::string("mov ") + "[ebp" + offset_string  + "], ";
-    return assembly;
+        assembly.push_back("mov [ebp" + offset_string  + "], " + register_);
 }
 
 // "mov ebx, " + "[ebp" + std::to_string(it->second) + "]";
