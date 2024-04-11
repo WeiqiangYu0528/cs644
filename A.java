@@ -21,7 +21,7 @@ public class A{
     }
 
     public static int test() {
-        return A.m0(0);
+        return 5 % 3;
         // int r2 = A.m0(1);
         // int r3 = A.m0(100);
         // int r4 = A.m1(0);

@@ -141,7 +141,23 @@ void Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std
     assembly.push_back("mov ecx, ebx");
     tileExp(binOp->getLeft(), assembly);
     auto op = binOp->getOpType();
-    assembly.push_back(opTypeToAssembly(op) + " ebx, ecx");
+    if (op == TIR::BinOp::OpType::DIV) {
+        assembly.push_back("mov eax, ebx");
+        assembly.push_back("cdq");
+        assembly.push_back("mov ebx, ecx");
+        assembly.push_back(opTypeToAssembly(op) + " ebx");
+        assembly.push_back("mov ebx, eax");
+    }
+    else if (op == TIR::BinOp::OpType::MOD) {
+        assembly.push_back("mov eax, ebx");
+        assembly.push_back("cdq");
+        assembly.push_back("mov ebx, ecx");
+        assembly.push_back(opTypeToAssembly(op) + " ebx");
+        assembly.push_back("mov ebx, edx");
+    }
+    else {
+        assembly.push_back(opTypeToAssembly(op) + " ebx, ecx");
+    }
     if (op == TIR::BinOp::OpType::LT) {
         assembly.push_back("setl bl");
         assembly.push_back("movzx ebx, bl");
@@ -177,8 +193,9 @@ std::string Tiling::opTypeToAssembly(const TIR::BinOp::OpType& opType) {
     switch (opType) {
         case TIR::BinOp::OpType::ADD: return "add";
         case TIR::BinOp::OpType::SUB: return "sub";
-        case TIR::BinOp::OpType::MUL: return "mul";
-        case TIR::BinOp::OpType::DIV: return "div";
+        case TIR::BinOp::OpType::MUL: return "imul";
+        case TIR::BinOp::OpType::DIV: return "idiv";
+        case TIR::BinOp::OpType::MOD: return "idiv";
         case TIR::BinOp::OpType::AND: return "and";
         case TIR::BinOp::OpType::OR: return "or";
         case TIR::BinOp::OpType::XOR: return "xor";
