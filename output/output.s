@@ -265,16 +265,7 @@ jmp label23
 A_test:
 push ebp
 mov ebp, esp
-mov ebx, 0
-sub esp, 4
-mov [ebp-4], ebx
-mov [ebp-4], eax
-mov ebx, [ebp-4]
-push ebx
-call A_m0_int
-sub esp, 4
-mov [ebp-8], eax
-mov ebx, [ebp-8]
+mov ebx, 3
 mov eax, ebx
 mov esp, ebp
 pop ebp

@@ -103,6 +103,7 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
     }
 
     assembly.push_back("call " + std::dynamic_pointer_cast<TIR::Name>(node->getTarget())->getName());
+    callFlag = true;
 }
 
 // return(e)
@@ -218,9 +219,10 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
 
-    if (std::dynamic_pointer_cast<TIR::Call_s>(lastStmt)) {
-        assembly.push_back("mov [ebp" + std::to_string(currentStackOffset) + "], " + "eax");
-    }    
+    if (std::dynamic_pointer_cast<TIR::Move>(lastStmt) != nullptr && callFlag) {
+        assembly.push_back("mov [ebp" + offset_string  + "], eax");
+        callFlag = false;
+    } 
 
     if(register_ == "")
         assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
