@@ -1,6 +1,6 @@
 section .data
-Boolean.MAX_VALUE: dd 127
 Integer.MAX_VALUE: dd 2147483647
+Boolean.MAX_VALUE: dd 127
 Byte.MAX_VALUE: dd 127
 
 section .text
@@ -268,6 +268,7 @@ mov ebp, esp
 mov ebx, 0
 sub esp, 4
 mov [ebp-4], ebx
+mov [ebp-4], eax
 mov ebx, [ebp-4]
 push ebx
 call A_m0_int
