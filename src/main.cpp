@@ -530,14 +530,14 @@ int main(int argc, char *argv[])
         {
             std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
             cvisitor->visit(compUnit);
-            {
-                TIR::Simulator sim(compUnit);
-                sim.staticFields = staticFieldsMap;
-                sim.initStaticFields();
-                long result = sim.call(compUnit->getName() + "_test");
-                std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-                staticFieldsMap = sim.staticFields;
-            }
+            // {
+                // TIR::Simulator sim(compUnit);
+                // sim.staticFields = staticFieldsMap;
+                // sim.initStaticFields();
+                // long result = sim.call(compUnit->getName() + "_test");
+                // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
+                // staticFieldsMap = sim.staticFields;
+            // }
         }
         catch (std::exception &e)
         {
@@ -550,14 +550,14 @@ int main(int argc, char *argv[])
             cfv->visit(compUnit);
             std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
             std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
-            {
-                TIR::Simulator sim(compUnit);
-                sim.staticFields = staticFieldsMap;
-                sim.initStaticFields();
-                long result = sim.call(compUnit->getName() + "_test");
-                std::cout << "After CFG: program evaluates to " << result << std::endl;
-                staticFieldsMap = sim.staticFields;
-            }
+            // {
+            //     TIR::Simulator sim(compUnit);
+            //     sim.staticFields = staticFieldsMap;
+            //     sim.initStaticFields();
+            //     long result = sim.call(compUnit->getName() + "_test");
+            //     std::cout << "After CFG: program evaluates to " << result << std::endl;
+            //     staticFieldsMap = sim.staticFields;
+            // }
         }
         catch (std::exception &e)
         {

@@ -22,6 +22,7 @@
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
     // stmt have move(e_dst, e), jump(e), cjump(e, l), label(l), return(e), call(e)
     // e is expression and should be handled by tileExp(e)
+    lastStmt = stmt;
     if (auto move = std::dynamic_pointer_cast<TIR::Move>(stmt)) {
         std::cout << "visit move" << std::endl;
         tileMove(move, assembly);
@@ -102,6 +103,7 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
     }
 
     assembly.push_back("call " + std::dynamic_pointer_cast<TIR::Name>(node->getTarget())->getName());
+    callFlag = true;
 }
 
 // return(e)
@@ -133,7 +135,7 @@ void Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node, std::vector<std::st
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
         std::cout << "visit mem" << std::endl;
         tileMem(memNode, assembly);
-    }
+    }   
 }
 
 void Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std::string>& assembly) {    
@@ -233,6 +235,11 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
     auto offset_string = std::to_string(tempToStackOffset[node->getName()]);
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
+
+    if (std::dynamic_pointer_cast<TIR::Move>(lastStmt) != nullptr && callFlag) {
+        assembly.push_back("mov [ebp" + offset_string  + "], eax");
+        callFlag = false;
+    } 
 
     if(register_ == "")
         assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
