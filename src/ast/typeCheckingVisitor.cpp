@@ -344,6 +344,7 @@ ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpT
 }
 
 void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode) {
+    if (!typeNode) return;
     if (typeNode->type == DataType::INT)
         currentExpInfo.expType = ExpType::Integer;
     else if (typeNode->type == DataType::CHAR)        
