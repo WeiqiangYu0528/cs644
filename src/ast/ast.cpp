@@ -430,6 +430,7 @@ std::string Method::getSignature() const {
     for (int i = 0; i < formalParameters.size(); ++i) {
         signature += "_" + formalParameters[i]->type->typeToString();
     }
+    signature += "_" + type->typeToString();
     return signature;
 }
 

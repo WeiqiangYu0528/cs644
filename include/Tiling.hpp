@@ -23,7 +23,7 @@ public:
     // void tileEdst(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly);
     void tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std::string>& assembly);
     void tileExp(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly, const std::string& register_ = "");
-    void tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::string>& assembly);
+    void tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::string>& assembly, const std::string& register_ = "");
     void tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, const std::string& register_ = "");
     void tileConst(const std::shared_ptr<TIR::Const>& node, std::vector<std::string>& assembly);
     std::string opTypeToAssembly(const TIR::BinOp::OpType& opType);
