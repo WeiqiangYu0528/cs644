@@ -164,7 +164,7 @@ void Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std
         assembly.push_back("cdq");
         assembly.push_back("mov ebx, ecx");
         assembly.push_back("cmp ebx, 0");
-        assembly.push_back("je zerodivisionlabel")
+        assembly.push_back("je zerodivisionlabel");
         assembly.push_back(opTypeToAssembly(op) + " ebx");
         assembly.push_back("mov ebx, eax");
     }
@@ -173,7 +173,7 @@ void Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std
         assembly.push_back("cdq");
         assembly.push_back("mov ebx, ecx");
         assembly.push_back("cmp ebx, 0");
-        assembly.push_back("je zerodivisionlabel")
+        assembly.push_back("je zerodivisionlabel");
         assembly.push_back(opTypeToAssembly(op) + " ebx");
         assembly.push_back("mov ebx, edx");
     }
