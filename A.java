@@ -3,9 +3,10 @@ public class A{
     }
 
     public static int test() {
-        if (true && false) {
-            return 123;
+        int largest = 0;
+        if (0 < 1 && 5 > 7) {
+            largest = 10;
         }
-        return 200;
+        return largest;
     }
 }

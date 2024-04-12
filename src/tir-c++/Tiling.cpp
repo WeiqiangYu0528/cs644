@@ -255,10 +255,10 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
 
-    if (std::dynamic_pointer_cast<TIR::Move>(lastStmt) != nullptr && callFlag) {
+    if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {
         assembly.push_back("mov [ebp" + offset_string  + "], eax");
         callFlag = false;
-    } 
+    }
 
     if(register_ == "") {
         if (staticFieldsMap.contains(localVarName)) {

@@ -1,8 +1,8 @@
 #pragma once
-#include "IRAst.hpp"
 #include <vector>
 #include <string>
-
+#include "Configuration.hpp"
+#include "IRAst.hpp"
 
 class Tiling {
 public:
