@@ -71,7 +71,13 @@ void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::s
 void Tiling::tileCJump(const std::shared_ptr<TIR::CJump>& node, std::vector<std::string>& assembly) {
     // jmp | jz | jnz | jg 
     std::string jump;
+    if(callFlag) {
+        tileExp(node->getCond(), assembly, "eax");
+        callFlag = false;
+    }
+    
     tileExp(node->getCond(), assembly);
+    
     if (auto binop = std::dynamic_pointer_cast<TIR::BinOp>(node->getCond())) {
         if (binop->getOpType() == TIR::BinOp::OpType::EQ) jump = "je";
         else if (binop->getOpType() == TIR::BinOp::OpType::NEQ) jump = "jne";
@@ -255,7 +261,7 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
 
-    if (std::dynamic_pointer_cast<TIR::Move>(lastStmt) != nullptr && callFlag) {
+    if (std::dynamic_pointer_cast<TIR::Move>(lastStmt) != nullptr && callFlag) {        
         assembly.push_back("mov [ebp" + offset_string  + "], eax");
         callFlag = false;
     } 

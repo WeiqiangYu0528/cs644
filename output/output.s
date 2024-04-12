@@ -2,26 +2,19 @@ extern __malloc
 extern __exception
 
 section .data
-Boolean_MAX_VALUE: dd 127
 Integer_MAX_VALUE: dd 2147483647
+Boolean_MAX_VALUE: dd 127
 Byte_MAX_VALUE: dd 127
+J2_fieldinit_forward_ref_j: dd 17
+J2_fieldinit_forward_ref_i: dd 1
 
 section .text
 global _start
 _start:
-call J1_sim_or_test_int
+call J2_fieldinit_forward_ref_test_int
 mov ebx, eax
 mov eax, 1
 int 0x80
-
-System_gc_void:
-push ebp
-mov ebp, esp
-mov ebx, 0
-mov eax, ebx
-mov esp, ebp
-pop ebp
-ret
 
 Arrays_equals_array_boolean_array_boolean_boolean:
 push ebp
@@ -41,9 +34,9 @@ mov ebx, [ebp-12]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label13
+je label7
 
-label14:
+label8:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-16], ebx
@@ -63,9 +56,9 @@ mov ebx, [ebp-24]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label15
+je label9
 
-label16:
+label10:
 mov ebx, [ebp-8]
 sub esp, 4
 mov [ebp-28], ebx
@@ -79,14 +72,14 @@ mov ebx, [ebp-20]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label10
+jne label4
 
-label12:
+label6:
 mov ebx, 0
 sub esp, 4
 mov [ebp-32], ebx
 
-label17:
+label11:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-36], ebx
@@ -99,9 +92,9 @@ mov ebx, [ebp-40]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label20
+je label14
 
-label21:
+label15:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-44], ebx
@@ -115,34 +108,34 @@ mov ebx, [ebp-36]
 cmp ebx, ecx
 setl bl
 movzx ebx, bl
-jl label18
+jl label12
 mov ebx, 1
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
 
-label13:
+label7:
 call __exception
-jmp label14
+jmp label8
 
-label15:
+label9:
 call __exception
-jmp label16
+jmp label10
 
-label10:
+label4:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label12
+jmp label6
 
-label20:
+label14:
 call __exception
-jmp label21
+jmp label15
 
-label18:
+label12:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-48], ebx
@@ -155,7 +148,7 @@ mov ebx, [ebp-52]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label25
+je label19
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-56], ebx
@@ -175,12 +168,12 @@ mov ebx, [ebp-60]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label27
+jb label21
 
-label25:
+label19:
 call __exception
 
-label27:
+label21:
 mov ebx, [ebp-48]
 sub esp, 4
 mov [ebp-68], ebx
@@ -215,7 +208,7 @@ mov ebx, [ebp-88]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label28
+je label22
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-92], ebx
@@ -235,12 +228,12 @@ mov ebx, [ebp-96]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label30
+jb label24
 
-label28:
+label22:
 call __exception
 
-label30:
+label24:
 mov ebx, [ebp-84]
 sub esp, 4
 mov [ebp-104], ebx
@@ -266,9 +259,9 @@ mov ebx, [ebp-80]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label22
+jne label16
 
-label24:
+label18:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-116], ebx
@@ -277,15 +270,15 @@ mov ecx, ebx
 mov ebx, [ebp-116]
 add ebx, ecx
 mov [ebp-32], ebx
-jmp label17
+jmp label11
 
-label22:
+label16:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label24
+jmp label18
 
 Arrays_equals_array_char_array_char_boolean:
 push ebp
@@ -305,9 +298,9 @@ mov ebx, [ebp-12]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label34
+je label28
 
-label35:
+label29:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-16], ebx
@@ -327,9 +320,9 @@ mov ebx, [ebp-24]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label36
+je label30
 
-label37:
+label31:
 mov ebx, [ebp-8]
 sub esp, 4
 mov [ebp-28], ebx
@@ -343,14 +336,14 @@ mov ebx, [ebp-20]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label31
+jne label25
 
-label33:
+label27:
 mov ebx, 0
 sub esp, 4
 mov [ebp-32], ebx
 
-label38:
+label32:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-36], ebx
@@ -363,9 +356,9 @@ mov ebx, [ebp-40]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label41
+je label35
 
-label42:
+label36:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-44], ebx
@@ -379,34 +372,34 @@ mov ebx, [ebp-36]
 cmp ebx, ecx
 setl bl
 movzx ebx, bl
-jl label39
+jl label33
 mov ebx, 1
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
 
-label34:
+label28:
 call __exception
-jmp label35
+jmp label29
 
-label36:
+label30:
 call __exception
-jmp label37
+jmp label31
 
-label31:
+label25:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label33
+jmp label27
 
-label41:
+label35:
 call __exception
-jmp label42
+jmp label36
 
-label39:
+label33:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-48], ebx
@@ -419,7 +412,7 @@ mov ebx, [ebp-52]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label46
+je label40
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-56], ebx
@@ -439,12 +432,12 @@ mov ebx, [ebp-60]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label48
+jb label42
 
-label46:
+label40:
 call __exception
 
-label48:
+label42:
 mov ebx, [ebp-48]
 sub esp, 4
 mov [ebp-68], ebx
@@ -479,7 +472,7 @@ mov ebx, [ebp-88]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label49
+je label43
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-92], ebx
@@ -499,12 +492,12 @@ mov ebx, [ebp-96]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label51
+jb label45
 
-label49:
+label43:
 call __exception
 
-label51:
+label45:
 mov ebx, [ebp-84]
 sub esp, 4
 mov [ebp-104], ebx
@@ -530,9 +523,9 @@ mov ebx, [ebp-80]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label43
+jne label37
 
-label45:
+label39:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-116], ebx
@@ -541,232 +534,37 @@ mov ecx, ebx
 mov ebx, [ebp-116]
 add ebx, ecx
 mov [ebp-32], ebx
-jmp label38
+jmp label32
 
-label43:
+label37:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label45
+jmp label39
 
-J1_sim_or_test_int:
+System_gc_void:
 push ebp
 mov ebp, esp
-mov ebx, 3
-sub esp, 4
-mov [ebp-4], ebx
-mov ebx, 3
-mov ecx, ebx
-mov ebx, [ebp-4]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-8], ebx
-mov ebx, 3
-mov ecx, ebx
-mov ebx, [ebp-8]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-12], ebx
-mov ebx, 1
-sub esp, 4
-mov [ebp-16], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-16]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-20], ebx
-mov ebx, 3
-mov ecx, ebx
-mov ebx, [ebp-20]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-24], ebx
-mov ebx, 4
-mov ecx, ebx
-mov ebx, [ebp-24]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-28], ebx
-mov ebx, 5
-mov ecx, ebx
-mov ebx, [ebp-28]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-32], ebx
-mov ebx, [ebp-32]
-push ebx
-mov ebx, [ebp-12]
-push ebx
-call J1_sim_or_sim_or_int_int_int
-sub esp, 4
-mov [ebp-36], eax
-mov ebx, [ebp-36]
+mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
 
-J1_sim_or_sim_or_int_int_int:
+J2_fieldinit_forward_ref_test_int:
 push ebp
 mov ebp, esp
-mov [ebp+8], eax
-mov ebx, [ebp+8]
+mov ebx, 122
 sub esp, 4
 mov [ebp-4], ebx
-mov ebx, [ebp+12]
 sub esp, 4
-mov [ebp-8], ebx
-mov ebx, 0
-sub esp, 4
-mov [ebp-12], ebx
+mov ebx, [J2_fieldinit_forward_ref_i]
+mov ecx, ebx
 mov ebx, [ebp-4]
-sub esp, 4
-mov [ebp-16], ebx
-mov ebx, 0
-mov ecx, ebx
-mov ebx, [ebp-16]
-cmp ebx, ecx
-sete bl
-movzx ebx, bl
-je label3
-
-label4:
-mov ebx, [ebp-12]
-cmp ebx, 1
-je label0
-
-label2:
-mov ebx, 1
-mov [ebp-12], ebx
-mov ebx, [ebp-4]
-sub esp, 4
-mov [ebp-20], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-20]
-mov eax, ebx
-cdq
-mov ebx, ecx
-idiv ebx
-mov ebx, edx
-sub esp, 4
-mov [ebp-24], ebx
-mov ebx, 0
-mov ecx, ebx
-mov ebx, [ebp-24]
-cmp ebx, ecx
-setne bl
-movzx ebx, bl
-jne label5
-mov ebx, [ebp-8]
-sub esp, 4
-mov [ebp-28], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-28]
-mov eax, ebx
-cdq
-mov ebx, ecx
-idiv ebx
-mov ebx, edx
-sub esp, 4
-mov [ebp-32], ebx
-mov ebx, 0
-mov ecx, ebx
-mov ebx, [ebp-32]
-cmp ebx, ecx
-setne bl
-movzx ebx, bl
-mov [ebp-12], ebx
-
-label5:
-mov ebx, [ebp-12]
-sub esp, 4
-mov [ebp-36], ebx
-mov ebx, [ebp-4]
-sub esp, 4
-mov [ebp-40], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-40]
-mov eax, ebx
-cdq
-mov ebx, ecx
-idiv ebx
-mov ebx, eax
-sub esp, 4
-mov [ebp-44], ebx
-mov ebx, [ebp-8]
-sub esp, 4
-mov [ebp-48], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-48]
-mov eax, ebx
-cdq
-mov ebx, ecx
-idiv ebx
-mov ebx, eax
-sub esp, 4
-mov [ebp-52], ebx
-mov ebx, [ebp-52]
-push ebx
-mov ebx, [ebp-44]
-push ebx
-call J1_sim_or_sim_or_int_int_int
-sub esp, 4
-mov [ebp-56], eax
-mov ebx, [ebp-56]
-sub esp, 4
-mov [ebp-60], ebx
-mov ebx, 2
-mov ecx, ebx
-mov ebx, [ebp-60]
-imul ebx, ecx
-sub esp, 4
-mov [ebp-64], ebx
-mov ebx, [ebp-36]
-cmp ebx, 1
-je label7
-
-label9:
-mov ebx, [ebp-64]
-mov eax, ebx
-mov esp, ebp
-pop ebp
-ret
-
-label3:
-mov ebx, [ebp-8]
-sub esp, 4
-mov [ebp-68], ebx
-mov ebx, 0
-mov ecx, ebx
-mov ebx, [ebp-68]
-cmp ebx, ecx
-sete bl
-movzx ebx, bl
-mov [ebp-12], ebx
-jmp label4
-
-label0:
-mov ebx, 0
-mov eax, ebx
-mov esp, ebp
-pop ebp
-ret
-jmp label2
-
-label7:
-mov ebx, [ebp-64]
-sub esp, 4
-mov [ebp-72], ebx
-mov ebx, 1
-mov ecx, ebx
-mov ebx, [ebp-72]
 add ebx, ecx
-mov [ebp-64], ebx
-jmp label9
+mov eax, ebx
+mov esp, ebp
+pop ebp
+ret
