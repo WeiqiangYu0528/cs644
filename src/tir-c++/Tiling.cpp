@@ -19,6 +19,9 @@
 //           o = overflow
 //           no = not overflow
 
+Tiling::Tiling(std::unordered_map<std::string, int>& staticFieldsMap) : staticFieldsMap(staticFieldsMap) {
+}
+
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
     // stmt have move(e_dst, e), jump(e), cjump(e, l), label(l), return(e), call(e)
     // e is expression and should be handled by tileExp(e)
@@ -111,6 +114,7 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
     assembly.push_back("call " + funcName);
     if (funcName != "__exception" && funcName.substr(funcName.length() - 4) != "void")
         callFlag = true;
+    std::cout << funcName << " " << callFlag << std::endl;
 }
 
 // return(e)
@@ -240,13 +244,14 @@ void Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::str
 }
 
 void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, const std::string& register_) {
-    if (!tempToStackOffset.contains(node->getName())) {
+    std::string localVarName{node->getName()};
+    if (!tempToStackOffset.contains(localVarName)) {
         assembly.push_back("sub esp, 4");
         currentStackOffset -= 4;
-        tempToStackOffset[node->getName()] = currentStackOffset;
+        tempToStackOffset[localVarName] = currentStackOffset;
     }
-    auto offset = tempToStackOffset[node->getName()];
-    auto offset_string = std::to_string(tempToStackOffset[node->getName()]);
+    auto offset = tempToStackOffset[localVarName];
+    auto offset_string = std::to_string(tempToStackOffset[localVarName]);
     if (offset > 0)
         offset_string = std::string("+") + offset_string;
 
@@ -255,8 +260,14 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
         callFlag = false;
     } 
 
-    if(register_ == "")
-        assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
+    if(register_ == "") {
+        if (staticFieldsMap.contains(localVarName)) {
+            std::string staticField = localVarName;
+            std::replace(staticField.begin(), staticField.end(), '.', '_');
+            assembly.push_back("mov ebx, [" + staticField + "]");
+        }
+        else assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
+    }
     else
         assembly.push_back("mov [ebp" + offset_string  + "], " + register_);
 }

@@ -6,7 +6,8 @@
 
 class Tiling {
 public:
-
+    Tiling(std::unordered_map<std::string, int>& staticFieldsMap);
+    std::unordered_map<std::string, int>& staticFieldsMap;
     std::unordered_map<std::string, int> tempToStackOffset;
     int currentStackOffset = 0;
     std::shared_ptr<TIR::Stmt> lastStmt = nullptr;

@@ -530,14 +530,14 @@ int main(int argc, char *argv[])
         {
             std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
             cvisitor->visit(compUnit);
-            // {
-                // TIR::Simulator sim(compUnit);
-                // sim.staticFields = staticFieldsMap;
-                // sim.initStaticFields();
+            {
+                TIR::Simulator sim(compUnit);
+                sim.staticFields = staticFieldsMap;
+                sim.initStaticFields();
                 // long result = sim.call(compUnit->getName() + "_test_int");
                 // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-                // staticFieldsMap = sim.staticFields;
-            // }
+                staticFieldsMap = sim.staticFields;
+            }
         }
         catch (std::exception &e)
         {
@@ -574,7 +574,9 @@ int main(int argc, char *argv[])
             assemblyCodes.push_back("section .data");
             for (auto &[key, value] : staticFieldsMap)
             {
-                assemblyCodes.push_back(key + ": dd " + std::to_string(value));
+                std::string staticField = key;
+                std::replace(staticField.begin(), staticField.end(), '.', '_');
+                assemblyCodes.push_back(staticField + ": dd " + std::to_string(value));
             }
             // for (auto instr : assemblyCodes)
             // {
@@ -582,7 +584,7 @@ int main(int argc, char *argv[])
             // }
             assemblyCodes.push_back("\nsection .text");
             assemblyCodes.push_back("global _start");
-            Tiling tiler;
+            Tiling tiler(staticFieldsMap);
 
             assemblyCodes.push_back("_start:"); // Entry point label
             assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
@@ -592,7 +594,6 @@ int main(int argc, char *argv[])
 
             for (auto &[funcName, funcDecl] : compUnit->getFunctions())
             {
-                if (funcName != "Arrays_equals_array_boolean_array_boolean_boolean" && funcName != "Arrays_equals_array_char_array_char_boolean") {
                 std::cout << funcName << std::endl;
                 tiler.currentStackOffset = 0;
                 tiler.tempToStackOffset.clear();
@@ -621,7 +622,7 @@ int main(int argc, char *argv[])
                 // {
                 //     std::cout << instr << std::endl;
                 // }
-                }
+                
             }
 
             generateAssemblyFile("output.s", assemblyCodes);
