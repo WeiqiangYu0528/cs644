@@ -625,6 +625,8 @@ int main(int argc, char *argv[])
                 
             }
 
+            assemblyCodes.push_back("\nzerodivisionlabel:");
+            assemblyCodes.push_back("call __exception");
             generateAssemblyFile("output.s", assemblyCodes);
         }
     }
