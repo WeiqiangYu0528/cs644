@@ -1,6 +1,7 @@
 .vscode/
 build/
 joosc
+main
 src/lexer/lex.yy.cpp
 src/parser/parser.tab.cpp
 include/location.h

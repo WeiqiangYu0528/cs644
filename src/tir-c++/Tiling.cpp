@@ -25,7 +25,6 @@ Tiling::Tiling(std::unordered_map<std::string, int>& staticFieldsMap) : staticFi
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
     // stmt have move(e_dst, e), jump(e), cjump(e, l), label(l), return(e), call(e)
     // e is expression and should be handled by tileExp(e)
-    lastStmt = stmt;
     if (auto move = std::dynamic_pointer_cast<TIR::Move>(stmt)) {
         std::cout << "visit move" << std::endl;
         tileMove(move, assembly);
@@ -71,7 +70,13 @@ void Tiling::tileJump(const std::shared_ptr<TIR::Jump>& node, std::vector<std::s
 void Tiling::tileCJump(const std::shared_ptr<TIR::CJump>& node, std::vector<std::string>& assembly) {
     // jmp | jz | jnz | jg 
     std::string jump;
+    if(callFlag) {
+        tileExp(node->getCond(), assembly, "eax");
+        callFlag = false;
+    }
+    
     tileExp(node->getCond(), assembly);
+    
     if (auto binop = std::dynamic_pointer_cast<TIR::BinOp>(node->getCond())) {
         if (binop->getOpType() == TIR::BinOp::OpType::EQ) jump = "je";
         else if (binop->getOpType() == TIR::BinOp::OpType::NEQ) jump = "jne";
