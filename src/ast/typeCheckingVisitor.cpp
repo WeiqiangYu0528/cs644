@@ -75,6 +75,7 @@ void TypeCheckingVisitor::visit(std::shared_ptr<Constructor> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<Method> n) {
+    n->className = scope->current->getClassOrInterfaceDecl()->id->name;
     scope->current->beginScope(ScopeType::LOCALVARIABLE);
     if (n->isStatic) scope->current->beginScope(ScopeType::STATIC);
     SetCurrentExpTypebyAmbiguousName(n->type);
@@ -248,18 +249,21 @@ void TypeCheckingVisitor::visit(std::shared_ptr<NotEqualExp> n) {
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<AndExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;
+    //error = true;
+    //std::cerr << "Error: Bitwise operations not allowed" << std::endl;
+    visitBinaryOpExp<AndExp>(n);
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<XorExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;    
+    // error = true;
+    // std::cerr << "Error: Bitwise operations not allowed" << std::endl;    
+    visitBinaryOpExp<XorExp>(n);    
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<OrExp> n) {
-    error = true;
-    std::cerr << "Error: Bitwise operations not allowed" << std::endl;  
+    // error = true;
+    // std::cerr << "Error: Bitwise operations not allowed" << std::endl;  
+    visitBinaryOpExp<OrExp>(n);       
 }
 
 
@@ -340,6 +344,7 @@ ExpType TypeCheckingVisitor::CalcExpType(ExpRuleType exp, ExpType lhs_type, ExpT
 }
 
 void TypeCheckingVisitor::SetCurrentExpTypebyAmbiguousName(std::shared_ptr<Type> typeNode) {
+    if (!typeNode) return;
     if (typeNode->type == DataType::INT)
         currentExpInfo.expType = ExpType::Integer;
     else if (typeNode->type == DataType::CHAR)        
@@ -778,7 +783,10 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
             ambiguousName.symbolTable = scope->current;
         }
     }
-    if (method) SetCurrentExpTypebyAmbiguousName(method->type);
+    if (method) {
+        SetCurrentExpTypebyAmbiguousName(method->type);
+        n->method = method;
+    }
     else currentExpInfo.expType = ExpType::Any;
 
     std::shared_ptr<SymbolTable> methodSt;
@@ -822,6 +830,7 @@ AmbiguousName TypeCheckingVisitor::visitNewArrayExp(std::shared_ptr<NewArrayExp>
 AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAccessExp> n) {
     AmbiguousName ambiguousName;
     // not finished yet
+
     auto indexType = GetExpInfo(n->index);
     std::set<ExpType> s { ExpType::Integer, ExpType::Short, ExpType::Char, ExpType::Byte};
     if (!s.contains(indexType.expType)) {
@@ -830,9 +839,9 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
         ambiguousName.type = AmbiguousNamesType::ERROR;
         return ambiguousName;
     }
-    
-    if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
-        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
+
+
+    auto processExpType = [&](auto& ambiguousName, auto& currentExpInfo, auto& d2e, bool& error) {
         SetCurrentExpTypebyAmbiguousName(ambiguousName.typeNode);
         if (currentExpInfo.arrayType == DataType::OBJECT) {
             currentExpInfo.expType = ExpType::Object;
@@ -847,7 +856,17 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
             ambiguousName.type = AmbiguousNamesType::ERROR;
             return ambiguousName;
         }
+        return ambiguousName;
+    };
+
+    if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
+        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
     } 
+    else if (auto left = std::dynamic_pointer_cast<ParExp>(n->array)) {
+        ambiguousName = visitParExp(left);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
+    }
     else {
         currentExpInfo.expType = ExpType::Any;
     }    
@@ -868,7 +887,7 @@ AmbiguousName TypeCheckingVisitor::visitAssignment(std::shared_ptr<Assignment> n
     scope->current->endScope(ScopeType::ASSIGNMENT);
         
     auto right_type = GetExpInfo(n->right);
-    
+
     ambiguousName = AssignmentTypeCheckingLogic(left_type, right_type);
     currentExpInfo = left_type;
     return ambiguousName;
@@ -900,7 +919,12 @@ template<typename BinOpExp>
 void TypeCheckingVisitor::visitBinaryOpExp(std::shared_ptr<BinOpExp> n, ExpRuleType rule_type1, ExpRuleType rule_type2) {
     auto t1 = GetExpInfo(n->exp1);
     auto t2 = GetExpInfo(n->exp2);
-    if (typeid(BinOpExp) == typeid(ConditionalAndExp) || typeid(BinOpExp) == typeid(ConditionalOrExp)) {
+    if (typeid(BinOpExp) == typeid(ConditionalAndExp) 
+        || typeid(BinOpExp) == typeid(ConditionalOrExp)
+        || typeid(BinOpExp) == typeid(AndExp)
+        || typeid(BinOpExp) == typeid(OrExp)
+        || typeid(BinOpExp) == typeid(XorExp)
+        ) {
         if (t1.expType == ExpType::Any || t2.expType == ExpType::Any) return;
         if (t1.expType != ExpType::Boolean || t2.expType != ExpType::Boolean) {
             error = true;

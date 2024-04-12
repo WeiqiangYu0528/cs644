@@ -6,7 +6,9 @@ error_code = {
     'J1_' : 0,
     'J2_' : 0,
     'Jw_' : 43,
-    'Je_' : 42
+    'Je_' : 42,
+    'J1e' : 13,
+    None : 0,
 }
 
 def parse_arguments():
@@ -103,8 +105,8 @@ def single(dir_or_file):
 
 if __name__ == "__main__":
     args = parse_arguments()
-    jsl_dir = './JSL_4.0'
-    test_dir = './tests/a4-tests'
+    jsl_dir = './JSL_5.0'
+    test_dir = './tests/a5-tests'
 
     if args.single:
         single(args.single)

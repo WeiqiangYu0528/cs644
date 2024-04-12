@@ -118,11 +118,19 @@ void CastExp::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
+std::string IdentifierType::typeToString() {
+    return id->name;
+}
+
 IdentifierType::IdentifierType(std::shared_ptr<Identifier> i, bool s) : Type(DataType::OBJECT), id(i), simple(s) {
 }
 
 void IdentifierType::accept(Visitor* v) {
     v->visit(shared_from_this());
+}
+
+std::string ArrayType::typeToString() {
+    return "array_" + dataType->typeToString();
 }
 
 ArrayType::ArrayType(std::shared_ptr<Type> t) : Type(DataType::ARRAY), dataType(t) {
@@ -291,11 +299,19 @@ ClassInstanceCreationExp::ClassInstanceCreationExp(std::shared_ptr<IdentifierTyp
 {
 }
 
+std::string IntType::typeToString() {
+    return "int";
+}
+
 void IntType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 IntType::IntType() : Type(DataType::INT) {
+}
+
+std::string CharType::typeToString() {
+    return "char";
 }
 
 void CharType::accept(Visitor* v) {
@@ -305,11 +321,19 @@ void CharType::accept(Visitor* v) {
 CharType::CharType() : Type(DataType::CHAR) {
 }
 
+std::string ShortType::typeToString() {
+    return "short";
+}
+
 void ShortType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 ShortType::ShortType() : Type(DataType::SHORT) {
+}
+
+std::string VoidType::typeToString() {
+    return "void";
 }
 
 void VoidType::accept(Visitor* v) {
@@ -319,11 +343,19 @@ void VoidType::accept(Visitor* v) {
 VoidType::VoidType() : Type(DataType::VOID) {
 }
 
+std::string BooleanType::typeToString() {
+    return "boolean";
+}
+
 void BooleanType::accept(Visitor* v) {
     v->visit(shared_from_this());
 }
 
 BooleanType::BooleanType() : Type(DataType::BOOLEAN) {
+}
+
+std::string ByteType::typeToString() {
+    return "byte";
 }
 
 void ByteType::accept(Visitor* v) {
@@ -390,7 +422,16 @@ void Field::setModifiers(std::vector<Modifiers>& m) {
 
 Method::Method(MemberType mt, std::vector<Modifiers> m, std::shared_ptr<Type> t, std::shared_ptr<Identifier> mn, 
 std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b)
-: MemberDecl(mt, m), isStatic(false), isPublic(false), isFinal(false), isAbstract(false), type(t), methodName(mn), formalParameters(fp), block(b) {
+: MemberDecl(mt, m), isStatic(false), isNative(false), isPublic(false), isFinal(false), isAbstract(false), type(t), methodName(mn), formalParameters(fp), block(b) {
+}
+
+std::string Method::getSignature() const {
+    std::string signature = className + "_" + methodName->name;
+    for (int i = 0; i < formalParameters.size(); ++i) {
+        signature += "_" + formalParameters[i]->type->typeToString();
+    }
+    signature += "_" + type->typeToString();
+    return signature;
 }
 
 void Method::accept(Visitor* v) {
@@ -414,6 +455,10 @@ void Method::setModifiers(std::vector<Modifiers>& m) {
         if (modifier == Modifiers::PUBLIC)
         {
             isPublic = true;
+        }
+        if (modifier == Modifiers::NATIVE)
+        {
+            isNative = true;
         }
     }
 }

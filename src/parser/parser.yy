@@ -843,7 +843,7 @@ FormalParameterDeclsRest
 
 Block
     : LEFT_BRACE BlockStatements RIGHT_BRACE {$$ = std::make_shared<BlockStatement>($2);}
-    | LEFT_BRACE RIGHT_BRACE {$$ = nullptr;}
+    | LEFT_BRACE RIGHT_BRACE {$$ = std::make_shared<BlockStatement>(std::make_shared<BlockStatements>());}
     ;
 
 BlockStatements:

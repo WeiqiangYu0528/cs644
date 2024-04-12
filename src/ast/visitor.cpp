@@ -323,7 +323,8 @@ void Visitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n)
 void Visitor::visit(std::shared_ptr<WhileStatement> n)
 {
     n->exp->accept(this);
-    n->statement->accept(this);
+    if (n->statement)
+        n->statement->accept(this);
 }
 
 void Visitor::visit(std::shared_ptr<SemicolonStatement> n)

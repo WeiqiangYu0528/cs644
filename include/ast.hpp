@@ -30,6 +30,7 @@ class Type : public AstNode {
             if (!a || !b) return false;
             return a->type == b->type;
         }
+        virtual std::string typeToString() = 0;
         virtual void accept(Visitor* v) = 0;
 };
 
@@ -63,6 +64,7 @@ class IdentifierType : public Type, public std::enable_shared_from_this<Identifi
         std::shared_ptr<Identifier> id;
         bool simple;
         IdentifierType(std::shared_ptr<Identifier> i, bool s = false);
+        std::string typeToString() override;
         void accept(Visitor* v) override;
 };
 
@@ -70,6 +72,7 @@ class ArrayType : public Type, public std::enable_shared_from_this<ArrayType> {
     public:
         std::shared_ptr<Type> dataType;
         ArrayType(std::shared_ptr<Type> t);
+        std::string typeToString() override;
         void accept(Visitor* v) override;
 };
 
@@ -342,24 +345,6 @@ public:
     void accept(Visitor* v) override;
 };
 
-class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
-public:
-    std::shared_ptr<Exp> primary;
-    std::shared_ptr<IdentifierExp> primaryMethodName;
-    std::shared_ptr<IdentifierType> ambiguousName;
-    std::shared_ptr<IdentifierExp> ambiguousMethodName;
-    std::vector<std::shared_ptr<Exp>> arguments;
-    MethodInvocation(std::shared_ptr<Exp> primary, 
-        std::shared_ptr<IdentifierExp> primaryMethodName,
-        std::vector<std::shared_ptr<Exp>> arguments);
-    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
-    std::shared_ptr<IdentifierExp> ambiguousMethodName,
-    std::vector<std::shared_ptr<Exp>> arguments);
-    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
-    std::vector<std::shared_ptr<Exp>> arguments);
-    void accept(Visitor* v) override;
-};
-
 class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
 public:
     std::shared_ptr<IdentifierType> classType;
@@ -371,36 +356,42 @@ public:
 class ByteType : public Type, public std::enable_shared_from_this<ByteType> {
 public:
     ByteType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class ShortType : public Type, public std::enable_shared_from_this<ShortType> {
 public:
     ShortType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class CharType : public Type, public std::enable_shared_from_this<CharType> {
 public:
     CharType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class IntType : public Type, public std::enable_shared_from_this<IntType> {
 public:
     IntType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class BooleanType : public Type, public std::enable_shared_from_this<BooleanType> {
 public:
     BooleanType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
 class VoidType : public Type, public std::enable_shared_from_this<VoidType> {
 public:
     VoidType();
+    std::string typeToString() override;
     void accept(Visitor* v) override;
 };
 
@@ -565,10 +556,11 @@ class Field : public MemberDecl, public std::enable_shared_from_this<Field> {
 class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
     public:
         bool isStatic;
-        // No isProtected and just use !isPublic
+        bool isNative;
         bool isPublic;
         bool isFinal;
         bool isAbstract;
+        std::string className;
         std::shared_ptr<Type> type;
         std::shared_ptr<Identifier> methodName;
         std::vector<std::shared_ptr<FormalParameter>> formalParameters;
@@ -578,6 +570,26 @@ class Method : public MemberDecl, public std::enable_shared_from_this<Method> {
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
         void setModifiers(std::vector<Modifiers>& m) override;
+        std::string getSignature() const;
+};
+
+class MethodInvocation : public Exp, public std::enable_shared_from_this<MethodInvocation> {
+public:
+    std::shared_ptr<Exp> primary;
+    std::shared_ptr<IdentifierExp> primaryMethodName;
+    std::shared_ptr<IdentifierType> ambiguousName;
+    std::shared_ptr<IdentifierExp> ambiguousMethodName;
+    std::shared_ptr<Method> method;
+    std::vector<std::shared_ptr<Exp>> arguments;
+    MethodInvocation(std::shared_ptr<Exp> primary, 
+        std::shared_ptr<IdentifierExp> primaryMethodName,
+        std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierType> ambiguousName,
+    std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    MethodInvocation(std::shared_ptr<IdentifierExp> ambiguousMethodName,
+    std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
 };
 
 class Constructor : public MemberDecl, public std::enable_shared_from_this<Constructor> {
