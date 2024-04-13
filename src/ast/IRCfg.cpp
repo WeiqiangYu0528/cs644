@@ -1,5 +1,5 @@
 #include "IRCfg.hpp"
-
+#include <cassert>
 
 namespace TIR {
     BasicBlock::BasicBlock() {}
@@ -60,20 +60,16 @@ namespace TIR {
         std::remove(dotFile.c_str());
     }
 
-    void CFG::collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<Stmt>>& stmts) {
+    void CFG::collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<BasicBlock>>& blocks) {
         if (!block || block->marked) return;
-
         block->marked = true;
-        for (auto& stmt : block->statements) {
-            stmts.push_back(stmt);
-        }
-
+        blocks.push_back(block);
         if (!block->outgoing.empty()) {
             if (std::dynamic_pointer_cast<CJump>(block->statements.back()) && block->outgoing.size() > 1) {
-                collectTrace(block->outgoing[1]->to, stmts);
+                collectTrace(block->outgoing[1]->to, blocks);
             }
             else
-                collectTrace(block->outgoing[0]->to, stmts); 
+                collectTrace(block->outgoing[0]->to, blocks); 
         }
     }
 
@@ -83,10 +79,11 @@ namespace TIR {
         std::vector<std::shared_ptr<Stmt>> collectedStmts;
         for (auto& block : blocks) {
             if (!block->marked) {
-                std::vector<std::shared_ptr<Stmt>> stmts;
-                collectTrace(block, stmts);          
-                optimizeJumps(stmts);
-                collectedStmts.insert(collectedStmts.end(), stmts.begin(), stmts.end());
+                std::vector<std::shared_ptr<BasicBlock>> trace;
+                collectTrace(block, trace);       
+                optimizeJumps(trace);
+                for (auto& block: trace)
+                    collectedStmts.insert(collectedStmts.end(), block->statements.begin(), block->statements.end());
             }
 
         }
@@ -115,39 +112,48 @@ namespace TIR {
         return collectedStmts;
     }
 
-    void CFG::optimizeJumps(std::vector<std::shared_ptr<Stmt>>& stmts) {
+    void CFG::optimizeJumps(std::vector<std::shared_ptr<BasicBlock>>& trace) {
         // Remove unnecessary JUMP
-        for (auto it = stmts.begin(); it != stmts.end(); ) {
-            if (auto jump = std::dynamic_pointer_cast<Jump>(*it)) {
-                auto nextIt = std::next(it);
-                if (nextIt != stmts.end()) {
-                    auto label = std::dynamic_pointer_cast<Label>(*nextIt);
-                    auto target = std::dynamic_pointer_cast<Name>(jump->getTarget());
-                    if (label->getName() == target->getName()) {
-                        it = stmts.erase(it); 
-                        continue;  
+        
+        for(auto& block : trace) {
+            auto& stmts = block->statements;
+            for (auto it = stmts.begin(); it != stmts.end(); ) {
+                if (auto jump = std::dynamic_pointer_cast<Jump>(*it)) {
+                    auto nextIt = std::next(it);
+                    if (nextIt != stmts.end()) {
+                        auto label = std::dynamic_pointer_cast<Label>(*nextIt);
+                        auto target = std::dynamic_pointer_cast<Name>(jump->getTarget());
+                        if (label->getName() == target->getName()) {
+                            it = stmts.erase(it); 
+                            continue;  
+                        }
                     }
                 }
+                ++it;
             }
-            ++it;
         }
-        // Convert CJUMP and add necessary JUMP
-        for (auto it = stmts.begin(); it != stmts.end(); ++it) {
-            if (auto cjump = std::dynamic_pointer_cast<CJump>(*it)) {
-                if(cjump->hasFalseLabel()) {
-                    *it = std::make_shared<CJump>(cjump->getCond(), cjump->getTrueLabel(), "");
-                    auto trueBlock = labelToBlock[cjump->getTrueLabel()];
-                    auto falseBlock = labelToBlock[cjump->getFalseLabel()];
-                    if(trueBlock->outgoing.size() > 0 && trueBlock->outgoing[0]->to == falseBlock) {
-                        trueBlock->statements.push_back(
-                            std::make_shared<Jump>(std::make_shared<Name>(cjump->getFalseLabel()))
-                        );
+        for(auto& block : trace) {
+            auto& stmts = block->statements;
+            // Convert CJUMP and add necessary JUMP
+            for (auto it = stmts.begin(); it != stmts.end(); ++it) {
+                if (auto cjump = std::dynamic_pointer_cast<CJump>(*it)) {
+                    if(cjump->hasFalseLabel()) {
+                        *it = std::make_shared<CJump>(cjump->getCond(), cjump->getTrueLabel(), "");
+                        auto falseBlock = labelToBlock[cjump->getFalseLabel()];
+                        assert(falseBlock->incoming.size() <= 2);
+                        if (falseBlock->incoming.size() > 1) {
+                            auto trueBlock = (falseBlock->incoming[0]->from == block) ? falseBlock->incoming[1]->from : falseBlock->incoming[0]->from;
+                            if(!trueBlock->marked) {
+                                trueBlock->statements.push_back(
+                                    std::make_shared<Jump>(std::make_shared<Name>(cjump->getFalseLabel()))
+                                );   
+                            }                           
+                        }                    
                     }
-                }
 
+                }
             }
         }
-      
     }
 
 }

@@ -40,8 +40,8 @@ namespace TIR {
             std::shared_ptr<BasicBlock> newBlock();
             void addEdge(std::shared_ptr<BasicBlock> from, std::shared_ptr<BasicBlock> to);
             void Print(const std::string filename="cfg");
-            void collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<Stmt>>& stmts);
-            void optimizeJumps(std::vector<std::shared_ptr<Stmt>>& stmts);
+            void collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<BasicBlock>>& blocks);
+            void optimizeJumps(std::vector<std::shared_ptr<BasicBlock>>& trace);
             std::vector<std::shared_ptr<Stmt>> collectTraces();            
     };
 

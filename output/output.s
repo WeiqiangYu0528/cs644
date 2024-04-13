@@ -2,28 +2,17 @@ extern __malloc
 extern __exception
 
 section .data
-Boolean_MAX_VALUE: dd 127
 Integer_MAX_VALUE: dd 2147483647
+Boolean_MAX_VALUE: dd 127
 Byte_MAX_VALUE: dd 127
-J2_fieldinit_forward_ref_j: dd 17
-J2_fieldinit_forward_ref_i: dd 1
 
 section .text
 global _start
 _start:
-call J2_fieldinit_forward_ref_test_int
+call A_test_int
 mov ebx, eax
 mov eax, 1
 int 0x80
-
-System_gc_void:
-push ebp
-mov ebp, esp
-mov ebx, 0
-mov eax, ebx
-mov esp, ebp
-pop ebp
-ret
 
 Arrays_equals_array_boolean_array_boolean_boolean:
 push ebp
@@ -43,9 +32,9 @@ mov ebx, [ebp-12]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label3
+je label18
 
-label4:
+label19:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-16], ebx
@@ -65,9 +54,9 @@ mov ebx, [ebp-24]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label5
+je label20
 
-label6:
+label21:
 mov ebx, [ebp-8]
 sub esp, 4
 mov [ebp-28], ebx
@@ -81,14 +70,14 @@ mov ebx, [ebp-20]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label0
+jne label15
 
-label2:
+label17:
 mov ebx, 0
 sub esp, 4
 mov [ebp-32], ebx
 
-label7:
+label22:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-36], ebx
@@ -101,9 +90,9 @@ mov ebx, [ebp-40]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label10
+je label25
 
-label11:
+label26:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-44], ebx
@@ -117,34 +106,34 @@ mov ebx, [ebp-36]
 cmp ebx, ecx
 setl bl
 movzx ebx, bl
-jl label8
+jl label23
 mov ebx, 1
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
 
-label3:
+label18:
 call __exception
-jmp label4
+jmp label19
 
-label5:
+label20:
 call __exception
-jmp label6
+jmp label21
 
-label0:
+label15:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label2
+jmp label17
 
-label10:
+label25:
 call __exception
-jmp label11
+jmp label26
 
-label8:
+label23:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-48], ebx
@@ -157,7 +146,7 @@ mov ebx, [ebp-52]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label15
+je label30
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-56], ebx
@@ -177,12 +166,12 @@ mov ebx, [ebp-60]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label17
+jb label32
 
-label15:
+label30:
 call __exception
 
-label17:
+label32:
 mov ebx, [ebp-48]
 sub esp, 4
 mov [ebp-68], ebx
@@ -217,7 +206,7 @@ mov ebx, [ebp-88]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label18
+je label33
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-92], ebx
@@ -237,12 +226,12 @@ mov ebx, [ebp-96]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label20
+jb label35
 
-label18:
+label33:
 call __exception
 
-label20:
+label35:
 mov ebx, [ebp-84]
 sub esp, 4
 mov [ebp-104], ebx
@@ -268,9 +257,9 @@ mov ebx, [ebp-80]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label12
+jne label27
 
-label14:
+label29:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-116], ebx
@@ -279,15 +268,15 @@ mov ecx, ebx
 mov ebx, [ebp-116]
 add ebx, ecx
 mov [ebp-32], ebx
-jmp label7
+jmp label22
 
-label12:
+label27:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label14
+jmp label29
 
 Arrays_equals_array_char_array_char_boolean:
 push ebp
@@ -307,9 +296,9 @@ mov ebx, [ebp-12]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label24
+je label39
 
-label25:
+label40:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-16], ebx
@@ -329,9 +318,9 @@ mov ebx, [ebp-24]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label26
+je label41
 
-label27:
+label42:
 mov ebx, [ebp-8]
 sub esp, 4
 mov [ebp-28], ebx
@@ -345,14 +334,14 @@ mov ebx, [ebp-20]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label21
+jne label36
 
-label23:
+label38:
 mov ebx, 0
 sub esp, 4
 mov [ebp-32], ebx
 
-label28:
+label43:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-36], ebx
@@ -365,9 +354,9 @@ mov ebx, [ebp-40]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label31
+je label46
 
-label32:
+label47:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-44], ebx
@@ -381,34 +370,34 @@ mov ebx, [ebp-36]
 cmp ebx, ecx
 setl bl
 movzx ebx, bl
-jl label29
+jl label44
 mov ebx, 1
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
 
-label24:
+label39:
 call __exception
-jmp label25
+jmp label40
 
-label26:
+label41:
 call __exception
-jmp label27
+jmp label42
 
-label21:
+label36:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label23
+jmp label38
 
-label31:
+label46:
 call __exception
-jmp label32
+jmp label47
 
-label29:
+label44:
 mov ebx, [ebp-4]
 sub esp, 4
 mov [ebp-48], ebx
@@ -421,7 +410,7 @@ mov ebx, [ebp-52]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label36
+je label51
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-56], ebx
@@ -441,12 +430,12 @@ mov ebx, [ebp-60]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label38
+jb label53
 
-label36:
+label51:
 call __exception
 
-label38:
+label53:
 mov ebx, [ebp-48]
 sub esp, 4
 mov [ebp-68], ebx
@@ -481,7 +470,7 @@ mov ebx, [ebp-88]
 cmp ebx, ecx
 sete bl
 movzx ebx, bl
-je label39
+je label54
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-92], ebx
@@ -501,12 +490,12 @@ mov ebx, [ebp-96]
 cmp ebx, ecx
 setb bl
 movzx ebx, bl
-jb label41
+jb label56
 
-label39:
+label54:
 call __exception
 
-label41:
+label56:
 mov ebx, [ebp-84]
 sub esp, 4
 mov [ebp-104], ebx
@@ -532,9 +521,9 @@ mov ebx, [ebp-80]
 cmp ebx, ecx
 setne bl
 movzx ebx, bl
-jne label33
+jne label48
 
-label35:
+label50:
 mov ebx, [ebp-32]
 sub esp, 4
 mov [ebp-116], ebx
@@ -543,28 +532,201 @@ mov ecx, ebx
 mov ebx, [ebp-116]
 add ebx, ecx
 mov [ebp-32], ebx
-jmp label28
+jmp label43
 
-label33:
+label48:
 mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
-jmp label35
+jmp label50
 
-J2_fieldinit_forward_ref_test_int:
+System_gc_void:
 push ebp
 mov ebp, esp
-mov ebx, 122
-sub esp, 4
-mov [ebp-4], ebx
-sub esp, 4
-mov ebx, [J2_fieldinit_forward_ref_i]
-mov ecx, ebx
-mov ebx, [ebp-4]
-add ebx, ecx
+mov ebx, 0
 mov eax, ebx
 mov esp, ebp
 pop ebp
 ret
+
+A_test_int:
+push ebp
+mov ebp, esp
+mov ebx, 1
+sub esp, 4
+mov [ebp-4], ebx
+mov ebx, [ebp-4]
+sub esp, 4
+mov [ebp-8], ebx
+mov ebx, 0
+mov ecx, ebx
+mov ebx, [ebp-8]
+cmp ebx, ecx
+setl bl
+movzx ebx, bl
+jl label0
+
+label1:
+mov ebx, [ebp-4]
+sub esp, 4
+mov [ebp-12], ebx
+mov ebx, 4
+mov ecx, ebx
+mov ebx, [ebp-12]
+imul ebx, ecx
+sub esp, 4
+mov [ebp-16], ebx
+mov ebx, 8
+mov ecx, ebx
+mov ebx, [ebp-16]
+add ebx, ecx
+sub esp, 4
+mov [ebp-20], ebx
+mov ebx, [ebp-20]
+mov eax, ebx
+call __malloc
+sub esp, 4
+mov [ebp-24], eax
+mov ebx, [ebp-24]
+sub esp, 4
+mov [ebp-28], ebx
+mov ebx, [ebp-28]
+sub esp, 4
+mov [ebp-32], ebx
+mov ebx, [ebp-4]
+mov ecx, ebx
+mov ebx, [ebp-32]
+mov [ebx], ecx
+mov ebx, [ebp-28]
+sub esp, 4
+mov [ebp-36], ebx
+mov ebx, 4
+mov ecx, ebx
+mov ebx, [ebp-36]
+add ebx, ecx
+sub esp, 4
+mov [ebp-40], ebx
+mov ebx, [ebp-40]
+sub esp, 4
+mov [ebp-44], ebx
+mov ebx, [ebp-44]
+sub esp, 4
+mov [ebp-48], ebx
+mov ebx, 0
+mov ecx, ebx
+mov ebx, [ebp-48]
+cmp ebx, ecx
+sete bl
+movzx ebx, bl
+je label3
+mov ebx, 0
+sub esp, 4
+mov [ebp-52], ebx
+mov ebx, [ebp-52]
+sub esp, 4
+mov [ebp-56], ebx
+mov ebx, [ebp-44]
+sub esp, 4
+mov [ebp-60], ebx
+mov ebx, 4
+mov ecx, ebx
+mov ebx, [ebp-60]
+sub ebx, ecx
+mov ebx, [ebx]
+mov ecx, ebx
+mov ebx, [ebp-56]
+cmp ebx, ecx
+setb bl
+movzx ebx, bl
+jb label5
+
+label3:
+call __exception
+
+label0:
+call __exception
+jmp label1
+
+label5:
+mov ebx, 1
+sub esp, 4
+mov [ebp-64], ebx
+mov ebx, [ebp-44]
+sub esp, 4
+mov [ebp-68], ebx
+mov ebx, [ebp-52]
+sub esp, 4
+mov [ebp-72], ebx
+mov ebx, 4
+mov ecx, ebx
+mov ebx, [ebp-72]
+imul ebx, ecx
+sub esp, 4
+mov [ebp-76], ebx
+mov ebx, 4
+mov ecx, ebx
+mov ebx, [ebp-76]
+add ebx, ecx
+mov ecx, ebx
+mov ebx, [ebp-68]
+add ebx, ecx
+sub esp, 4
+mov [ebp-80], ebx
+mov ebx, [ebp-64]
+mov ecx, ebx
+mov ebx, [ebp-80]
+mov [ebx], ecx
+mov ebx, 1
+sub esp, 4
+mov [ebp-84], ebx
+mov ebx, 0
+sub esp, 4
+mov [ebp-88], ebx
+mov ebx, 1
+sub esp, 4
+mov [ebp-92], ebx
+mov ebx, 3
+mov ecx, ebx
+mov ebx, [ebp-92]
+cmp ebx, ecx
+setl bl
+movzx ebx, bl
+jl label9
+
+label10:
+mov ebx, [ebp-88]
+cmp ebx, 1
+je label6
+
+label8:
+mov ebx, 200
+mov eax, ebx
+mov esp, ebp
+pop ebp
+ret
+
+label9:
+mov ebx, [ebp-84]
+sub esp, 4
+mov [ebp-96], ebx
+mov ebx, 5
+mov ecx, ebx
+mov ebx, [ebp-96]
+cmp ebx, ecx
+setg bl
+movzx ebx, bl
+mov [ebp-88], ebx
+jmp label10
+
+label6:
+mov ebx, 123
+mov eax, ebx
+mov esp, ebp
+pop ebp
+ret
+jmp label8
+
+zerodivisionlabel:
+call __exception

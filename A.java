@@ -3,10 +3,11 @@ public class A{
     }
 
     public static int test() {
-        int largest = 0;
-        if (0 < 1 && 5 > 7) {
-            largest = 10;
+        int[] arr = new int[1];
+        arr[0] = 1;
+        if (1 < 3 && arr[0] > 5) {
+            return 123;
         }
-        return largest;
+        return 200;
     }
 }
