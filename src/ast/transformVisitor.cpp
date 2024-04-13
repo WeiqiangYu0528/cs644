@@ -32,6 +32,11 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
             methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
         }
     }
+    for (auto constructorDecl: n->declarations[2]) {
+        auto constructor = std::dynamic_pointer_cast<Constructor>(constructorDecl);
+        constructor->accept(this);
+        methods[constructor->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+    }
     std::shared_ptr<TIR::CompUnit> compUnit = nodeFactory->IRCompUnit(n->id->name, methods);
     compUnit->setFields(fields);
     node = compUnit;
@@ -47,6 +52,26 @@ void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     //     }
     // }
     node = nodeFactory->IRCompUnit(n->id->name, methods);
+}
+
+void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("obj");
+    std::vector<std::shared_ptr<Field>>& fields = scope->current->fields;
+    size_t fieldSize = fields.size();
+    stmts.push_back(nodeFactory->IRMove(obj, nodeFactory->IRCall(nodeFactory->IRName("__malloc"), nodeFactory->IRConst((fieldSize + 1) * 4))));
+    for (size_t i = 0; i < fieldSize; ++i) {
+        fields[i]->accept(this);
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, obj, nodeFactory->IRConst((i + 1) * 4))), getExpr()));
+    }
+    for (size_t i = 0; i < n->formalParameters.size(); ++i) {
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(n->formalParameters[i]->variableName->name), nodeFactory->IRTemp(std::string(TIR::Configuration::ABSTRACT_ARG_PREFIX) + std::to_string(i))));
+    }
+    n->block->accept(this);
+    auto block = std::dynamic_pointer_cast<TIR::Seq>(node);
+    stmts.push_back(block);
+    stmts.push_back(nodeFactory->IRReturn(obj));
+    node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
 }
 
 void TransformVisitor::visit(std::shared_ptr<Method> n) {
@@ -504,6 +529,10 @@ void TransformVisitor::visit(std::shared_ptr<Field> n) {
     } else {
         node = nodeFactory->IRConst(0);
     }
+}
+
+void TransformVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
+
 }
 
 std::shared_ptr<TIR::CompUnit> TransformVisitor::getCompUnit() const {
