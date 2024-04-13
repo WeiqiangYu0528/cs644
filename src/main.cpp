@@ -530,14 +530,14 @@ int main(int argc, char *argv[])
         {
             std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
             cvisitor->visit(compUnit);
-            // {
-                // TIR::Simulator sim(compUnit);
-                // sim.staticFields = staticFieldsMap;
-                // sim.initStaticFields();
-                // long result = sim.call(compUnit->getName() + "_test");
-                // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-                // staticFieldsMap = sim.staticFields;
-            // }
+            {
+                TIR::Simulator sim(compUnit);
+                sim.staticFields = staticFieldsMap;
+                sim.initStaticFields();
+                long result = sim.call(compUnit->getName() + "_test");
+                std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
+            }
         }
         catch (std::exception &e)
         {
@@ -550,80 +550,80 @@ int main(int argc, char *argv[])
             cfv->visit(compUnit);
             std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
             std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
-            // {
-            //     TIR::Simulator sim(compUnit);
-            //     sim.staticFields = staticFieldsMap;
-            //     sim.initStaticFields();
-            //     long result = sim.call(compUnit->getName() + "_test");
-            //     std::cout << "After CFG: program evaluates to " << result << std::endl;
-            //     staticFieldsMap = sim.staticFields;
-            // }
+            {
+                TIR::Simulator sim(compUnit);
+                sim.staticFields = staticFieldsMap;
+                sim.initStaticFields();
+                long result = sim.call(compUnit->getName() + "_test");
+                std::cout << "After CFG: program evaluates to " << result << std::endl;
+                staticFieldsMap = sim.staticFields;
+            }
         }
         catch (std::exception &e)
         {
             std::cout << "Error in CFG" << std::endl;
         }
 
-        {
-            // generate .s file for compUnit
+        // {
+        //     // generate .s file for compUnit
 
-            std::vector<std::string> assemblyCodes;
-            // static data
-            assemblyCodes.push_back("section .data");
-            for (auto &[key, value] : staticFieldsMap)
-            {
-                assemblyCodes.push_back(key + ": dd " + std::to_string(value));
-            }
-            // for (auto instr : assemblyCodes)
-            // {
-            //     std::cout << instr << std::endl;
-            // }
-            assemblyCodes.push_back("\nsection .text");
-            assemblyCodes.push_back("global _start");
-            Tiling tiler;
+        //     std::vector<std::string> assemblyCodes;
+        //     // static data
+        //     assemblyCodes.push_back("section .data");
+        //     for (auto &[key, value] : staticFieldsMap)
+        //     {
+        //         assemblyCodes.push_back(key + ": dd " + std::to_string(value));
+        //     }
+        //     // for (auto instr : assemblyCodes)
+        //     // {
+        //     //     std::cout << instr << std::endl;
+        //     // }
+        //     assemblyCodes.push_back("\nsection .text");
+        //     assemblyCodes.push_back("global _start");
+        //     Tiling tiler;
 
-            assemblyCodes.push_back("_start:"); // Entry point label
-            assemblyCodes.push_back("call " + compUnit->getName() + "_test");
-            assemblyCodes.push_back("mov ebx, eax");
-            assemblyCodes.push_back("mov eax, 1");
-            assemblyCodes.push_back("int 0x80");
+        //     assemblyCodes.push_back("_start:"); // Entry point label
+        //     assemblyCodes.push_back("call " + compUnit->getName() + "_test");
+        //     assemblyCodes.push_back("mov ebx, eax");
+        //     assemblyCodes.push_back("mov eax, 1");
+        //     assemblyCodes.push_back("int 0x80");
 
-            for (auto &[funcName, funcDecl] : compUnit->getFunctions())
-            {
-                if (funcName != "Arrays_equals_array_boolean_array_boolean" && funcName != "Arrays_equals_array_char_array_char") {
-                std::cout << funcName << std::endl;
-                tiler.currentStackOffset = 0;
-                tiler.tempToStackOffset.clear();
-                // std::vector<std::string> assemblyInstructions;
+        //     for (auto &[funcName, funcDecl] : compUnit->getFunctions())
+        //     {
+        //         if (funcName != "Arrays_equals_array_boolean_array_boolean" && funcName != "Arrays_equals_array_char_array_char") {
+        //         std::cout << funcName << std::endl;
+        //         tiler.currentStackOffset = 0;
+        //         tiler.tempToStackOffset.clear();
+        //         // std::vector<std::string> assemblyInstructions;
 
-                assemblyCodes.push_back("\n" + funcDecl->getName() + ":");
-                assemblyCodes.push_back("push ebp");
-                assemblyCodes.push_back("mov ebp, esp");
-                for (int i = 0; i < funcDecl->getNumParams(); i++)
-                    tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+        //         assemblyCodes.push_back("\n" + funcDecl->getName() + ":");
+        //         assemblyCodes.push_back("push ebp");
+        //         assemblyCodes.push_back("mov ebp, esp");
+        //         for (int i = 0; i < funcDecl->getNumParams(); i++)
+        //             tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
 
-                // if (!tempToStackOffset.contains(node->getName())) {
-                //     tempToStackOffset[node->getName()] = currentStackOffset;
-                // }
-                // std::cout << funcDecl->getName() << std::endl;
+        //         // if (!tempToStackOffset.contains(node->getName())) {
+        //         //     tempToStackOffset[node->getName()] = currentStackOffset;
+        //         // }
+        //         // std::cout << funcDecl->getName() << std::endl;
 
-                for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
-                {
-                    // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
-                    //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
-                    // }
-                    tiler.tileStmt(stmt, assemblyCodes);
-                }
-                // assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
-                // for (auto instr : assemblyInstructions)
-                // {
-                //     std::cout << instr << std::endl;
-                // }
-                }
-            }
+        //         for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
+        //         {
+        //             // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
+        //             //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
+        //             // }
+        //             tiler.tileStmt(stmt, assemblyCodes);
+        //         }
+        //         // assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
+        //         // for (auto instr : assemblyInstructions)
+        //         // {
+        //         //     std::cout << instr << std::endl;
+        //         // }
+        //         }
+        //     }
 
-            generateAssemblyFile("output.s", assemblyCodes);
-        }
+        //     generateAssemblyFile("output.s", assemblyCodes);
+        // }
     }
 
     if (error)

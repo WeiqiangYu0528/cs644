@@ -303,6 +303,26 @@ void Simulator::leave(std::shared_ptr<ExecutionFrame> frame) {
         int addr = exprStack->popValue();
         exprStack->pushAddr(read(addr), addr);
     }
+    else if (auto temp = std::dynamic_pointer_cast<Call>(insn)) {
+        int argsCount = temp->getNumArgs();
+        std::vector<int> args(argsCount);
+        for (int i = argsCount - 1; i >= 0; --i)
+            args[i] = exprStack->popValue();
+        std::shared_ptr<StackItem> target = exprStack->pop();
+        std::string targetName;
+        if (target->type == StackItem::Kind::NAME)
+            targetName = target->name;
+        else if (indexToInsn.contains(target->value)) {
+            std::shared_ptr<Node> node = indexToInsn[target->value];
+            if (auto func = std::dynamic_pointer_cast<FuncDecl>(node))
+                targetName = func->getName();
+            else throw std::runtime_error("Call to a non-function instruction!");
+        }
+        else throw std::runtime_error("Invalid function call (target '" + std::to_string(target->value) + "' is unknown)!");
+
+        int retVal = call(frame, targetName, args);
+        exprStack->pushValue(retVal);
+    }
     else if (auto temp = std::dynamic_pointer_cast<Call_s>(insn)) {
         int argsCount = temp->getNumArgs();
         std::vector<int> args(argsCount);
