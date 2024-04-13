@@ -477,7 +477,7 @@ void Constructor::setModifiers(std::vector<Modifiers>& m) {
 }
 
 std::string Constructor::getSignature() const {
-    std::string signature = constructorName->name;
+    std::string signature = "constructor_" + constructorName->name;
     for (int i = 0; i < formalParameters.size(); ++i) {
         signature += "_" + formalParameters[i]->type->typeToString();
     }

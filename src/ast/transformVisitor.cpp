@@ -19,6 +19,9 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
             field->accept(this);
             fields.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), std::dynamic_pointer_cast<TIR::Expr>(node)));
         }
+        else if (!field->isStatic) {
+            scope->current->fields.push_back(field);
+        }
     }
     for (auto methodDecl: n->declarations[1]) {
         auto method = std::dynamic_pointer_cast<Method>(methodDecl);
@@ -473,7 +476,20 @@ void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
         }
     }
     if (!isArray) {
-        node = nodeFactory->IRTemp(str);
+        if (n->simple) node = nodeFactory->IRTemp(str);
+        else {
+            std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+            std::istringstream iss(str);
+            std::string obj;
+            std::string field;
+            while (std::getline(iss, field, '.')) {  // Using '.' as the delimiter
+                if (obj == "") obj = field;
+                else {
+                    std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp(obj);
+                    stmt.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(field), nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, temp, nodeFactory->IRConst()))));
+                }
+            }
+        }
     }
 }
 
@@ -517,7 +533,7 @@ void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
             }
         }
     } else {
-        node = nullptr;
+        node = nodeFactory->IRConst(0);
     }
     //undefined
     // node = nullptr;
@@ -532,7 +548,13 @@ void TransformVisitor::visit(std::shared_ptr<Field> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
+    std::vector<std::shared_ptr<TIR::Expr>> args;
+    for (auto arg : n->arguments) {
+        arg->accept(this);
+        args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
+    }
 
+    node = nodeFactory->IRCall(nodeFactory->IRName("constructor_" + n->classType->id->name), args);
 }
 
 std::shared_ptr<TIR::CompUnit> TransformVisitor::getCompUnit() const {

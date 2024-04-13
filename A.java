@@ -1,6 +1,6 @@
 public class A{
-    public int a = 0;
-    public int b = 1;
+    public int a = 5;
+    public int b;
     public A() {
     }
 

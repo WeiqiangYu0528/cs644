@@ -506,11 +506,6 @@ int main(int argc, char *argv[])
         std::shared_ptr<TIR::CompUnit> compUnit;
         for (std::shared_ptr<Program> program : asts)
         {
-            std::shared_ptr<SymbolTable> st = program->scope->current;
-            for (auto& field : st->getFieldTable()) {
-                if (!field.second->isStatic)
-                    st->fields.push_back(field.second);
-            }
             TransformVisitor tvisitor(program->scope, nodeFactory);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
