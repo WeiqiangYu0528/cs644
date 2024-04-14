@@ -17,10 +17,7 @@ void CanonicalVisitor::visit(std::shared_ptr<CompUnit> cu) {
 void CanonicalVisitor::visit(std::shared_ptr<FuncDecl> fd) {
     std::shared_ptr<Seq> seq = std::dynamic_pointer_cast<Seq>(fd->body);
     assert(seq);
-
-    int startLabelCounter = labelCounter;
     auto flatSeq = visit(seq);
-    fd->numTemps = labelCounter - startLabelCounter + 1; //+1 is to make it more fault-tolerant
     fd->body = std::make_shared<Seq>(flatSeq.stmts);
 }
 
