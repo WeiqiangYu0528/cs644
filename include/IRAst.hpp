@@ -249,6 +249,7 @@ public:
     std::string name;
     std::shared_ptr<Stmt> body;
     int numParams;
+    int numTemps;
 
     FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body);
 

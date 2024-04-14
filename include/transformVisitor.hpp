@@ -45,8 +45,8 @@ class TransformVisitor : public Visitor {
         void visit(std::shared_ptr<ConditionalOrExp> n) override;     
         void visit(std::shared_ptr<Assignment> n) override;
         void visit(std::shared_ptr<MethodInvocation> n) override;
-        // void visit(std::shared_ptr<ClassInstanceCreationExp> n) override;
-        // void visit(std::shared_ptr<Constructor> n) override;
+        void visit(std::shared_ptr<ClassInstanceCreationExp> n) override;
+        void visit(std::shared_ptr<Constructor> n) override;
         void visit(std::shared_ptr<Method> n) override;
         void visit(std::shared_ptr<Field> n) override;
         void visit(std::shared_ptr<ClassDecl> n) override;
