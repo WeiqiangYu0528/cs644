@@ -549,6 +549,7 @@ private:
     std::string name;
 
 public:
+    static int counter;
     Temp(const std::string& name);
 
     std::string getName() const;

@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
                 assemblyCodes.push_back("\n" + funcDecl->getName() + ":");
                 assemblyCodes.push_back("push ebp");
                 assemblyCodes.push_back("mov ebp, esp");
-                assemblyCodes.push_back("sub esp, " + std::to_string(4 * (funcDecl->numTemps + 5)));
+                assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
                 for (int i = 0; i < funcDecl->getNumParams(); i++)
                     tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
 

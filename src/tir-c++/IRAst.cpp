@@ -1,6 +1,7 @@
 #include "IRAst.hpp"
 
 using namespace TIR;
+int Temp::counter = 0;
 
 BinOp::BinOp(OpType type, std::shared_ptr<Expr> left, std::shared_ptr<Expr> right) : left(left), right(right), type(type) {
 }
@@ -378,7 +379,9 @@ std::string Name::getLabel() const {
     return "NAME(" + name + ")";
 }
 
-Temp::Temp(const std::string& name) : name(name) {}
+Temp::Temp(const std::string& name) : name(name) {
+    counter++;
+}
 
 std::string Temp::getName() const {
     return name;

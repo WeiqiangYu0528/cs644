@@ -50,6 +50,7 @@ void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<Method> n) {
+    int tempNum{TIR::Temp::counter};
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     for (size_t i = 0; i < n->formalParameters.size(); ++i) {
         stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(n->formalParameters[i]->variableName->name), nodeFactory->IRTemp(std::string(TIR::Configuration::ABSTRACT_ARG_PREFIX) + std::to_string(i))));
@@ -60,7 +61,9 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
     if (n->type->type == DataType::VOID && (block->getStmts().empty() || block->getStmts().back()->getLabel() != "RETURN")) {
         stmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
     }
-    node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts)); 
+    auto func = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
+    func->numTemps = TIR::Temp::counter - tempNum;
+    node = func;
 }
 
 void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
