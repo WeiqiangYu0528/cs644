@@ -26,22 +26,16 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
     // stmt have move(e_dst, e), jump(e), cjump(e, l), label(l), return(e), call(e)
     // e is expression and should be handled by tileExp(e)
     if (auto move = std::dynamic_pointer_cast<TIR::Move>(stmt)) {
-        std::cout << "visit move" << std::endl;
         tileMove(move, assembly);
     } else if (auto jump = std::dynamic_pointer_cast<TIR::Jump>(stmt)) {
-        std::cout << "visit jump" << std::endl;
         tileJump(jump, assembly);
     } else if (auto cJump = std::dynamic_pointer_cast<TIR::CJump>(stmt)) {
-        std::cout << "visit cjump" << std::endl;
         tileCJump(cJump, assembly);
     } else if (auto label = std::dynamic_pointer_cast<TIR::Label>(stmt)) {
-        std::cout << "visit label" << std::endl;
         tileLabel(label, assembly);
     } else if (auto ret = std::dynamic_pointer_cast<TIR::Return>(stmt)) {
-        std::cout << "visit return" << std::endl;
         tileReturn(ret, assembly);
     } else if (auto call = std::dynamic_pointer_cast<TIR::Call_s>(stmt)) {
-        std::cout << "visit call" << std::endl;
         tileCall(call, assembly);
     }
 }
@@ -119,7 +113,6 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
     assembly.push_back("call " + funcName);
     if (funcName != "__exception" && funcName.substr(funcName.length() - 4) != "void")
         callFlag = true;
-    std::cout << funcName << " " << callFlag << std::endl;
 }
 
 // return(e)
@@ -140,16 +133,12 @@ void Tiling::tileReturn(const std::shared_ptr<TIR::Return>& node, std::vector<st
 void Tiling::tileExp(const std::shared_ptr<TIR::Expr>& node, std::vector<std::string>& assembly, const std::string& register_) {
     // Exp only have const(n), temp(t), op(e1, e2), mem(e), name(l)
     if (auto constNode = std::dynamic_pointer_cast<TIR::Const>(node)) {
-        std::cout << "visit const" << std::endl;
         tileConst(constNode, assembly);
     } else if (auto tempNode = std::dynamic_pointer_cast<TIR::Temp>(node)) {
-        std::cout << "visit temp" << std::endl;
         tileTemp(tempNode, assembly, register_);
     } else if (auto binOpNode = std::dynamic_pointer_cast<TIR::BinOp>(node)) {
-        std::cout << "visit binop" << std::endl;
         tileBinOp(binOpNode, assembly);
     } else if (auto memNode = std::dynamic_pointer_cast<TIR::Mem>(node)) {
-        std::cout << "visit mem" << std::endl;
         tileMem(memNode, assembly, register_);
     }
 }
@@ -255,7 +244,7 @@ void Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::str
 void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, const std::string& register_) {
     std::string localVarName{node->getName()};
     if (!tempToStackOffset.contains(localVarName)) {
-        assembly.push_back("sub esp, 4");
+        // assembly.push_back("sub esp, 4");
         currentStackOffset -= 4;
         tempToStackOffset[localVarName] = currentStackOffset;
     }
