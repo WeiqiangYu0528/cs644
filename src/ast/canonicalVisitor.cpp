@@ -95,6 +95,7 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Label> lab
 }
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Move> move) {
     if (auto temp = std::dynamic_pointer_cast<Temp>(move->getTarget())) {
+        labelCounter++;
         CanonicalVisitor::VisitResult vr = visit(move->getSource());
         std::shared_ptr<Move> _move = std::make_shared<Move>(temp, vr.pureExpr);
         vr.stmts.push_back(_move);
@@ -138,6 +139,7 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Expr> expr
     } else if (auto name = std::dynamic_pointer_cast<Name>(expr)) {
         return visit(name);
     } else if (auto temp = std::dynamic_pointer_cast<Temp>(expr)) {
+        labelCounter++;
         return visit(temp);
     } else if (auto eseq = std::dynamic_pointer_cast<ESeq>(expr)) {
         return visit(eseq);
