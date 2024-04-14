@@ -155,7 +155,6 @@ CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Const> _co
     return CanonicalVisitor::VisitResult(_const);
 }
 CanonicalVisitor::VisitResult CanonicalVisitor::visit(std::shared_ptr<Temp> temp) {
-    labelCounter++;
     //no side effects
     return CanonicalVisitor::VisitResult(temp);
 }
