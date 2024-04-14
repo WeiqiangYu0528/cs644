@@ -38,8 +38,6 @@ class SymbolTable {
     bool assignmentScope;
 
     public:
-        // non-static field (including parent class's field)
-        std::vector<std::shared_ptr<Field>> fields;
         void putField(const std::string& key, const std::shared_ptr<Field> value);
         std::shared_ptr<Field> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<Method> value);
@@ -73,5 +71,4 @@ class SymbolTable {
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISIMTable();
-        std::unordered_map<std::string, std::shared_ptr<Field>>& getFieldTable();
 };

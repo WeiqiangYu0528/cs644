@@ -1,11 +1,13 @@
 public class A{
-    public int a = 0;
-    public int b = 1;
     public A() {
     }
 
     public static int test() {
-        A obj = new A();
-        return obj.a;
+        int[] arr = new int[1];
+        arr[0] = 1;
+        if (1 < 3 && arr[0] > 5) {
+            return 123;
+        }
+        return 200;
     }
 }

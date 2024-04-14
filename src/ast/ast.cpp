@@ -476,14 +476,6 @@ void Constructor::setModifiers(std::vector<Modifiers>& m) {
     modifiers = m;
 }
 
-std::string Constructor::getSignature() const {
-    std::string signature = constructorName->name;
-    for (int i = 0; i < formalParameters.size(); ++i) {
-        signature += "_" + formalParameters[i]->type->typeToString();
-    }
-    return signature;
-}
-
 ClassDecl::ClassDecl(std::string m, std::shared_ptr<Identifier> cn, std::vector<std::shared_ptr<IdentifierType>> e, 
 std::vector<std::shared_ptr<IdentifierType>> i, std::vector<std::vector<std::shared_ptr<MemberDecl>>> d) :
 ClassOrInterfaceDecl(cn, e), modifier(m), implemented(i), declarations(d) {

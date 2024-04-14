@@ -602,7 +602,6 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
         void setModifiers(std::vector<Modifiers>& m) override;
-        std::string getSignature() const;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
