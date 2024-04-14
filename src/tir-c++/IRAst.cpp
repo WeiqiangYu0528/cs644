@@ -412,7 +412,7 @@ std::shared_ptr<Node> Return::visitChildren(std::shared_ptr<IRVisitor> v) {
     return shared_from_this();
 }
 
-FuncDecl::FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body) : name(name), body(body), numParams(numParams), numTemps(0) {
+FuncDecl::FuncDecl(const std::string& name, int numParams, std::shared_ptr<Stmt> body) : name(name), body(body), numParams(numParams) {
 }
 
 std::string FuncDecl::getName() const {
