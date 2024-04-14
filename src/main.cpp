@@ -144,7 +144,6 @@ struct PairStringVectorHash
 
 void populateIMTables(std::shared_ptr<Program> n, bool &error)
 {
-
     assert(n->scope->current->imtablesPopulated == false);
     n->scope->current->imtablesPopulated = true;
     auto &iscmtable = n->scope->current->getISCMTable();
@@ -258,6 +257,52 @@ void populateIMTables(std::shared_ptr<Program> n, bool &error)
                 processTable(superTable->getISCMTable(), iscmtable, false, error);
             }
         }
+    }
+}
+
+void populateISCFields(std::shared_ptr<Program> n, bool &error) {
+
+    std::shared_ptr<ClassDecl> cdecl = std::dynamic_pointer_cast<ClassDecl>(n->classOrInterfaceDecl);
+    if (!cdecl) return;
+
+    assert(n->scope->current->iscfieldsPopulated == false);
+    n->scope->current->iscfieldsPopulated = true;
+    auto &iscfields = n->scope->current->getISCFields();
+
+    std::unordered_set<std::string> fieldNames;
+
+    //get current IFields
+    for (auto memberDecl : cdecl->declarations[0]) {
+        std::shared_ptr<Field> field = std::dynamic_pointer_cast<Field>(memberDecl);
+        if (!field || field->isStatic) continue;
+        iscfields.push_back(field);
+        assert(!(fieldNames.contains(field->fieldName->name))); //we shouldn't have any duplicate fields
+        fieldNames.insert(field->fieldName->name);
+    }
+
+    //for each parent
+    for (std::shared_ptr<SymbolTable> superTable : n->scope->supers) {
+        std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getAst()->classOrInterfaceDecl);
+        if (!scdecl) continue;
+
+        //ensure the parent's IFields are populated
+        if (superTable->iscfieldsPopulated == false)
+            populateISCFields(superTable->getAst(), error);
+        
+        //get that parent's IFields
+        auto &superiscfields = superTable->getISCFields();
+        for (auto superField : superiscfields) {
+            assert(!(superField->isStatic));
+            //if it's a duplicate, skip it
+            if (fieldNames.contains(superField->fieldName->name))
+                continue;
+            else {
+                //otherwise, add it to our list of fields
+                iscfields.push_back(superField);
+                fieldNames.insert(superField->fieldName->name);
+            }
+        }
+        return; //we can only extend at most one class
     }
 }
 
@@ -389,6 +434,12 @@ int main(int argc, char *argv[])
         for (auto ast : asts)
             if (ast->scope->current->imtablesPopulated == false)
                 populateIMTables(ast, error);
+    }
+    if (!error)
+    {
+        for (auto ast : asts)
+            if (ast->scope->current->iscfieldsPopulated == false)
+                populateISCFields(ast, error);
     }
 
     if (!error)
