@@ -67,11 +67,16 @@ class SymbolTable {
         //inherited from superinterface
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>> isimtable;
 
+        //inherited (non-static) fields from superclass
+        std::vector<std::shared_ptr<Field>> iscfields;
+
         bool imtablesPopulated = false;
-        SymbolTable() : staticScope(false), fieldInitializerScope(false), assignmentScope(false), imtablesPopulated(false) {}
+        bool iscfieldsPopulated = false;
+        SymbolTable() : staticScope(false), fieldInitializerScope(false), assignmentScope(false), imtablesPopulated(false), iscfieldsPopulated(false) {}
 
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISIMTable();
+        std::vector<std::shared_ptr<Field>>& getISCFields();
         std::unordered_map<std::string, std::shared_ptr<Field>>& getFieldTable();
 };
