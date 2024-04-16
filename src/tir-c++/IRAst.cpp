@@ -37,6 +37,9 @@ bool BinOp::isConstant() const {
 }
 
 Call::Call(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) : target(target), args(args) {
+    if (auto name = std::dynamic_pointer_cast<Name>(target)) {
+        signature = name->getName();
+    }
 }
 
 std::shared_ptr<Expr> Call::getTarget() const {
@@ -53,6 +56,14 @@ int Call::getNumArgs() const {
 
 std::string Call::getLabel() const {
     return "CALL";
+}
+
+void Call::setSignature(const std::string& s) {
+    signature = s;
+}
+
+std::string Call::getSignature() const {
+    return signature;
 }
 
 std::shared_ptr<Node> Call::visitChildren(std::shared_ptr<IRVisitor> v) {
@@ -78,10 +89,10 @@ bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inExpr();
 }
 
-Call_s::Call_s(std::shared_ptr<Name> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
+Call_s::Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
 }
 
-std::shared_ptr<Name> Call_s::getTarget() const {
+std::shared_ptr<Temp> Call_s::getTarget() const {
     return target;
 }
 
@@ -95,6 +106,14 @@ int Call_s::getNumArgs() const {
 
 std::string Call_s::getLabel() const {
     return "CALL_s";
+}
+
+void Call_s::setSignature(const std::string& s) {
+    signature = s;
+}
+
+std::string Call_s::getSignature() const {
+    return signature;
 }
 
 std::shared_ptr<Node> Call_s::visitChildren(std::shared_ptr<IRVisitor> v) {

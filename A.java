@@ -4,8 +4,12 @@ public class A{
     public A() {
     }
 
+    public int joy() {
+        return 123;
+    }
+
     public static int test() {
-        int a = 5;
-        return a;
+        A obj = new A();
+        return obj.joy();
     }
 }

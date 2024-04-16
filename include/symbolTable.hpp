@@ -42,6 +42,7 @@ class SymbolTable {
     public:
         // non-static field (including parent class's field)
         std::vector<std::shared_ptr<Field>> fields;
+        std::vector<std::shared_ptr<Method>> methods;
         void putField(const std::string& key, const std::shared_ptr<Field> value);
         std::shared_ptr<Field> getField(const std::string& key) const;
         void putMethod(const std::string& key, const std::shared_ptr<Method> value);

@@ -708,7 +708,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
         methodName = n->ambiguousMethodName->id->name;
         if (n->ambiguousName) {
             //complex method invocation a.b.c()
-            ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple);
+            ambiguousName = scope->reclassifyAmbiguousName(n->ambiguousName->id->name, n->ambiguousName->simple, &(n->exprs));
             if (ambiguousName.type == AmbiguousNamesType::TYPE) {
                 auto methods = ambiguousName.symbolTable->getMethod(methodName);
                 method = getClosestMatchMethod(methods, arguments);
@@ -860,7 +860,7 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     };
 
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
-        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple);
+        ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, &(left->exprs));
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     } 
     else if (auto left = std::dynamic_pointer_cast<ParExp>(n->array)) {

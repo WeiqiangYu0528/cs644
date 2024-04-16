@@ -504,13 +504,17 @@ int main(int argc, char *argv[])
         std::unordered_map<std::string, int> staticFieldsMap;
         std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> staticMethodMap;
         std::shared_ptr<TIR::CompUnit> compUnit;
+        std::shared_ptr<SymbolTable> st;
         for (std::shared_ptr<Program> program : asts)
         {
             TransformVisitor tvisitor(program->scope, nodeFactory);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
-            if (compUnit == nullptr)
+            if (compUnit == nullptr) {
                 compUnit = cu;
+                st = program->scope->current;
+            }
+            
             for (auto fieldDecl : cu->getFields())
             {
                 auto field = std::dynamic_pointer_cast<TIR::Temp>(fieldDecl->getTarget());
@@ -573,6 +577,16 @@ int main(int argc, char *argv[])
             assemblyCodes.push_back("extern __exception\n");
             // static data
             assemblyCodes.push_back("section .data");
+            std::vector<std::shared_ptr<Method>>& methods = st->methods;
+            size_t methodSize{methods.size()};
+            if (methodSize > 0) {
+                std::string vtableDecl = "\t" + compUnit->getName()+ "_vtable: dd ";
+                for (size_t i = 0; i < methodSize; ++i) {
+                    vtableDecl += methods[i]->getSignature();
+                    if (i != methodSize - 1) vtableDecl += ", ";
+                }
+                assemblyCodes.push_back(vtableDecl);
+            }
             for (auto &[key, value] : staticFieldsMap)
             {
                 std::string staticField = key;
@@ -585,7 +599,7 @@ int main(int argc, char *argv[])
             // }
             assemblyCodes.push_back("\nsection .text");
             assemblyCodes.push_back("global _start");
-            Tiling tiler(staticFieldsMap);
+            Tiling tiler(st, staticFieldsMap);
 
             assemblyCodes.push_back("_start:"); // Entry point label
             assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
@@ -599,32 +613,20 @@ int main(int argc, char *argv[])
                 tiler.tempToStackOffset.clear();
                 // std::vector<std::string> assemblyInstructions;
                 std::cout << funcName << " " << funcDecl->numTemps << std::endl;
-
-                assemblyCodes.push_back("\n" + funcDecl->getName() + ":");
+                assemblyCodes.push_back("\nglobal " + funcDecl->getName());
+                assemblyCodes.push_back(funcDecl->getName() + ":");
                 assemblyCodes.push_back("push ebp");
                 assemblyCodes.push_back("mov ebp, esp");
                 assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
-                for (int i = 0; i < funcDecl->getNumParams(); i++)
+                for (int i = 0; i < funcDecl->getNumParams(); i++) {
                     tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
-
-                // if (!tempToStackOffset.contains(node->getName())) {
-                //     tempToStackOffset[node->getName()] = currentStackOffset;
-                // }
-                // std::cout << funcDecl->getName() << std::endl;
+                }
 
                 for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
                 {
-                    // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
-                    //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
-                    // }
                     tiler.tileStmt(stmt, assemblyCodes);
                 }
-                // assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
-                // for (auto instr : assemblyInstructions)
-                // {
-                //     std::cout << instr << std::endl;
-                // }
-                
+
             }
 
             assemblyCodes.push_back("\nzerodivisionlabel:");

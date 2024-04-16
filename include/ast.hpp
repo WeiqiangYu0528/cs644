@@ -588,6 +588,7 @@ public:
     std::shared_ptr<IdentifierType> ambiguousName;
     std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::shared_ptr<Method> method;
+    std::vector<ExpressionObject> exprs;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
         std::shared_ptr<IdentifierExp> primaryMethodName,
