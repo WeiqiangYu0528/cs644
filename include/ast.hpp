@@ -7,7 +7,14 @@
 #include "weeder.hpp"
 
 class Visitor;
+class SymbolTable;
 class Scope;
+
+struct ExpressionObject {
+    Expression exp;
+    std::string name;
+    std::shared_ptr<SymbolTable> st;
+};
 
 class AstNode {
     public:
@@ -160,6 +167,7 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
         std::shared_ptr<Identifier> id;
+        std::vector<ExpressionObject> exprs;
         bool simple;
         IdentifierExp(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;

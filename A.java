@@ -5,7 +5,7 @@ public class A{
     }
 
     public static int test() {
-        A obj = new A();
-        return obj.a;
+        int a = 5;
+        return a;
     }
 }

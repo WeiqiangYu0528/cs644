@@ -1,3 +1,4 @@
+#include <cassert>
 #include <algorithm>
 #include "transformVisitor.hpp"
 #include "Configuration.hpp"
@@ -456,41 +457,42 @@ void TransformVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> 
 }
 
 void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
-    std::string& str {n->id->name};
-    std::size_t lastDotPos = str.find_last_of(".");
-    bool isArray = false;
-    if (lastDotPos != std::string::npos) {
-        std::string arr = str.substr(0, lastDotPos);
-        std::string lastPart = str.substr(lastDotPos + 1);
-        if (lastPart == "length") {
-            isArray = true;
-            std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-            std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-            std::shared_ptr<TIR::Label> nonNullLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-            std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp(arr);
-            stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::EQ, temp, nodeFactory->IRConst(0)), errLabel->getName(), nonNullLabel->getName()));
-            stmts.push_back(errLabel);
-            stmts.push_back(nodeFactory->IRExp(nodeFactory->IRCall(nodeFactory->IRName("__exception"))));
-            stmts.push_back(nonNullLabel);
-            node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(4))));
-        }
-    }
-    if (!isArray) {
-        if (n->simple) node = nodeFactory->IRTemp(str);
+    // std::string& str {n->id->name};
+    // std::size_t lastDotPos = str.find_last_of(".");
+    // bool isArray = false;
+    // if (lastDotPos != std::string::npos) {
+    //     std::string arr = str.substr(0, lastDotPos);
+    //     std::string lastPart = str.substr(lastDotPos + 1);
+    //     if (lastPart == "length") {
+    //         isArray = true;
+    //         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    //         std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    //         std::shared_ptr<TIR::Label> nonNullLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    //         std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp(arr);
+    //         stmts.push_back(nodeFactory->IRCJump(nodeFactory->IRBinOp(TIR::BinOp::OpType::EQ, temp, nodeFactory->IRConst(0)), errLabel->getName(), nonNullLabel->getName()));
+    //         stmts.push_back(errLabel);
+    //         stmts.push_back(nodeFactory->IRExp(nodeFactory->IRCall(nodeFactory->IRName("__exception"))));
+    //         stmts.push_back(nonNullLabel);
+    //         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(4))));
+    //     }
+    // }
+    // if (!isArray) {
+        // if (n->simple) node = nodeFactory->IRTemp(str);
+    std::shared_ptr<TIR::Expr> expr;
+    std::shared_ptr<SymbolTable> st;
+    for (size_t i = 0; i < n->exprs.size(); ++i) {
+        const ExpressionObject& exprObj = n->exprs[i];
+        if (exprObj.exp == Expression::NON_STATIC_FIELD) {
+            // if (temp == nullptr) //this
+            expr = getField(expr, st, exprObj.name);
+        } 
         else {
-            std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-            std::istringstream iss(str);
-            std::string obj;
-            std::string field;
-            while (std::getline(iss, field, '.')) {  // Using '.' as the delimiter
-                if (obj == "") obj = field;
-                else {
-                    std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp(obj);
-                    stmt.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(field), nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, temp, nodeFactory->IRConst()))));
-                }
-            }
+            expr = nodeFactory->IRTemp(exprObj.name);
         }
+        st = exprObj.st;
     }
+    node = expr;
+    // }
 }
 
 void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
@@ -601,4 +603,16 @@ std::shared_ptr<TIR::ESeq> TransformVisitor::getCastExpr(int mask) const {
     stmts.push_back(nodeFactory->IRMove(temp, nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(mask + 1))));
     stmts.push_back(falseLabel);
     return nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), temp);
+}
+
+std::shared_ptr<TIR::Mem> TransformVisitor::getField(std::shared_ptr<TIR::Expr> expr, std::shared_ptr<SymbolTable> st, const std::string& name) const {
+    std::vector<std::shared_ptr<Field>>& fields = st->fields;
+    size_t i = 0;
+    for (; i < fields.size(); ++i) {
+        if (fields[i]->fieldName->name == name) {
+            break;
+        }
+    }
+    assert(i < fields.size());
+    return nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, expr, nodeFactory->IRConst((i + 1) * 4)));
 }

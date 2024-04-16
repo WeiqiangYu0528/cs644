@@ -68,4 +68,5 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<TIR::Expr> getExpr() const;
         std::shared_ptr<TIR::Stmt> getStmt() const;
         std::shared_ptr<TIR::ESeq> getCastExpr(int mask) const;
+        std::shared_ptr<TIR::Mem> getField(std::shared_ptr<TIR::Expr>, std::shared_ptr<SymbolTable> st, const std::string& name) const;
 };

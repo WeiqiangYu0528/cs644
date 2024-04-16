@@ -530,7 +530,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
 
 AmbiguousName TypeCheckingVisitor::visitIdentifierExp(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
-    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple);
+    auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, &(n->exprs));
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
         error = true;

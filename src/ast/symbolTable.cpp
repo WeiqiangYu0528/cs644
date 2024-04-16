@@ -98,6 +98,14 @@ std::string SymbolTable::getPackage() const {
     return pkg;
 }
 
+void SymbolTable::setClassName(const std::string& c) {
+    cname = c;
+}
+
+std::string SymbolTable::getClassName() const {
+    return cname;
+}
+
 void SymbolTable::setClassOrInterfaceDecl(std::shared_ptr<ClassOrInterfaceDecl> c) {
     cdecl = c;
 }
