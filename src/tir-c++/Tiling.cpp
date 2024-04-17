@@ -110,6 +110,7 @@ void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std:
             assembly.push_back("push ebx");
         }
     }
+    tileExp(node->getTarget(), assembly);
     assembly.push_back("call ebx");
     if (funcName != "__exception" && funcName.substr(funcName.length() - 4) != "void")
         callFlag = true;

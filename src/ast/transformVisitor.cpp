@@ -389,6 +389,8 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::shared_ptr<TIR::Expr> expr;
     std::shared_ptr<SymbolTable> st;
     reclassifyAmbiguousName(n->exprs, expr, st);
+    assert (expr != nullptr);
+    assert (st != nullptr);
     for (auto arg : n->arguments) {
         arg->accept(this);
         args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
@@ -629,7 +631,7 @@ std::shared_ptr<TIR::Mem> TransformVisitor::getField(std::shared_ptr<TIR::Expr> 
     return nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, expr, nodeFactory->IRConst((i + 1) * 4)));
 }
 
-void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObject> exprs, std::shared_ptr<TIR::Expr> expr, std::shared_ptr<SymbolTable> st) {
+void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObject>& exprs, std::shared_ptr<TIR::Expr>& expr, std::shared_ptr<SymbolTable>& st) {
     for (size_t i = 0; i < exprs.size(); ++i) {
         const ExpressionObject& exprObj = exprs[i];
         if (exprObj.exp == Expression::NON_STATIC_FIELD) {
