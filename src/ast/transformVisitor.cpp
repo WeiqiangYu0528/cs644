@@ -212,7 +212,7 @@ void TransformVisitor::visit(std::shared_ptr<XorExp> n) {
 
 void TransformVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR:Label:> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Temp> t = nodeFactory->IRTemp("t");
     stmts.push_back(nodeFactory->IRMove(t, nodeFactory->IRConst(0)));

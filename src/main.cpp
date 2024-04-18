@@ -579,14 +579,13 @@ int main(int argc, char *argv[])
             assemblyCodes.push_back("section .data");
             std::vector<std::shared_ptr<Method>>& methods = st->methods;
             size_t methodSize{methods.size()};
-            if (methodSize > 0) {
-                std::string vtableDecl = "\t" + compUnit->getName()+ "_vtable: dd ";
-                for (size_t i = 0; i < methodSize; ++i) {
-                    vtableDecl += methods[i]->getSignature();
-                    if (i != methodSize - 1) vtableDecl += ", ";
-                }
-                assemblyCodes.push_back(vtableDecl);
+            std::string vtableDecl = "\t" + compUnit->getName()+ "_vtable: dd ";
+            for (size_t i = 0; i < methodSize; ++i) {
+                vtableDecl += methods[i]->getSignature();
+                if (i != methodSize - 1) vtableDecl += ", ";
             }
+            assemblyCodes.push_back(vtableDecl);
+
             for (auto &[key, value] : staticFieldsMap)
             {
                 std::string staticField = key;
