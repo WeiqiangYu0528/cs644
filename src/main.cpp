@@ -140,7 +140,7 @@ struct PairStringVectorHash
         }
         return seed;
     }
-};
+}; 
 
 void populateIMTables(std::shared_ptr<Program> n, bool &error)
 {
