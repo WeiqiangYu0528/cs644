@@ -524,7 +524,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
     }
     currentExpInfo.expType = ExpType::Object;
     currentExpInfo.objectName = cname;
-
+    n->constructor = constructor;
     return ambiguousName;
 }
 

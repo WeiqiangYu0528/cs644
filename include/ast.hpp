@@ -353,14 +353,6 @@ public:
     void accept(Visitor* v) override;
 };
 
-class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
-public:
-    std::shared_ptr<IdentifierType> classType;
-    std::vector<std::shared_ptr<Exp>> arguments;
-    ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
-    void accept(Visitor* v) override;
-};
-
 class ByteType : public Type, public std::enable_shared_from_this<ByteType> {
 public:
     ByteType();
@@ -612,6 +604,15 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         void accept(Visitor* v) override;
         void setModifiers(std::vector<Modifiers>& m) override;
         std::string getSignature() const;
+};
+
+class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
+public:
+    std::shared_ptr<IdentifierType> classType;
+    std::vector<std::shared_ptr<Exp>> arguments;
+    std::shared_ptr<Constructor> constructor;
+    ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {

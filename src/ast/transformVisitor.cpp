@@ -570,7 +570,7 @@ void TransformVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
         args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
     }
 
-    node = nodeFactory->IRCall(nodeFactory->IRName("constructor_" + n->classType->id->name), args);
+    node = nodeFactory->IRCall(nodeFactory->IRName(n->constructor->getSignature()), args);
 }
 
 std::shared_ptr<TIR::CompUnit> TransformVisitor::getCompUnit() const {
