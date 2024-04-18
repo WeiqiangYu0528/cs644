@@ -75,7 +75,7 @@ class SymbolTable {
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISCMTable();
         std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& getISIMTable();
-
+        
         std::vector<std::shared_ptr<Field>>& getISCFields();
         std::unordered_map<std::string, std::shared_ptr<Field>>& getFieldTable();
 
