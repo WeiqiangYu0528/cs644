@@ -5,7 +5,7 @@ public class A{
     }
 
     public int temp() {
-        return this.joy();
+        return joy();
     }
 
     public int joy() {

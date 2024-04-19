@@ -404,11 +404,11 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
         std::shared_ptr<TIR::Move> move = nodeFactory->IRMove(vtable, nodeFactory->IRMem(expr));
         size_t i = 0;
-        std::cout << st->methods.size() << std::endl;
-        for (; i < st->methods.size(); ++i) {
-            if (st->methods[i] == n->method) break;
+        std::cout << st->getVtableMethods().size() << std::endl;
+        for (; i < st->getVtableMethods().size(); ++i) {
+            if (st->getVtableMethods()[i] == n->method) break;
         }
-        assert(i < st->methods.size());
+        assert(i < st->getVtableMethods().size());
         std::shared_ptr<TIR::Call> call = nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
         call->setSignature(n->method->getSignature());
         node = nodeFactory->IRESeq(move, call);
@@ -633,13 +633,13 @@ std::shared_ptr<TIR::Mem> TransformVisitor::getField(std::shared_ptr<TIR::Expr> 
 }
 
 void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObject>& exprs, std::shared_ptr<TIR::Expr>& expr, std::shared_ptr<SymbolTable>& st) {
+    if (exprs.empty() || exprs[0].exp == Expression::NON_STATIC_FIELD) {
+        expr = nodeFactory->IRTemp("this");
+        st = scope->current;
+    }
     for (size_t i = 0; i < exprs.size(); ++i) {
         const ExpressionObject& exprObj = exprs[i];
         if (exprObj.exp == Expression::NON_STATIC_FIELD) {
-            if (expr == nullptr) {
-                expr = nodeFactory->IRTemp("this");
-                st = scope->current;
-            }
             expr = getField(expr, st, exprObj.name);
         } 
         else {

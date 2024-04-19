@@ -691,7 +691,7 @@ int main(int argc, char *argv[])
             assemblyCodes.push_back("extern __exception\n");
             // static data
             assemblyCodes.push_back("section .data");
-            std::vector<std::shared_ptr<Method>>& methods = st->methods;
+            std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
             size_t methodSize{methods.size()};
             std::string vtableDecl = "\t" + compUnit->getName()+ "_vtable: dd ";
             for (size_t i = 0; i < methodSize; ++i) {
