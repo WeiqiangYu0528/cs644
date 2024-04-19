@@ -119,8 +119,12 @@ std::unordered_map<std::string, std::vector<std::shared_ptr<Method>>>& SymbolTab
     return isimtable;
 }
 
-std::vector<std::shared_ptr<Field>>& SymbolTable::getISCFields() {
-    return iscfields;
+std::vector<std::shared_ptr<Field>>& SymbolTable::getVtableFields() {
+    return vtableFields;
+}
+
+std::vector<std::shared_ptr<Method>>& SymbolTable::getVtableMethods() {
+    return vtableMethods;
 }
 
 std::unordered_map<std::string, std::shared_ptr<Field>>& SymbolTable::getFieldTable() {
