@@ -631,10 +631,16 @@ AmbiguousName TypeCheckingVisitor::visitThisExp(std::shared_ptr<ThisExp> n) {
 AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAccessExp> n) {
     AmbiguousName ambiguousName;
     std::string fieldName{n->field->id->name};
-    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) ambiguousName = visitThisExp(thisExp);
+    if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
+        ambiguousName = visitThisExp(thisExp);
+        n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
+    }
     else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) ambiguousName = visitParExp(parExp);
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) ambiguousName = visitClassInstanceCreationExp(classexp);
-    else if (auto fieldexp = std::dynamic_pointer_cast<FieldAccessExp>(n->exp)) ambiguousName = visitFieldAccessExp(fieldexp);
+    else if (auto fieldexp = std::dynamic_pointer_cast<FieldAccessExp>(n->exp)) {
+        ambiguousName = visitFieldAccessExp(fieldexp);
+        n->exprs = fieldexp->exprs;
+    }
     else if (auto methodexp = std::dynamic_pointer_cast<MethodInvocation>(n->exp)) ambiguousName = visitMethodInvocation(methodexp);
     else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(n->exp)) ambiguousName = visitStringLiteralExp(stringexp);
     else if (auto newarrexp = std::dynamic_pointer_cast<NewArrayExp>(n->exp)) ambiguousName = visitNewArrayExp(newarrexp);
@@ -665,6 +671,7 @@ AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAcce
     if (ie) fieldSt = ambiguousName.symbolTable->getScope()->getNameInScope(ie->id->name, ie->simple);
     ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, fieldSt);
     ambiguousName.typeNode = field->type;
+    n->exprs.emplace_back(Expression::NON_STATIC_FIELD, fieldName, fieldSt);
     return ambiguousName;
 }
 
@@ -680,10 +687,16 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
     //primary method invocation
     if (n->primary) {
         methodName = n->primaryMethodName->id->name;
-        if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) ambiguousName = visitThisExp(thisExp);
+        if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
+            ambiguousName = visitThisExp(thisExp);
+            n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
+        }
         else if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) ambiguousName = visitClassInstanceCreationExp(classExp);
         else if (auto parexp = std::dynamic_pointer_cast<ParExp>(n->primary)) ambiguousName = visitParExp(parexp);
-        else if (auto fieldexp = std::dynamic_pointer_cast<FieldAccessExp>(n->primary)) ambiguousName = visitFieldAccessExp(fieldexp);
+        else if (auto fieldexp = std::dynamic_pointer_cast<FieldAccessExp>(n->primary)) {
+            ambiguousName = visitFieldAccessExp(fieldexp);
+            n->exprs = fieldexp->exprs;
+        }
         else if (auto methodexp = std::dynamic_pointer_cast<MethodInvocation>(n->primary)) ambiguousName = visitMethodInvocation(methodexp);
         else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(n->primary)) ambiguousName = visitStringLiteralExp(stringexp);
         else if (auto newarrexp = std::dynamic_pointer_cast<NewArrayExp>(n->primary)) ambiguousName = visitNewArrayExp(newarrexp);

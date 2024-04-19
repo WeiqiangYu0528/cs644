@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    std::cout << asts[0]->scope->current->getMethod("test")[0]->getSignature() << std::endl;
     if (!error)
     {
         for (std::shared_ptr<Program> program : asts)
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    std::cout << asts[0]->scope->current->getMethod("test")[0]->getSignature() << std::endl;
     if (!error)
     {
         for (std::shared_ptr<Program> program : asts)

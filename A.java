@@ -4,12 +4,16 @@ public class A{
     public A() {
     }
 
+    public int temp() {
+        return this.joy();
+    }
+
     public int joy() {
-        return 123;
+        return a;
     }
 
     public static int test() {
         A obj = new A();
-        return obj.joy();
+        return obj.temp();
     }
 }

@@ -232,6 +232,7 @@ class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAcce
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<IdentifierExp> field;
+        std::vector<ExpressionObject> exprs;
         FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
         void accept(Visitor* v) override;
 };

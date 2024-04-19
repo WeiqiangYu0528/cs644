@@ -212,7 +212,7 @@ void TransformVisitor::visit(std::shared_ptr<XorExp> n) {
 
 void TransformVisitor::visit(std::shared_ptr<ConditionalAndExp> n) {
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-    std::shared_ptr<TIR:Label:> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
+    std::shared_ptr<TIR::Label> trueLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Label> falseLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Temp> t = nodeFactory->IRTemp("t");
     stmts.push_back(nodeFactory->IRMove(t, nodeFactory->IRConst(0)));
@@ -386,11 +386,6 @@ void TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::vector<std::shared_ptr<TIR::Expr>> args;
 
-    std::shared_ptr<TIR::Expr> expr;
-    std::shared_ptr<SymbolTable> st;
-    reclassifyAmbiguousName(n->exprs, expr, st);
-    assert (expr != nullptr);
-    assert (st != nullptr);
     for (auto arg : n->arguments) {
         arg->accept(this);
         args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
@@ -400,10 +395,16 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         node = call;
     }
     else {
+        std::shared_ptr<TIR::Expr> expr;
+        std::shared_ptr<SymbolTable> st;
+        reclassifyAmbiguousName(n->exprs, expr, st);
+        assert (expr != nullptr);
+        assert (st != nullptr);
         args.push_back(expr);
         std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
         std::shared_ptr<TIR::Move> move = nodeFactory->IRMove(vtable, nodeFactory->IRMem(expr));
         size_t i = 0;
+        std::cout << st->methods.size() << std::endl;
         for (; i < st->methods.size(); ++i) {
             if (st->methods[i] == n->method) break;
         }
@@ -542,17 +543,17 @@ void TransformVisitor::visit(std::shared_ptr<NegExp> n) {
 
 void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     n->exp->accept(this);
-    if (auto move = std::dynamic_pointer_cast<TIR::Move>(node)) {
-        if (n->field->id->name == "length") {
-            if (auto temp = std::dynamic_pointer_cast<TIR::Temp>(move->getTarget())) {
-                node = nodeFactory->IRESeq(move, nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(4))));
-            }
-        }
-    } else {
-        node = nodeFactory->IRConst(0);
-    }
-    //undefined
-    // node = nullptr;
+    std::shared_ptr<TIR::Expr> expr;
+    std::shared_ptr<SymbolTable> st;
+    reclassifyAmbiguousName(n->exprs, expr, st);
+    node = expr;
+    // if (auto move = std::dynamic_pointer_cast<TIR::Move>(node)) {
+    //     if (n->field->id->name == "length") {
+    //         if (auto temp = std::dynamic_pointer_cast<TIR::Temp>(move->getTarget())) {
+    //             node = nodeFactory->IRESeq(move, nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(4))));
+    //         }
+    //     }
+    // }
 }
 
 void TransformVisitor::visit(std::shared_ptr<Field> n) {
@@ -635,7 +636,10 @@ void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObjec
     for (size_t i = 0; i < exprs.size(); ++i) {
         const ExpressionObject& exprObj = exprs[i];
         if (exprObj.exp == Expression::NON_STATIC_FIELD) {
-            if (expr == nullptr) expr = nodeFactory->IRTemp("this");
+            if (expr == nullptr) {
+                expr = nodeFactory->IRTemp("this");
+                st = scope->current;
+            }
             expr = getField(expr, st, exprObj.name);
         } 
         else {
