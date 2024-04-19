@@ -140,11 +140,10 @@ struct PairStringVectorHash
         }
         return seed;
     }
-};
+}; 
 
 void populateIMTables(std::shared_ptr<Program> n, bool &error)
 {
-
     assert(n->scope->current->imtablesPopulated == false);
     n->scope->current->imtablesPopulated = true;
     auto &iscmtable = n->scope->current->getISCMTable();
@@ -260,6 +259,107 @@ void populateIMTables(std::shared_ptr<Program> n, bool &error)
         }
     }
 }
+
+std::string removeClassName(std::string methodSignature, std::string className) {
+    if (methodSignature.length() < className.length() || methodSignature.compare(0, className.length(), className) != 0) {
+        throw std::runtime_error("Tried to remove class name from method signature without that class name: Inside removeClassName");
+    } else {
+        methodSignature.erase(0, className.length());
+    }
+    return methodSignature;
+}
+
+void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassDecl> cdecl = std::dynamic_pointer_cast<ClassDecl>(n->classOrInterfaceDecl);
+    if (!cdecl) return;
+
+    assert(n->scope->current->vtableMethodsPopulated == false);
+    n->scope->current->vtableMethodsPopulated = true;
+    std::vector<std::shared_ptr<Method>> &vtableMethods = n->scope->current->getVtableMethods();
+
+    std::unordered_set<std::string> classlessMethodSignatures;
+    
+    //get and set current vtableMethods
+    for (const auto& memberDecl : cdecl->declarations[1]) {
+        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
+        if (!method || method->isStatic) continue;
+        vtableMethods.push_back(method);  
+        std::string methodSignature = removeClassName(method->getSignature(), method->className);
+        assert(!(classlessMethodSignatures.contains(methodSignature)));
+        classlessMethodSignatures.insert(methodSignature);
+    }
+
+    //for each parent, add their non-static vtableMethods
+    for (const auto& superTable : n->scope->supers) {
+        std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getAst()->classOrInterfaceDecl);
+        if (!scdecl) continue;
+
+        //ensure the parent's vtableMethods is populated
+        if (superTable->vtableMethodsPopulated == false) {
+            populateVtableMethods(superTable->getAst(), error);
+        }
+
+        //get that parent's vtableMethods
+        std::vector<std::shared_ptr<Method>> &superVtableMethods = superTable->getVtableMethods();
+        for (const auto& superMethod : superVtableMethods) {
+            //don't allow any repeat method signatures
+            std::string methodSignature = removeClassName(superMethod->getSignature(), superMethod->className);
+            if (classlessMethodSignatures.contains(methodSignature)) continue;
+            vtableMethods.push_back(superMethod);
+            classlessMethodSignatures.insert(methodSignature);            
+        }
+        return; //we can only extend at most one class
+    }
+}
+
+void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
+
+    std::shared_ptr<ClassDecl> cdecl = std::dynamic_pointer_cast<ClassDecl>(n->classOrInterfaceDecl);
+    if (!cdecl) return;
+
+    assert(n->scope->current->vtableFieldsPopulated == false);
+    n->scope->current->vtableFieldsPopulated = true;
+    auto &vtableFields = n->scope->current->getVtableFields();
+
+    std::unordered_set<std::string> fieldNames;
+
+    //get and set current vtableFields
+    for (auto memberDecl : cdecl->declarations[0]) {
+        std::shared_ptr<Field> field = std::dynamic_pointer_cast<Field>(memberDecl);
+        if (!field || field->isStatic) continue;
+        vtableFields.push_back(field);
+        assert(!(fieldNames.contains(field->fieldName->name))); //we shouldn't have any duplicate fields
+        fieldNames.insert(field->fieldName->name);
+    }
+
+    //for each parent
+    for (std::shared_ptr<SymbolTable> superTable : n->scope->supers) {
+        std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getAst()->classOrInterfaceDecl);
+        if (!scdecl) continue;
+
+        //ensure the parent's vtableFields is populated
+        if (superTable->vtableFieldsPopulated == false)
+            populateVtableFields(superTable->getAst(), error);
+        
+        //get that parent's vtableFields
+        auto &superVtableFields = superTable->getVtableFields();
+        for (auto superField : superVtableFields) {
+            assert(!(superField->isStatic));
+            //if it's a duplicate, skip it
+            if (fieldNames.contains(superField->fieldName->name)) continue;
+            else {
+                //otherwise, add it to our vtableFields
+                vtableFields.push_back(superField);
+                fieldNames.insert(superField->fieldName->name);
+            }
+        }
+        return; //we can only extend at most one class
+    }
+}
+
+
+
+
 
 int main(int argc, char *argv[])
 {
@@ -495,6 +595,20 @@ int main(int argc, char *argv[])
             program->accept(&cfgvisitor);
             // break;
         }
+    }
+
+    if (!error)
+    {
+        for (std::shared_ptr<Program> program : asts)
+            if (program->scope->current->vtableFieldsPopulated == false)
+                populateVtableFields(program, error);
+    }
+
+    if (!error)
+    {
+        for (std::shared_ptr<Program> program : asts)
+            if (program->scope->current->vtableMethodsPopulated == false)
+                populateVtableMethods(program, error);
     }
 
     if (!error)
