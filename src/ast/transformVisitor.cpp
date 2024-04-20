@@ -538,11 +538,23 @@ void TransformVisitor::visit(std::shared_ptr<NegExp> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
-    n->exp->accept(this);
-    std::shared_ptr<TIR::Expr> expr;
-    std::shared_ptr<SymbolTable> st;
-    reclassifyAmbiguousName(n->exprs, expr, st);
-    node = expr;
+    if (auto thisexp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
+        std::shared_ptr<TIR::Expr> expr;
+        std::shared_ptr<SymbolTable> st;
+        reclassifyAmbiguousName(n->exprs, expr, st);
+        assert(expr != nullptr);
+        node = expr;
+    } else {
+        n->exp->accept(this);
+        std::shared_ptr<TIR::Move> stmt = nodeFactory->IRMove(nodeFactory->IRTemp("this"), getExpr());
+        assert(stmt != nullptr);
+        std::shared_ptr<TIR::Expr> expr;
+        std::shared_ptr<SymbolTable> st;
+        std::cout << n->exprs.size() << std::endl;
+        reclassifyAmbiguousName(n->exprs, expr, st);
+        assert(expr != nullptr);
+        node = nodeFactory->IRESeq(stmt, expr);
+    }
     // if (auto move = std::dynamic_pointer_cast<TIR::Move>(node)) {
     //     if (n->field->id->name == "length") {
     //         if (auto temp = std::dynamic_pointer_cast<TIR::Temp>(move->getTarget())) {
@@ -587,6 +599,10 @@ std::shared_ptr<TIR::Expr> TransformVisitor::getExpr() const {
         else if (auto eseq = std::dynamic_pointer_cast<TIR::ESeq>(move->getTarget())) {
             expr = eseq->getExpr();
         }
+        else if (auto mem = std::dynamic_pointer_cast<TIR::Mem>(move->getTarget())) {
+            expr = mem;
+        }
+        assert(expr != nullptr);
         ret = nodeFactory->IRESeq(move, expr);
     }
     assert(ret != nullptr);

@@ -612,6 +612,7 @@ public:
     std::shared_ptr<IdentifierType> classType;
     std::vector<std::shared_ptr<Exp>> arguments;
     std::shared_ptr<Constructor> constructor;
+    std::vector<ExpressionObject> exprs;
     ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
     void accept(Visitor* v) override;
 };
