@@ -18,6 +18,7 @@
 #include "IRCfgVisitor.hpp"
 #include <Tiling.hpp>
 #include "cfgVisitor.hpp"
+#include "subtypeTable.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
     {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY}, {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY}, {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY}, {DataType::OBJECT, DataType::OBJECTARRAY}};
@@ -359,6 +360,38 @@ void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
 
 
 
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    if (subtypeTable.contains(decl)) return;
+
+    subtypeTable.insert({decl, {}});
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(decl).contains(superDecl)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(superDecl)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(decl).insert(superDecl);
+            for (std::shared_ptr<ClassOrInterfaceDecl> ancestorDecl : subtypeTable.at(superDecl)) {
+                if (subtypeTable.at(decl).contains(ancestorDecl)) continue;
+                subtypeTable.at(decl).insert(ancestorDecl);
+            }
+        }
+    }
+}
+
+
 
 
 int main(int argc, char *argv[])
@@ -447,6 +480,14 @@ int main(int argc, char *argv[])
         std::cerr << "Error: Hierarchy Checking failed" << std::endl;
         error = true;
     }
+
+    //reset
+    subtypeTable.clear(); //just in case
+    for (auto ast : asts) 
+    {
+        populateSubtypeTable(ast, error);
+    }
+
 
     if (!error)
     {
