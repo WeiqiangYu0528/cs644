@@ -376,7 +376,7 @@ int main(int argc, char* argv[])
 
     if (!error) {
         for (std::shared_ptr<Program> program : asts) {
-            std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
+            // std::cout << program->scope->current->getClassOrInterfaceDecl()->id->name << std::endl;
             CFGVisitor cfgvisitor(program->scope);
             program->accept(&cfgvisitor);
             //break;
