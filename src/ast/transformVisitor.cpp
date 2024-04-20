@@ -47,19 +47,13 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
 void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     className = n->id->name;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
-    // for (auto method : n->methods) {
-    //     if (method->isStatic && !method->isNative && method->type->type != DataType::OBJECT) {
-    //         method->accept(this);
-    //         methods[className + "." + method->methodName->name] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
-    //     }
-    // }
     node = nodeFactory->IRCompUnit(n->id->name, methods);
 }
 
 void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-    std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("obj");
-    std::vector<std::shared_ptr<Field>>& fields = scope->current->fields;
+    std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("this");
+    std::vector<std::shared_ptr<Field>>& fields = scope->current->getVtableFields();
     size_t fieldSize = fields.size();
     stmts.push_back(nodeFactory->IRMove(obj, nodeFactory->IRCall(nodeFactory->IRName("__malloc"), nodeFactory->IRConst((fieldSize + 1) * 4))));
     stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(obj), nodeFactory->IRTemp(TIR::Configuration::VTABLE)));
@@ -270,6 +264,8 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
         auto left = getExpr();
         n->right->accept(this);
         auto right = getExpr();
+        assert(left != nullptr);
+        assert(right != nullptr);
         node = nodeFactory->IRMove(left, right);
     }
 }
@@ -593,6 +589,7 @@ std::shared_ptr<TIR::Expr> TransformVisitor::getExpr() const {
         }
         ret = nodeFactory->IRESeq(move, expr);
     }
+    assert(ret != nullptr);
     return ret;
 }
 

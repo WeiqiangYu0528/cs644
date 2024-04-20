@@ -280,5 +280,3 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
     else
         assembly.push_back("mov [ebp" + offset_string  + "], " + register_);
 }
-
-// "mov ebx, " + "[ebp" + std::to_string(it->second) + "]";
