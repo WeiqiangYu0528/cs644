@@ -310,7 +310,7 @@ class CompUnit : public Node_c {
 private:
     std::string name;
     std::shared_ptr<FuncDecl> staticInitFunc;
-    std::vector<std::shared_ptr<Move>> fields;
+    std::vector<std::shared_ptr<Move>> staticFields;
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions;
 
 public:
@@ -322,7 +322,7 @@ public:
 
     void setStaticInitFunc(std::shared_ptr<FuncDecl> func);
 
-    void setFields(std::vector<std::shared_ptr<Move>>& fields);
+    void setStaticFields(std::vector<std::shared_ptr<Move>>& fields);
 
     void setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions);
 
@@ -330,7 +330,7 @@ public:
 
     const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& getFunctions() const;
 
-    const std::vector<std::shared_ptr<Move>>& getFields() const;
+    const std::vector<std::shared_ptr<Move>>& getStaticFields() const;
 
     std::shared_ptr<FuncDecl> getFunction(const std::string& name) const;
 

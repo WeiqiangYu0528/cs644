@@ -1,3 +1,4 @@
+#include <cassert>
 #include <queue>
 #include "scope.hpp"
 
@@ -80,6 +81,7 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, s
                         if (segment == "length" && !current->getScopeType(ScopeType::ASSIGNMENT)) {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
                             ambiguousName.typeNode = std::make_shared<IntType>();
+                            updateExpressionObject("length", nullptr, Expression::ARRAY, exprs);
                         }
                         else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
@@ -174,13 +176,6 @@ bool Scope::superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<Symbol
 }
 
 void Scope::updateExpressionObject(const std::string& name, std::shared_ptr<SymbolTable> st, Expression expr, std::vector<ExpressionObject>* exprs) {
-    if (exprs) {
-        if (expr == Expression::LOCAL) {
-            exprs->emplace_back(Expression::LOCAL, name, st);
-        } else if (expr == Expression::NON_STATIC_FIELD) {
-            exprs->emplace_back(Expression::NON_STATIC_FIELD, name, st);
-        } else {
-            exprs->emplace_back(Expression::STATIC_FIELD, name, st);
-        }
-    }
+    if (exprs)
+        exprs->emplace_back(expr, name, st);
 }

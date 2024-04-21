@@ -29,7 +29,7 @@ void PrintCompUnit(std::shared_ptr<TIR::CompUnit> root, const std::string& filen
                 funcLabelStream << "0x" << std::hex << reinterpret_cast<uintptr_t>(func.second.get()) << "\n " + func.second->getLabel();
                 graph << "    \"" << label << "\" -> \"" << funcLabelStream.str() << "\";\n";
             }
-            for (const auto& field : node->getFields()) {
+            for (const auto& field : node->getStaticFields()) {
 
                 std::stringstream labelStream;
                 queue.push(field);

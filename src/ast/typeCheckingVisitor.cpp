@@ -525,7 +525,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
     currentExpInfo.expType = ExpType::Object;
     currentExpInfo.objectName = cname;
     n->constructor = constructor;
-    n->exprs.emplace_back(Expression::LOCAL, "this", ambiguousName.symbolTable);
+    n->exprs.emplace_back(Expression::LOCAL, "tmp", ambiguousName.symbolTable);
     return ambiguousName;
 }
 
@@ -695,7 +695,10 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
             ambiguousName = visitThisExp(thisExp);
             n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
         }
-        else if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) ambiguousName = visitClassInstanceCreationExp(classExp);
+        else if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) {
+            ambiguousName = visitClassInstanceCreationExp(classExp);
+            n->exprs = classExp->exprs;
+        }
         else if (auto parexp = std::dynamic_pointer_cast<ParExp>(n->primary)) ambiguousName = visitParExp(parexp);
         else if (auto fieldexp = std::dynamic_pointer_cast<FieldAccessExp>(n->primary)) {
             ambiguousName = visitFieldAccessExp(fieldexp);

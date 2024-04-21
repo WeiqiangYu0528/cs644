@@ -192,8 +192,8 @@ void CompUnit::setStaticInitFunc(std::shared_ptr<FuncDecl> func) {
     this->staticInitFunc = func;
 }
 
-void CompUnit::setFields(std::vector<std::shared_ptr<Move>>& fields) {
-    this->fields = fields;
+void CompUnit::setStaticFields(std::vector<std::shared_ptr<Move>>& fields) {
+    this->staticFields = fields;
 }
 
 void CompUnit::setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions) {
@@ -208,8 +208,8 @@ const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& CompUnit::getF
     return functions;
 }
 
-const std::vector<std::shared_ptr<Move>>& CompUnit::getFields() const {
-    return fields;
+const std::vector<std::shared_ptr<Move>>& CompUnit::getStaticFields() const {
+    return staticFields;
 }
 
 std::shared_ptr<FuncDecl> CompUnit::getFunction(const std::string& name) const {

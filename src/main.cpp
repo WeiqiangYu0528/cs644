@@ -612,11 +612,12 @@ int main(int argc, char *argv[])
     if (!error)
     {
         std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
-        std::vector<std::shared_ptr<TIR::Stmt>> staticFields;
-        std::unordered_map<std::string, int> staticFieldsMap;
+        std::vector<std::string> staticFields;
+        std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
         std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> staticMethodMap;
         std::shared_ptr<TIR::CompUnit> compUnit;
         std::shared_ptr<SymbolTable> st;
+        int k = 0;
         for (std::shared_ptr<Program> program : asts)
         {
             TransformVisitor tvisitor(program->scope, nodeFactory);
@@ -626,35 +627,33 @@ int main(int argc, char *argv[])
                 compUnit = cu;
                 st = program->scope->current;
             }
-            
-            for (auto fieldDecl : cu->getFields())
+            for (auto fieldDecl : cu->getStaticFields())
             {
                 auto field = std::dynamic_pointer_cast<TIR::Temp>(fieldDecl->getTarget());
-                staticFieldsMap[field->getName()] = 0;
-                staticFields.push_back(fieldDecl);
+                staticFields.push_back(field->getName());
+                staticFieldStmts.push_back(fieldDecl);
             }
             for (auto &[k, v] : cu->getFunctions())
             {
                 staticMethodMap[k] = v;
             }
             break;
+            // if (++k == 3) break;
         }
-        staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
-        compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
         compUnit->setFunctions(staticMethodMap);
 
         try
         {
             std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
             cvisitor->visit(compUnit);
-            {
-                TIR::Simulator sim(compUnit);
-                sim.staticFields = staticFieldsMap;
-                sim.initStaticFields();
-                // long result = sim.call(compUnit->getName() + "_test_int");
-                // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-                staticFieldsMap = sim.staticFields;
-            }
+            // {
+            //     TIR::Simulator sim(compUnit);
+            //     sim.staticFields = staticFieldsMap;
+            //     sim.initStaticFields();
+            //     // long result = sim.call(compUnit->getName() + "_test_int");
+            //     // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
+            //     staticFieldsMap = sim.staticFields;
+            // }
         }
         catch (std::exception &e)
         {
@@ -691,28 +690,26 @@ int main(int argc, char *argv[])
             assemblyCodes.push_back("section .data");
             std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
             size_t methodSize{methods.size()};
-            std::string vtableDecl = "\t" + compUnit->getName()+ "_vtable: dd ";
+            std::string vtableDecl = compUnit->getName()+ "_vtable: dd ";
             for (size_t i = 0; i < methodSize; ++i) {
                 vtableDecl += methods[i]->getSignature();
                 if (i != methodSize - 1) vtableDecl += ", ";
             }
             assemblyCodes.push_back(vtableDecl);
 
-            for (auto &[key, value] : staticFieldsMap)
+            for (auto& field : staticFields)
             {
-                std::string staticField = key;
-                std::replace(staticField.begin(), staticField.end(), '.', '_');
-                assemblyCodes.push_back(staticField + ": dd " + std::to_string(value));
+                std::replace(field.begin(), field.end(), '.', '_');
+                assemblyCodes.push_back(field + ": dd 0");
             }
-            // for (auto instr : assemblyCodes)
-            // {
-            //     std::cout << instr << std::endl;
-            // }
             assemblyCodes.push_back("\nsection .text");
             assemblyCodes.push_back("global _start");
-            Tiling tiler(st, staticFieldsMap);
+            Tiling tiler(st, staticFields);
 
             assemblyCodes.push_back("_start:"); // Entry point label
+            for (auto stmt : staticFieldStmts) {
+                tiler.tileStmt(stmt, assemblyCodes);
+            }
             assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
             assemblyCodes.push_back("mov ebx, eax");
             assemblyCodes.push_back("mov eax, 1");
@@ -722,7 +719,6 @@ int main(int argc, char *argv[])
             {
                 tiler.currentStackOffset = 0;
                 tiler.tempToStackOffset.clear();
-                // std::vector<std::string> assemblyInstructions;
                 std::cout << funcName << " " << funcDecl->numTemps << std::endl;
                 assemblyCodes.push_back("\nglobal " + funcDecl->getName());
                 assemblyCodes.push_back(funcDecl->getName() + ":");
