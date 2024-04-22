@@ -3,6 +3,7 @@ section .text
 ; Allocates eax bytes of memory. Pointer to allocated memory returned in eax.
     global __malloc
 __malloc:
+    push ebx     ; callee save ebx
     push eax
     mov eax, 45  ; sys_brk system call
     mov ebx, 0   ; 0 bytes - query current brk
@@ -19,6 +20,7 @@ __malloc:
     call __debexit
 ok:
     mov eax, ebx
+    pop ebx      ; restore ebx
     ret
 
 ; Debugging exit: ends the process, returning the value of
@@ -41,6 +43,7 @@ __exception:
 ; Outputs the low-order byte of eax to standard output.
     global NATIVEjava.io.OutputStream.nativeWrite
 NATIVEjava.io.OutputStream.nativeWrite:
+    push ebx       ; callee save ebx
     mov [char], al ; save the low order byte in memory
     mov eax, 4     ; sys_write system call
     mov ecx, char  ; address of bytes to write
@@ -48,6 +51,7 @@ NATIVEjava.io.OutputStream.nativeWrite:
     mov edx, 1     ; number of bytes to write
     int 0x80
     mov eax, 0     ; return 0
+    pop ebx        ; restore ebx
     ret
 
 section .data
