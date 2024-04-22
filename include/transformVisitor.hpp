@@ -72,5 +72,7 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<TIR::ESeq> getCastExpr(int mask) const;
         std::shared_ptr<TIR::Mem> getField(std::shared_ptr<TIR::Expr>, std::shared_ptr<SymbolTable> st, const std::string& name) const;
         std::shared_ptr<TIR::ESeq> getLength(std::shared_ptr<TIR::Expr> expr) const;
+        std::shared_ptr<TIR::Expr> getString(std::shared_ptr<Exp> exp);
+        std::shared_ptr<TIR::Call> toString(std::shared_ptr<TIR::Expr> exp, DataType type) const;
         void reclassifyAmbiguousName(const std::vector<ExpressionObject>& exprs, std::shared_ptr<TIR::Expr>& expr, std::shared_ptr<SymbolTable>& st);
 };

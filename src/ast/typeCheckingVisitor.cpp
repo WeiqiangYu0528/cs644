@@ -186,6 +186,9 @@ void TypeCheckingVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
 
 void TypeCheckingVisitor::visit(std::shared_ptr<PlusExp> n) {
     visitBinaryOpExp(n, ExpRuleType::Arithmetic, ExpRuleType::StringPlus);
+    if (currentExpInfo.expType == ExpType::String) {
+        n->stringConcat = true;
+    }
 }
 
 void TypeCheckingVisitor::visit(std::shared_ptr<MinusExp> n) {
@@ -525,7 +528,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
     currentExpInfo.expType = ExpType::Object;
     currentExpInfo.objectName = cname;
     n->constructor = constructor;
-    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", ambiguousName.symbolTable)};
+    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", nullptr, ambiguousName.symbolTable)};
     return ambiguousName;
 }
 
@@ -636,7 +639,7 @@ AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAcce
     n->exprs.clear();
     if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
         ambiguousName = visitThisExp(thisExp);
-        n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
+        n->exprs.emplace_back(Expression::LOCAL, "this", nullptr, scope->current);
     }
     else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) ambiguousName = visitParExp(parExp);
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
@@ -677,7 +680,7 @@ AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAcce
     if (ie) fieldSt = ambiguousName.symbolTable->getScope()->getNameInScope(ie->id->name, ie->simple);
     ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, fieldSt);
     ambiguousName.typeNode = field->type;
-    n->exprs.emplace_back(Expression::NON_STATIC_FIELD, fieldName, fieldSt);
+    n->exprs.emplace_back(Expression::NON_STATIC_FIELD, fieldName, nullptr, fieldSt);
     return ambiguousName;
 }
 
@@ -696,7 +699,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
         methodName = n->primaryMethodName->id->name;
         if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->primary)) {
             ambiguousName = visitThisExp(thisExp);
-            n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
+            n->exprs.emplace_back(Expression::LOCAL, "this", nullptr, scope->current);
         }
         else if (auto classExp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->primary)) {
             ambiguousName = visitClassInstanceCreationExp(classExp);

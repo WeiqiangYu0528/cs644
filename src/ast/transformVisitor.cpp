@@ -105,11 +105,35 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
-    n->exp1->accept(this);
-    auto exp1 = getExpr();
-    n->exp2->accept(this);
-    auto exp2 = getExpr();
-    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+    if (n->stringConcat) {
+        std::cout << "Plus Expr" << std::endl;
+        std::shared_ptr<SymbolTable> st = scope->getNameInScope("String", true);
+        std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+        std::vector<std::shared_ptr<TIR::Expr>> args;
+        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1");
+        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2");
+        stmts.push_back(nodeFactory->IRMove(str1, getString(n->exp1)));
+        stmts.push_back(nodeFactory->IRMove(str2, getString(n->exp2)));
+        args.push_back(str2);
+        args.push_back(str1);
+        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
+        stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(str1)));
+        size_t i = 0;
+        const std::string funcSignature{"String_concat_String_String"};
+        for (; i < st->getVtableMethods().size(); ++i) {
+            if (st->getVtableMethods()[i]->getSignature() == funcSignature) break;
+        }
+        assert(i < st->getVtableMethods().size());
+        std::shared_ptr<TIR::Call> call = nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
+        call->setSignature(funcSignature);
+        node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
+    } else {
+        n->exp1->accept(this);
+        auto exp1 = getExpr();
+        n->exp2->accept(this);
+        auto exp2 = getExpr();
+        node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+    }
 }
 
 void TransformVisitor::visit(std::shared_ptr<MinusExp> n) {
@@ -709,4 +733,63 @@ void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObjec
         st = exprObj.st;
     }
     assert(expr != nullptr);
+}
+
+std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp) {
+    exp->accept(this);
+    std::shared_ptr<TIR::Expr> expr = getExpr();
+    DataType data;
+    if (auto integer = std::dynamic_pointer_cast<IntegerLiteralExp>(exp)) {
+        data = DataType::INT;
+    }
+    else if (auto boolean = std::dynamic_pointer_cast<BoolLiteralExp>(exp)) {
+        data = DataType::BOOLEAN;
+    }
+    else if (auto character = std::dynamic_pointer_cast<CharLiteralExp>(exp)) {
+        data = DataType::CHAR;
+    }
+    else if (auto nullexp = std::dynamic_pointer_cast<NulLiteralExp>(exp)) {
+        data = DataType::NULLTYPE;
+    }
+    else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(exp) ) {
+        return expr;
+    }
+    else if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(exp)) {
+        data = ie->exprs.back().type->type;
+        if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
+        if (data == DataType::OBJECT && ie->exprs.back().type->typeToString() == "String") {
+            return expr;
+        } 
+    }
+    else if (auto plusexp = std::dynamic_pointer_cast<PlusExp>(exp)) {
+        return expr;
+    }
+    return toString(expr, data);
+}
+
+std::shared_ptr<TIR::Call> TransformVisitor::toString(std::shared_ptr<TIR::Expr> exp, DataType type) const {
+    std::string funcName;
+    switch (type) {
+        case DataType::INT:
+            funcName = "String_valueOf_int_String";
+            break;
+        case DataType::BOOLEAN:
+            funcName = "String_valueOf_boolean_String";
+            break;
+        case DataType::CHAR:
+            funcName = "String_valueOf_char_String";
+            break;
+        case DataType::STRING:
+            funcName = "String_valueOf_String_String";
+            break;
+        case DataType::NULLTYPE:
+        case DataType::OBJECT:
+            funcName = "String_valueOf_Object_String";
+            break;
+        default:
+            assert(false);
+    }
+    std::vector<std::shared_ptr<TIR::Expr>> args;
+    args.push_back(exp);
+    return nodeFactory->IRCall(nodeFactory->IRName(funcName), args);
 }
