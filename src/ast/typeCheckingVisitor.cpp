@@ -895,6 +895,10 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
         ambiguousName = visitFieldAccessExp(left);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     }
+    else if (auto left = std::dynamic_pointer_cast<MethodInvocation>(n->array)) {
+        ambiguousName = visitMethodInvocation(left);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
+    }
     else {
         currentExpInfo.expType = ExpType::Any;
     }    
