@@ -200,6 +200,10 @@ void TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
     node = nodeFactory->IRBinOp(TIR::BinOp::OpType::GEQ, exp1, exp2);
 }
 
+void TransformVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
+
+}
+
 void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
      n->exp1->accept(this);
     auto exp1 = getExpr();

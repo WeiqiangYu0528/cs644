@@ -40,7 +40,7 @@ class TransformVisitor : public Visitor {
         void visit(std::shared_ptr<GreaterExp> n) override;
         void visit(std::shared_ptr<LessEqualExp> n) override;
         void visit(std::shared_ptr<GreaterEqualExp> n) override;       
-        // void visit(std::shared_ptr<InstanceOfExp> n) override;  
+        void visit(std::shared_ptr<InstanceOfExp> n) override;  
         void visit(std::shared_ptr<EqualExp> n) override;
         void visit(std::shared_ptr<NotEqualExp> n) override;
         void visit(std::shared_ptr<ConditionalAndExp> n) override;
