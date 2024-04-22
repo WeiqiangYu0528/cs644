@@ -1,3 +1,4 @@
 #include "subtypeTable.hpp"
 
-std::unordered_map<std::shared_ptr<ClassOrInterfaceDecl>, std::unordered_set<std::shared_ptr<ClassOrInterfaceDecl>>> subtypeTable;
+std::unordered_map<std::shared_ptr<ClassOrInterfaceDecl>, std::unordered_set<std::shared_ptr<ClassOrInterfaceDecl>>> oldsubtypeTable;
+std::unordered_map<std::string, std::unordered_set<std::string>> subtypeTable;

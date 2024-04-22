@@ -361,7 +361,7 @@ void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
 
 
 //require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
-void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+void populateSubtypeTable2(std::shared_ptr<Program> n, bool &error) {
     std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
     if (subtypeTable.contains(decl)) return;
 
@@ -386,6 +386,70 @@ void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
             for (std::shared_ptr<ClassOrInterfaceDecl> ancestorDecl : subtypeTable.at(superDecl)) {
                 if (subtypeTable.at(decl).contains(ancestorDecl)) continue;
                 subtypeTable.at(decl).insert(ancestorDecl);
+            }
+        }
+    }
+}
+
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable2(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    if (subtypeTable.contains(decl)) return;
+
+    subtypeTable.insert({decl, {}});
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(decl).contains(superDecl)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(superDecl)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(decl).insert(superDecl);
+            for (std::shared_ptr<ClassOrInterfaceDecl> ancestorDecl : subtypeTable.at(superDecl)) {
+                if (subtypeTable.at(decl).contains(ancestorDecl)) continue;
+                subtypeTable.at(decl).insert(ancestorDecl);
+            }
+        }
+    }
+}
+
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    std::string fullClassName = n->package->id->name + "." + decl->id->name;
+    if (subtypeTable.contains(fullClassName)) return;
+
+    subtypeTable.insert({fullClassName, {}});
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+        std::string fullSuperClassName = superTable->getPackage()->id->name + "." + superTable->getClassName();
+
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(fullClassName).contains(fullSuperClassName)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(fullSuperClassName)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(fullClassName).insert(fullSuperClassName);
+            for (std::string fullAncestorClassName : subtypeTable.at(fullSuperClassName)) {
+                if (subtypeTable.at(fullClassName).contains(fullAncestorClassName)) continue;
+                subtypeTable.at(fullClassName).insert(fullAncestorClassName);
             }
         }
     }
