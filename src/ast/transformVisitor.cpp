@@ -6,42 +6,55 @@
 int TransformVisitor::labelCounter = 0;
 int TransformVisitor::arrayCounter = 0;
 
-TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf) : scope(s), nodeFactory(nf), node(nullptr) {
+TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods) : scope(s), nodeFactory(nf), node(nullptr), staticFields(staticFields), staticMethods(staticMethods) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
     className = n->id->name;
-    std::vector<std::shared_ptr<TIR::Move>> staticFields;
+    std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
+    std::vector<std::string> staticFieldVec;
+    std::vector<std::string> staticMethodVec;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
     for (auto fieldDecl: n->declarations[0]) {
         auto field = std::dynamic_pointer_cast<Field>(fieldDecl);
         std::string fieldName{className + "." + field->fieldName->name};
+        std::replace(fieldName.begin(), fieldName.end(), '.', '_');
         if (field->isStatic) {
             field->accept(this);
-            staticFields.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), getExpr()));
+            staticFieldVec.push_back(fieldName);
+            staticFieldStmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), getExpr()));
         }
     }
     for (auto methodDecl: n->declarations[1]) {
         auto method = std::dynamic_pointer_cast<Method>(methodDecl);
-        if (!method->isNative) {
+        if (!method->isNative && !method->isAbstract) {
             method->accept(this);
             methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+        }
+        if (method->isStatic) {
+            staticMethodVec.push_back(method->getSignature());
         }
     }
     for (auto constructorDecl: n->declarations[2]) {
         auto constructor = std::dynamic_pointer_cast<Constructor>(constructorDecl);
         constructor->accept(this);
         methods[constructor->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+        staticMethodVec.push_back(constructor->getSignature());
     }
     std::shared_ptr<TIR::CompUnit> compUnit = nodeFactory->IRCompUnit(n->id->name, methods);
-    compUnit->setStaticFields(staticFields);
+    staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+    compUnit->appendFunc(nodeFactory->IRFuncDecl(n->id->name + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
+    staticFields.push_back(std::move(staticFieldVec));
+    staticMethods.push_back(std::move(staticMethodVec));
     node = compUnit;
 }
 
 void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     className = n->id->name;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
-    node = nodeFactory->IRCompUnit(n->id->name, methods);
+    node = nodeFactory->IRCompUnit(className, methods);
+    staticFields.push_back(std::vector<std::string>{});
+    staticMethods.push_back(std::vector<std::string>{});
 }
 
 void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
@@ -373,6 +386,20 @@ void TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
     node = nodeFactory->IRSeq(stmts);
 }
 
+void TransformVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
+    std::string& str{n->value};
+    int len = str.size();
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Temp> tm = nodeFactory->IRTemp("tm" + std::to_string(arrayCounter++));
+    stmts.push_back(nodeFactory->IRMove(tm, nodeFactory->IRCall(nodeFactory->IRName("__malloc"), nodeFactory->IRConst(4 * len + 8))));
+    stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(tm), nodeFactory->IRConst(len)));
+    for (size_t i = 1; i <= len; ++i) {
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4 * (i + 1)))), nodeFactory->IRConst(str[i-1])));
+    }
+    std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4));
+    node = nodeFactory->IRCall(nodeFactory->IRName("Constructor_A_array_char"), std::vector<std::shared_ptr<TIR::Expr>>{nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset)});
+}
+
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::vector<std::shared_ptr<TIR::Expr>> args;
 
@@ -386,7 +413,7 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     }
     else {
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-        if (n->primary) {
+        if (n->primary && std::dynamic_pointer_cast<ThisExp>(n->primary) == nullptr) {
             n->primary->accept(this);
             stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp("tmp"), getExpr()));
         }
@@ -417,7 +444,6 @@ void TransformVisitor::visit(std::shared_ptr<NewArrayExp> n) {
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Label> nonNegLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-    std::shared_ptr<TIR::Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Temp> tn = nodeFactory->IRTemp("tn" + std::to_string(arrayCounter));
     std::shared_ptr<TIR::Temp> tm = nodeFactory->IRTemp("tm" + std::to_string(arrayCounter++));
     n->exp->accept(this);
@@ -562,6 +588,10 @@ void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     // }
 }
 
+void TransformVisitor::visit(std::shared_ptr<ThisExp> n) {
+    node = nodeFactory->IRTemp("this");
+}
+
 void TransformVisitor::visit(std::shared_ptr<Field> n) {
     if (n->initializer) {
         n->initializer->accept(this);
@@ -632,6 +662,7 @@ std::shared_ptr<TIR::ESeq> TransformVisitor::getCastExpr(int mask) const {
 }
 
 std::shared_ptr<TIR::Mem> TransformVisitor::getField(std::shared_ptr<TIR::Expr> expr, std::shared_ptr<SymbolTable> st, const std::string& name) const {
+    assert(st != nullptr);
     std::vector<std::shared_ptr<Field>>& fields = st->getVtableFields();
     size_t i = 0;
     for (; i < fields.size(); ++i) {

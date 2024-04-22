@@ -612,133 +612,111 @@ int main(int argc, char *argv[])
     if (!error)
     {
         std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
-        std::vector<std::string> staticFields;
-        std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
-        std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> staticMethodMap;
-        std::shared_ptr<TIR::CompUnit> compUnit;
-        std::shared_ptr<SymbolTable> st;
-        int k = 0;
+        std::vector<std::vector<std::string>> staticFields;
+        std::vector<std::vector<std::string>> staticMethods;
+        std::vector<std::shared_ptr<TIR::CompUnit>> compUnits;
         for (std::shared_ptr<Program> program : asts)
         {
-            TransformVisitor tvisitor(program->scope, nodeFactory);
+            std::cout << program->getQualifiedName().second << std::endl;
+            TransformVisitor tvisitor(program->scope, nodeFactory, staticFields, staticMethods);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
-            if (compUnit == nullptr) {
-                compUnit = cu;
-                st = program->scope->current;
-            }
-            for (auto fieldDecl : cu->getStaticFields())
+            compUnits.push_back(cu);
+        }
+        for (size_t i = 0; i < compUnits.size(); ++i) {
+            std::shared_ptr<TIR::CompUnit> compUnit = compUnits[i];
+            std::shared_ptr<SymbolTable> st = asts[i]->scope->current;
+            try
             {
-                auto field = std::dynamic_pointer_cast<TIR::Temp>(fieldDecl->getTarget());
-                staticFields.push_back(field->getName());
-                staticFieldStmts.push_back(fieldDecl);
+                std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
+                cvisitor->visit(compUnit);
             }
-            for (auto &[k, v] : cu->getFunctions())
+            catch (std::exception &e)
             {
-                staticMethodMap[k] = v;
+                std::cout << "Error in CanonicalVisitor" << std::endl;
             }
-            break;
-            // if (++k == 3) break;
-        }
-        compUnit->setFunctions(staticMethodMap);
 
-        try
-        {
-            std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
-            cvisitor->visit(compUnit);
-            // {
-            //     TIR::Simulator sim(compUnit);
-            //     sim.staticFields = staticFieldsMap;
-            //     sim.initStaticFields();
-            //     // long result = sim.call(compUnit->getName() + "_test_int");
-            //     // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-            //     staticFieldsMap = sim.staticFields;
-            // }
-        }
-        catch (std::exception &e)
-        {
-            std::cout << "Error in CanonicalVisitor" << std::endl;
-        }
-
-        try
-        {
-            std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
-            cfv->visit(compUnit);
-            std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
-            std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
-            // {
-            //     TIR::Simulator sim(compUnit);
-            //     sim.staticFields = staticFieldsMap;
-            //     sim.initStaticFields();
-            //     long result = sim.call(compUnit->getName() + "_test_int");
-            //     std::cout << "After CFG: program evaluates to " << result << std::endl;
-            //     staticFieldsMap = sim.staticFields;
-            // }
-        }
-        catch (std::exception &e)
-        {
-            std::cout << "Error in CFG" << std::endl;
-        }
-
-        {
-            // generate .s file for compUnit
-
-            std::vector<std::string> assemblyCodes;
-            assemblyCodes.push_back("extern __malloc");
-            assemblyCodes.push_back("extern __exception\n");
-            // static data
-            assemblyCodes.push_back("section .data");
-            std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
-            size_t methodSize{methods.size()};
-            std::string vtableDecl = compUnit->getName()+ "_vtable: dd ";
-            for (size_t i = 0; i < methodSize; ++i) {
-                vtableDecl += methods[i]->getSignature();
-                if (i != methodSize - 1) vtableDecl += ", ";
-            }
-            assemblyCodes.push_back(vtableDecl);
-
-            for (auto& field : staticFields)
+            try
             {
-                std::replace(field.begin(), field.end(), '.', '_');
-                assemblyCodes.push_back(field + ": dd 0");
+                std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
+                cfv->visit(compUnit);
+                std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
+                std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
             }
-            assemblyCodes.push_back("\nsection .text");
-            assemblyCodes.push_back("global _start");
-            Tiling tiler(st, staticFields);
-
-            assemblyCodes.push_back("_start:"); // Entry point label
-            for (auto stmt : staticFieldStmts) {
-                tiler.tileStmt(stmt, assemblyCodes);
-            }
-            assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
-            assemblyCodes.push_back("mov ebx, eax");
-            assemblyCodes.push_back("mov eax, 1");
-            assemblyCodes.push_back("int 0x80");
-
-            for (auto &[funcName, funcDecl] : compUnit->getFunctions())
+            catch (std::exception &e)
             {
-                tiler.currentStackOffset = 0;
-                tiler.tempToStackOffset.clear();
-                std::cout << funcName << " " << funcDecl->numTemps << std::endl;
-                assemblyCodes.push_back("\nglobal " + funcDecl->getName());
-                assemblyCodes.push_back(funcDecl->getName() + ":");
-                assemblyCodes.push_back("push ebp");
-                assemblyCodes.push_back("mov ebp, esp");
-                assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
-                for (int i = 0; i < funcDecl->getNumParams(); i++) {
-                    tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+                std::cout << "Error in CFG" << std::endl;
+            }
+
+            {
+                // generate .s file for compUnit
+                std::vector<std::string> assemblyCodes;
+                assemblyCodes.push_back("extern __malloc");
+                assemblyCodes.push_back("extern __exception\n");
+                for (size_t j = 0; j < staticFields.size(); ++j) {
+                    if (j == i) continue;
+                    for (const auto& field : staticFields[j]) {
+                        assemblyCodes.push_back("extern " + field);
+                    }
+                    for (const auto& method : staticMethods[j]) {
+                        assemblyCodes.push_back("extern " + method);
+                    }
                 }
+                for (const auto& field : staticFields[i]) {
+                    assemblyCodes.push_back("global " + field);
+                }
+                assemblyCodes.push_back("\nglobal " + compUnit->getName()+ "_vtable");
+                // static data
+                assemblyCodes.push_back("section .data");
+                std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
+                size_t methodSize{methods.size()};
+                std::string vtableDecl = compUnit->getName()+ "_vtable: dd ";
+                for (size_t i = 0; i < methodSize; ++i) {
+                    vtableDecl += methods[i]->getSignature();
+                    if (i != methodSize - 1) vtableDecl += ", ";
+                }
+                assemblyCodes.push_back(vtableDecl);
 
-                for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
+                for (const auto& field : staticFields[i])
                 {
-                    tiler.tileStmt(stmt, assemblyCodes);
+                    assemblyCodes.push_back(field + ": dd 0");
+                }
+                assemblyCodes.push_back("\nsection .text");
+                assemblyCodes.push_back("global _start");
+                Tiling tiler(st, staticFields[i]);
+
+                assemblyCodes.push_back("_start:"); // Entry point label
+                assemblyCodes.push_back("call " + compUnit->getName() + TIR::Configuration::STATIC_INIT_FUNC);
+                assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
+                assemblyCodes.push_back("mov ebx, eax");
+                assemblyCodes.push_back("mov eax, 1");
+                assemblyCodes.push_back("int 0x80");
+
+                for (auto &[funcName, funcDecl] : compUnit->getFunctions())
+                {
+                    tiler.currentStackOffset = 0;
+                    tiler.tempToStackOffset.clear();
+                    std::cout << funcName << " " << funcDecl->numTemps << std::endl;
+                    assemblyCodes.push_back("\nglobal " + funcDecl->getName());
+                    assemblyCodes.push_back(funcDecl->getName() + ":");
+                    assemblyCodes.push_back("push ebp");
+                    assemblyCodes.push_back("mov ebp, esp");
+                    assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
+                    for (int i = 0; i < funcDecl->getNumParams(); i++) {
+                        tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+                    }
+
+                    for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
+                    {
+                        tiler.tileStmt(stmt, assemblyCodes);
+                    }
+
                 }
 
+                assemblyCodes.push_back("\nzerodivisionlabel:");
+                assemblyCodes.push_back("call __exception");
+                generateAssemblyFile(compUnit->getName() + ".s", assemblyCodes);
             }
-
-            assemblyCodes.push_back("\nzerodivisionlabel:");
-            assemblyCodes.push_back("call __exception");
-            generateAssemblyFile("output.s", assemblyCodes);
         }
     }
 

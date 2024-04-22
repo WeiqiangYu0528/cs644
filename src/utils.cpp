@@ -29,13 +29,13 @@ void PrintCompUnit(std::shared_ptr<TIR::CompUnit> root, const std::string& filen
                 funcLabelStream << "0x" << std::hex << reinterpret_cast<uintptr_t>(func.second.get()) << "\n " + func.second->getLabel();
                 graph << "    \"" << label << "\" -> \"" << funcLabelStream.str() << "\";\n";
             }
-            for (const auto& field : node->getStaticFields()) {
+            // for (const auto& field : node->getStaticFields()) {
 
-                std::stringstream labelStream;
-                queue.push(field);
-                labelStream << "0x" << std::hex << reinterpret_cast<uintptr_t>(field.get()) << "\n " + field->getLabel();
-                graph << "    \"" << label << "\" -> \"" << labelStream.str() << "\";\n";
-            }
+            //     std::stringstream labelStream;
+            //     queue.push(field);
+            //     labelStream << "0x" << std::hex << reinterpret_cast<uintptr_t>(field.get()) << "\n " + field->getLabel();
+            //     graph << "    \"" << label << "\" -> \"" << labelStream.str() << "\";\n";
+            // }
                 
         } else if (auto funcDeclNode = std::dynamic_pointer_cast<TIR::FuncDecl>(current)) {
             graph << "    \"" << label << "\" [label=\"" << label << "\"];\n";

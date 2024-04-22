@@ -10,11 +10,13 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<Scope> scope;
         std::shared_ptr<TIR::NodeFactory> nodeFactory;
         std::shared_ptr<TIR::Node> node;
+        std::vector<std::vector<std::string>>& staticFields;
+        std::vector<std::vector<std::string>>& staticMethods;
         static int labelCounter;
         static int arrayCounter;
     public:
         std::string className;
-        TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf);
+        TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods);
         void visit(std::shared_ptr<PlusExp> n) override;
         void visit(std::shared_ptr<MinusExp> n) override;
         void visit(std::shared_ptr<TimesExp> n) override;
@@ -25,10 +27,10 @@ class TransformVisitor : public Visitor {
         void visit(std::shared_ptr<IntegerLiteralExp> n) override;
         void visit(std::shared_ptr<BoolLiteralExp> n) override;
         void visit(std::shared_ptr<CharLiteralExp> n) override;
-        // void visit(std::shared_ptr<StringLiteralExp> n) override;
+        void visit(std::shared_ptr<StringLiteralExp> n) override;
         void visit(std::shared_ptr<NulLiteralExp> n) override;
         void visit(std::shared_ptr<ArrayAccessExp> n) override;
-        // void visit(std::shared_ptr<ThisExp> n) override;
+        void visit(std::shared_ptr<ThisExp> n) override;
         void visit(std::shared_ptr<CastExp> n) override;
         void visit(std::shared_ptr<FieldAccessExp> n) override;
         void visit(std::shared_ptr<NewArrayExp> n) override;

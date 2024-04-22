@@ -525,12 +525,13 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
     currentExpInfo.expType = ExpType::Object;
     currentExpInfo.objectName = cname;
     n->constructor = constructor;
-    n->exprs.emplace_back(Expression::LOCAL, "tmp", ambiguousName.symbolTable);
+    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", ambiguousName.symbolTable)};
     return ambiguousName;
 }
 
 AmbiguousName TypeCheckingVisitor::visitIdentifierExp(std::shared_ptr<IdentifierExp> n) {
     const std::string key {n->id->name};
+    n->exprs.clear();
     auto ambiguousName = scope->reclassifyAmbiguousName(key, n->simple, &(n->exprs));
     if (ambiguousName.type != AmbiguousNamesType::EXPRESSION) {
         std::cerr << "Error: " << key << " is not a valid name in the current scope" << std::endl;
@@ -632,6 +633,7 @@ AmbiguousName TypeCheckingVisitor::visitThisExp(std::shared_ptr<ThisExp> n) {
 AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAccessExp> n) {
     AmbiguousName ambiguousName;
     std::string fieldName{n->field->id->name};
+    n->exprs.clear();
     if (auto thisExp = std::dynamic_pointer_cast<ThisExp>(n->exp)) {
         ambiguousName = visitThisExp(thisExp);
         n->exprs.emplace_back(Expression::LOCAL, "this", scope->current);
@@ -684,6 +686,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
     std::shared_ptr<Method> method;
     std::string methodName;
     std::vector<argumentExp> arguments;
+    n->exprs.clear();
     for (auto& arg : n->arguments) {
         arg->accept(this);
         arguments.emplace_back(currentExpInfo);
@@ -880,11 +883,16 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     };
 
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
+        left->exprs.clear();
         ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, &(left->exprs));
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     } 
     else if (auto left = std::dynamic_pointer_cast<ParExp>(n->array)) {
         ambiguousName = visitParExp(left);
+        return processExpType(ambiguousName, currentExpInfo, d2e, error);
+    }
+    else if (auto left = std::dynamic_pointer_cast<FieldAccessExp>(n->array)) {
+        ambiguousName = visitFieldAccessExp(left);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     }
     else {

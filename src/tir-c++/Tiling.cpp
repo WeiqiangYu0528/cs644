@@ -260,7 +260,6 @@ void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::s
         else assembly.push_back("mov ebx, [ebp" + offset_string  + "]");
     }
     else {
-        std::replace(localVarName.begin(), localVarName.end(), '.', '_');
         if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end()) {
             assembly.push_back("mov [" + localVarName + "], ebx");
         }
