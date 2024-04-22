@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
                 // generate .s file for compUnit
                 std::vector<std::string> assemblyCodes;
                 assemblyCodes.push_back("extern __malloc");
-                assemblyCodes.push_back("extern __exception\n");
+                assemblyCodes.push_back("extern __exception");
                 for (size_t j = 0; j < staticFields.size(); ++j) {
                     if (j == i) continue;
                     for (const auto& field : staticFields[j]) {
@@ -671,10 +671,15 @@ int main(int argc, char *argv[])
                 std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
                 size_t methodSize{methods.size()};
                 std::string vtableDecl = compUnit->getName()+ "_vtable: dd ";
+                bool validVTable{false};
                 for (size_t i = 0; i < methodSize; ++i) {
-                    vtableDecl += methods[i]->getSignature();
-                    if (i != methodSize - 1) vtableDecl += ", ";
+                    if (!methods[i]->isNative && !methods[i]->isAbstract) {
+                        vtableDecl += methods[i]->getSignature();
+                        if (i != methodSize - 1) vtableDecl += ", ";
+                        validVTable = true;
+                    }
                 }
+                if (!validVTable) vtableDecl += "0";
                 assemblyCodes.push_back(vtableDecl);
 
                 for (const auto& field : staticFields[i])
@@ -685,12 +690,14 @@ int main(int argc, char *argv[])
                 assemblyCodes.push_back("global _start");
                 Tiling tiler(st, staticFields[i]);
 
-                assemblyCodes.push_back("_start:"); // Entry point label
-                assemblyCodes.push_back("call " + compUnit->getName() + TIR::Configuration::STATIC_INIT_FUNC);
-                assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
-                assemblyCodes.push_back("mov ebx, eax");
-                assemblyCodes.push_back("mov eax, 1");
-                assemblyCodes.push_back("int 0x80");
+                if (i == 0) {
+                    assemblyCodes.push_back("_start:"); // Entry point label
+                    assemblyCodes.push_back("call " + compUnit->getName() + TIR::Configuration::STATIC_INIT_FUNC);
+                    assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
+                    assemblyCodes.push_back("mov ebx, eax");
+                    assemblyCodes.push_back("mov eax, 1");
+                    assemblyCodes.push_back("int 0x80");
+                }
 
                 for (auto &[funcName, funcDecl] : compUnit->getFunctions())
                 {

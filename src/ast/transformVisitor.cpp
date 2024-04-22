@@ -27,11 +27,13 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
     }
     for (auto methodDecl: n->declarations[1]) {
         auto method = std::dynamic_pointer_cast<Method>(methodDecl);
-        if (!method->isNative && !method->isAbstract) {
-            method->accept(this);
-            methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
-        }
-        if (method->isStatic) {
+        if (!method->isAbstract) {
+            if (method->isStatic && method->isNative) {
+                methods[method->getSignature()] = nodeFactory->IRFuncDecl(method->getSignature(), 1, nodeFactory->IRSeq(std::vector<std::shared_ptr<TIR::Stmt>>{}));
+            } else {
+                method->accept(this);
+                methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+            }
             staticMethodVec.push_back(method->getSignature());
         }
     }
@@ -58,6 +60,7 @@ void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
+    int tempNum{TIR::Temp::counter};
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("this");
     std::vector<std::shared_ptr<Field>>& fields = scope->current->getVtableFields();
@@ -75,7 +78,9 @@ void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
     auto block = std::dynamic_pointer_cast<TIR::Seq>(node);
     stmts.push_back(block);
     stmts.push_back(nodeFactory->IRReturn(obj));
-    node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
+    auto func = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
+    func->numTemps = TIR::Temp::counter - tempNum;
+    node = func;
 }
 
 void TransformVisitor::visit(std::shared_ptr<Method> n) {
@@ -397,7 +402,7 @@ void TransformVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
         stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4 * (i + 1)))), nodeFactory->IRConst(str[i-1])));
     }
     std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4));
-    node = nodeFactory->IRCall(nodeFactory->IRName("Constructor_A_array_char"), std::vector<std::shared_ptr<TIR::Expr>>{nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset)});
+    node = nodeFactory->IRCall(nodeFactory->IRName("Constructor_String_array_char"), std::vector<std::shared_ptr<TIR::Expr>>{nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset)});
 }
 
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
