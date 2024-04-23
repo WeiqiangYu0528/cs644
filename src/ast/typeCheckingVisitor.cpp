@@ -528,7 +528,7 @@ AmbiguousName TypeCheckingVisitor::visitClassInstanceCreationExp(std::shared_ptr
     currentExpInfo.expType = ExpType::Object;
     currentExpInfo.objectName = cname;
     n->constructor = constructor;
-    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", nullptr, ambiguousName.symbolTable)};
+    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", ambiguousName.typeNode, ambiguousName.symbolTable)};
     return ambiguousName;
 }
 
@@ -549,7 +549,9 @@ AmbiguousName TypeCheckingVisitor::visitIdentifierExp(std::shared_ptr<Identifier
 AmbiguousName TypeCheckingVisitor::visitCastExp(std::shared_ptr<CastExp> n) {
     AmbiguousName ambiguousName;
     auto expInfo = GetExpInfo(n->exp);
-    
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) {
+        n->expr = ie->exprs.back();
+    }
     ExpType castType {ExpType::Undefined};
     std::string castObjectTypeName;
     DataType castArrayDataType;
@@ -572,6 +574,8 @@ AmbiguousName TypeCheckingVisitor::visitCastExp(std::shared_ptr<CastExp> n) {
         castObjectTypeName = type->id->name;
         ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->getNameInScope(castObjectTypeName, type->simple));
         ambiguousName.typeNode = type;
+        n->expr.st = ambiguousName.symbolTable;
+        n->expr.type = type;
     }
     else
     {
@@ -611,10 +615,27 @@ AmbiguousName TypeCheckingVisitor::visitCastExp(std::shared_ptr<CastExp> n) {
 }
 
 AmbiguousName TypeCheckingVisitor::visitParExp(std::shared_ptr<ParExp> n) {
-    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) return visitIdentifierExp(ie);
-    if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) return visitCastExp(ce);
-    if (auto me = std::dynamic_pointer_cast<MethodInvocation>(n->exp)) return visitMethodInvocation(me);
-    if (auto cice = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) return visitClassInstanceCreationExp(cice);
+    n->exprs.clear();
+    if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(n->exp)) {
+        AmbiguousName ambiguousName = visitIdentifierExp(ie);
+        n->exprs = ie->exprs;
+        return ambiguousName;
+    }
+    if (auto ce = std::dynamic_pointer_cast<CastExp>(n->exp)) {
+        AmbiguousName ambiguousName = visitCastExp(ce);
+        n->exprs.push_back(ce->expr);
+        return ambiguousName;
+    }
+    if (auto me = std::dynamic_pointer_cast<MethodInvocation>(n->exp)) {
+        AmbiguousName ambiguousName = visitMethodInvocation(me);
+        n->exprs = me->exprs;
+        return ambiguousName;
+    }
+    if (auto cice = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
+        AmbiguousName ambiguousName = visitClassInstanceCreationExp(cice);
+        n->exprs = cice->exprs;
+        return ambiguousName;
+    }
     if (auto as = std::dynamic_pointer_cast<Assignment>(n->exp)) return visitAssignment(as);
     currentExpInfo = GetExpInfo(n->exp);
     if (currentExpInfo.expType == ExpType::String)
@@ -641,7 +662,10 @@ AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAcce
         ambiguousName = visitThisExp(thisExp);
         n->exprs.emplace_back(Expression::LOCAL, "this", nullptr, scope->current);
     }
-    else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) ambiguousName = visitParExp(parExp);
+    else if (auto parExp = std::dynamic_pointer_cast<ParExp>(n->exp)) {
+        ambiguousName = visitParExp(parExp);
+        n->exprs = parExp->exprs;
+    }
     else if (auto classexp = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
         ambiguousName = visitClassInstanceCreationExp(classexp);
         n->exprs = classexp->exprs;
@@ -665,6 +689,7 @@ AmbiguousName TypeCheckingVisitor::visitFieldAccessExp(std::shared_ptr<FieldAcce
         currentExpInfo.expType = ExpType::Integer;
         ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
         ambiguousName.typeNode = std::make_shared<IntType>();
+        n->exprs.emplace_back(Expression::ARRAY, "length", nullptr, nullptr);
         return ambiguousName;
     }
     auto field = ambiguousName.symbolTable->getField(fieldName);
@@ -895,24 +920,27 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     if (auto left = std::dynamic_pointer_cast<IdentifierExp>(n->array)) {
         left->exprs.clear();
         ambiguousName = scope->reclassifyAmbiguousName(left->id->name, left->simple, &(left->exprs));
+        n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     } 
     else if (auto left = std::dynamic_pointer_cast<ParExp>(n->array)) {
         ambiguousName = visitParExp(left);
+        n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     }
     else if (auto left = std::dynamic_pointer_cast<FieldAccessExp>(n->array)) {
         ambiguousName = visitFieldAccessExp(left);
+        n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     }
     else if (auto left = std::dynamic_pointer_cast<MethodInvocation>(n->array)) {
         ambiguousName = visitMethodInvocation(left);
+        n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
         return processExpType(ambiguousName, currentExpInfo, d2e, error);
     }
     else {
         currentExpInfo.expType = ExpType::Any;
     }
-    n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
     return ambiguousName;
 }
 

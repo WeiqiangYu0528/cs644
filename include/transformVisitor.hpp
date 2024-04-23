@@ -10,15 +10,18 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<Scope> scope;
         std::shared_ptr<TIR::NodeFactory> nodeFactory;
         std::shared_ptr<TIR::Node> node;
-        std::vector<std::vector<std::string>>& staticFields;
+        std::vector<std::string>& staticFields;
+        std::vector<std::shared_ptr<TIR::Stmt>>& staticFieldStmts;
         std::vector<std::vector<std::string>>& staticMethods;
         static int labelCounter;
         static int arrayCounter;
+        static int tempCounter;
+        DataType data;
     public:
         std::shared_ptr<SymbolTable> temp_st;
         std::string className;
         std::unordered_map<std::string, std::shared_ptr<SymbolTable>> localTypes; //maps variable names to their (object) types, set during ClassInstanceCreationExp
-        TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods);
+        TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::string>& staticFields, std::vector<std::shared_ptr<TIR::Stmt>>& staticFieldStmts, std::vector<std::vector<std::string>>& staticMethods);
         void visit(std::shared_ptr<PlusExp> n) override;
         void visit(std::shared_ptr<MinusExp> n) override;
         void visit(std::shared_ptr<TimesExp> n) override;
@@ -75,6 +78,6 @@ class TransformVisitor : public Visitor {
         std::shared_ptr<TIR::Mem> getField(std::shared_ptr<TIR::Expr>, std::shared_ptr<SymbolTable> st, const std::string& name) const;
         std::shared_ptr<TIR::ESeq> getLength(std::shared_ptr<TIR::Expr> expr) const;
         std::shared_ptr<TIR::Expr> getString(std::shared_ptr<Exp> exp);
-        std::shared_ptr<TIR::Call> toString(std::shared_ptr<TIR::Expr> exp, DataType type) const;
+        // std::shared_ptr<TIR::Call> toString(std::shared_ptr<TIR::Expr> exp, DataType type) const;
         void reclassifyAmbiguousName(const std::vector<ExpressionObject>& exprs, std::shared_ptr<TIR::Expr>& expr, std::shared_ptr<SymbolTable>& st);
 };

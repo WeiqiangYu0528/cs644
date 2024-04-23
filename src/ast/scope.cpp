@@ -68,22 +68,22 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, s
         else {
             switch (ambiguousName.type) {
                 case AmbiguousNamesType::EXPRESSION:
-                    if ((ambiguousName.symbolTable != nullptr)) {
-                        // only call non-static field/methods
-                        if (ambiguousName.symbolTable->getField(segment) != nullptr) {
-                            // ambiguousName.symbolTable->getField(segment)
-                            ambiguousName = reclassifyAmbiguousNameByField(segment, ambiguousName.symbolTable, false, exprs);
-                        } else {
-                            ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
-                        }
-                    }
-                    else if (ambiguousName.getDataType() == DataType::ARRAY) {
+                    if (ambiguousName.getDataType() == DataType::ARRAY) {
                         if (segment == "length" && !current->getScopeType(ScopeType::ASSIGNMENT)) {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
                             ambiguousName.typeNode = std::make_shared<IntType>();
                             updateExpressionObject("length", nullptr, Expression::ARRAY, nullptr, exprs);
                         }
                         else {
+                            ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
+                        }
+                    }
+                    else if (ambiguousName.symbolTable != nullptr) {
+                        // only call non-static field/methods
+                        if (ambiguousName.symbolTable->getField(segment) != nullptr) {
+                            // ambiguousName.symbolTable->getField(segment)
+                            ambiguousName = reclassifyAmbiguousNameByField(segment, ambiguousName.symbolTable, false, exprs);
+                        } else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
                         }
                     }

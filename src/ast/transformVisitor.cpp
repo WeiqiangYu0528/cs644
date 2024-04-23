@@ -6,14 +6,13 @@
 
 int TransformVisitor::labelCounter = 0;
 int TransformVisitor::arrayCounter = 0;
+int TransformVisitor::tempCounter = 0;
 
-TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods) : scope(s), nodeFactory(nf), node(nullptr), staticFields(staticFields), staticMethods(staticMethods) {
+TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::string>& staticFields, std::vector<std::shared_ptr<TIR::Stmt>>& staticFieldStmts, std::vector<std::vector<std::string>>& staticMethods) : scope(s), nodeFactory(nf), node(nullptr), staticFields(staticFields), staticFieldStmts(staticFieldStmts), staticMethods(staticMethods) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
     className = n->id->name;
-    std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
-    std::vector<std::string> staticFieldVec;
     std::vector<std::string> staticMethodVec;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
     for (auto fieldDecl: n->declarations[0]) {
@@ -22,7 +21,7 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
         std::replace(fieldName.begin(), fieldName.end(), '.', '_');
         if (field->isStatic) {
             field->accept(this);
-            staticFieldVec.push_back(fieldName);
+            staticFields.push_back(fieldName);
             staticFieldStmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), getExpr()));
         }
     }
@@ -45,9 +44,6 @@ void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
         staticMethodVec.push_back(constructor->getSignature());
     }
     std::shared_ptr<TIR::CompUnit> compUnit = nodeFactory->IRCompUnit(n->id->name, methods);
-    staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
-    compUnit->appendFunc(nodeFactory->IRFuncDecl(n->id->name + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
-    staticFields.push_back(std::move(staticFieldVec));
     staticMethods.push_back(std::move(staticMethodVec));
     node = compUnit;
 }
@@ -56,7 +52,6 @@ void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     className = n->id->name;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
     node = nodeFactory->IRCompUnit(className, methods);
-    staticFields.push_back(std::vector<std::string>{});
     staticMethods.push_back(std::vector<std::string>{});
 }
 
@@ -111,8 +106,8 @@ void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
         std::shared_ptr<SymbolTable> st = scope->getNameInScope("String", true);
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         std::vector<std::shared_ptr<TIR::Expr>> args;
-        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1");
-        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2");
+        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1_" + tempCounter);
+        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2_" + tempCounter++);
         stmts.push_back(nodeFactory->IRMove(str1, getString(n->exp1)));
         stmts.push_back(nodeFactory->IRMove(str2, getString(n->exp2)));
         args.push_back(str2);
@@ -128,13 +123,15 @@ void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
         std::shared_ptr<TIR::Call> call = nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
         call->setSignature(funcSignature);
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
+        data = DataType::STRING;
     } else {
-        std::cout << "non string" << std::endl;
+        // std::cout << "non string" << std::endl;
         n->exp1->accept(this);
         auto exp1 = getExpr();
         n->exp2->accept(this);
         auto exp2 = getExpr();
         node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+        data = DataType::INT;
     }
 }
 
@@ -251,6 +248,7 @@ void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
     n->exp2->accept(this);
     auto exp2 = getExpr();
     node = nodeFactory->IRBinOp(TIR::BinOp::OpType::EQ, exp1, exp2);
+    data = DataType::BOOLEAN;
 }
 
 void TransformVisitor::visit(std::shared_ptr<NotEqualExp> n) {
@@ -352,18 +350,22 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<IntegerLiteralExp> n) {
+    data = DataType::INT;
     node = nodeFactory->IRConst(static_cast<int>(n->value));
 }
 
 void TransformVisitor::visit(std::shared_ptr<BoolLiteralExp> n) {
+    data = DataType::BOOLEAN;
     node = nodeFactory->IRConst(static_cast<int>(n->value));
 }
 
 void TransformVisitor::visit(std::shared_ptr<CharLiteralExp> n) {
+    data = DataType::CHAR;
     node = nodeFactory->IRConst(static_cast<int>(n->value));
 }
 
 void TransformVisitor::visit(std::shared_ptr<NulLiteralExp> n) {
+    data = DataType::NULLTYPE;
     node = nodeFactory->IRConst(0);
 }
 
@@ -472,6 +474,7 @@ void TransformVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
     }
     std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4));
     node = nodeFactory->IRCall(nodeFactory->IRName("Constructor_String_array_char"), std::vector<std::shared_ptr<TIR::Expr>>{nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset)});
+    data = DataType::STRING;
 }
 
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
@@ -508,6 +511,7 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         call->setSignature(n->method->getSignature());
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
     }
+    data = n->expr.type->type;
 }
 
 void TransformVisitor::visit(std::shared_ptr<ParExp> n) {
@@ -601,11 +605,15 @@ void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     //         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::SUB, temp, nodeFactory->IRConst(4))));
     //     }
     // }
-    // if (!isArray) {
-        // if (n->simple) node = nodeFactory->IRTemp(str);
     std::shared_ptr<TIR::Expr> expr;
     std::shared_ptr<SymbolTable> st;
     reclassifyAmbiguousName(n->exprs, expr, st);
+    std::shared_ptr<Type> type = n->exprs.back().type;
+    data = type->type;
+    if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
+    if (data == DataType::OBJECT && type->typeToString() == "String") {
+        data = DataType::STRING;
+    } 
     node = expr;
     // }
 }
@@ -787,45 +795,52 @@ void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObjec
     temp_st = st;
 }
 
+// std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp) {
+   
+//     DataType data;
+    // if (auto integer = std::dynamic_pointer_cast<IntegerLiteralExp>(exp)) {
+    //     data = DataType::INT;
+    // }
+    // else if (auto boolean = std::dynamic_pointer_cast<BoolLiteralExp>(exp)) {
+    //     data = DataType::BOOLEAN;
+    // }
+    // else if (auto character = std::dynamic_pointer_cast<CharLiteralExp>(exp)) {
+    //     data = DataType::CHAR;
+    // }
+    // else if (auto nullexp = std::dynamic_pointer_cast<NulLiteralExp>(exp)) {
+    //     data = DataType::NULLTYPE;
+    // }
+    // else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(exp) ) {
+    //     return expr;
+    // }
+    // else if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(exp)) {
+    //     data = ie->exprs.back().type->type;
+    //     if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
+    //     if (data == DataType::OBJECT && ie->exprs.back().type->typeToString() == "String") {
+    //         return expr;
+    //     } 
+    // }
+    // else if (auto plusexp = std::dynamic_pointer_cast<PlusExp>(exp)) {
+    //     if (plusexp->stringConcat) return expr;
+    //     data = DataType::INT;
+    // }
+    // else if (auto parexp = std::dynamic_pointer_cast<ParExp>(exp)) {
+    //     if (auto equalexp = std::dynamic_pointer_cast<EqualExp>(parexp->exp)) {
+    //         std::cout << "called equal" << std::endl;
+    //         data = DataType::BOOLEAN;
+    //     }
+    //     else if (auto methodexp = std::dynamic_pointer_cast<MethodInvocation>(parexp->exp)) {
+    //         if (methodexp->expr.type->typeToString() == "String") return expr;
+    //     }
+    // }
+//     return toString(expr, data);
+// }
+
 std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp) {
     exp->accept(this);
     std::shared_ptr<TIR::Expr> expr = getExpr();
-    DataType data;
-    if (auto integer = std::dynamic_pointer_cast<IntegerLiteralExp>(exp)) {
-        data = DataType::INT;
-    }
-    else if (auto boolean = std::dynamic_pointer_cast<BoolLiteralExp>(exp)) {
-        data = DataType::BOOLEAN;
-    }
-    else if (auto character = std::dynamic_pointer_cast<CharLiteralExp>(exp)) {
-        data = DataType::CHAR;
-    }
-    else if (auto nullexp = std::dynamic_pointer_cast<NulLiteralExp>(exp)) {
-        data = DataType::NULLTYPE;
-    }
-    else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(exp) ) {
-        return expr;
-    }
-    else if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(exp)) {
-        data = ie->exprs.back().type->type;
-        if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
-        if (data == DataType::OBJECT && ie->exprs.back().type->typeToString() == "String") {
-            return expr;
-        } 
-    }
-    else if (auto plusexp = std::dynamic_pointer_cast<PlusExp>(exp)) {
-        if (plusexp->stringConcat) return expr;
-        data = DataType::INT;
-    }
-    else if (auto parexp = std::dynamic_pointer_cast<ParExp>(exp)) {
-        return expr;
-    }
-    return toString(expr, data);
-}
-
-std::shared_ptr<TIR::Call> TransformVisitor::toString(std::shared_ptr<TIR::Expr> exp, DataType type) const {
     std::string funcName;
-    switch (type) {
+    switch (data) {
         case DataType::INT:
             funcName = "String_valueOf_int_String";
             break;
@@ -836,8 +851,7 @@ std::shared_ptr<TIR::Call> TransformVisitor::toString(std::shared_ptr<TIR::Expr>
             funcName = "String_valueOf_char_String";
             break;
         case DataType::STRING:
-            funcName = "String_valueOf_String_String";
-            break;
+            return expr;
         case DataType::NULLTYPE:
         case DataType::OBJECT:
             funcName = "String_valueOf_Object_String";
@@ -846,6 +860,6 @@ std::shared_ptr<TIR::Call> TransformVisitor::toString(std::shared_ptr<TIR::Expr>
             assert(false);
     }
     std::vector<std::shared_ptr<TIR::Expr>> args;
-    args.push_back(exp);
+    args.push_back(expr);
     return nodeFactory->IRCall(nodeFactory->IRName(funcName), args);
 }
