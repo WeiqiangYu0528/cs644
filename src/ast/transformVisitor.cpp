@@ -204,8 +204,17 @@ void TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
 
 void TransformVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
 
+    
+
     //if true, transform to true
     n->exp->accept(this);
+
+    if (className == "String") {
+        node = nodeFactory->IRConst(true);
+        return;
+    }
+
+
     std::shared_ptr<SymbolTable> exp_st;
     std::shared_ptr<IdentifierExp> idExp = std::dynamic_pointer_cast<IdentifierExp>(n->exp);
     if (idExp != nullptr && localTypes.contains(idExp->id->name)) {
