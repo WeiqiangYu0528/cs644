@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "transformVisitor.hpp"
 #include "Configuration.hpp"
+#include "subtypeTable.hpp"
 
 int TransformVisitor::labelCounter = 0;
 int TransformVisitor::arrayCounter = 0;
@@ -198,6 +199,49 @@ void TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
     n->exp2->accept(this);
     auto exp2 = getExpr();
     node = nodeFactory->IRBinOp(TIR::BinOp::OpType::GEQ, exp1, exp2);
+}
+
+void TransformVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
+
+    //if true, transform to true
+    n->exp->accept(this);
+    std::shared_ptr<SymbolTable> exp_st;
+    std::shared_ptr<IdentifierExp> idExp = std::dynamic_pointer_cast<IdentifierExp>(n->exp);
+    if (idExp != nullptr && localTypes.contains(idExp->id->name)) {
+        exp_st = localTypes[idExp->id->name];
+    } else {
+        exp_st = temp_st;
+    }
+    if (exp_st == nullptr) {
+        node = nodeFactory->IRConst(false);
+        return;
+    }
+
+    std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(n->type);
+    std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(n->type);
+    if (idType == nullptr && arrayType == nullptr) {
+        throw std::runtime_error("Error: Instanceof used with type that isn't an IdentifierType or ArrayType");
+    }
+
+
+    if (idType) {
+
+        std::shared_ptr<SymbolTable> type_st = scope->getNameInScope(idType->id->name, true);
+        if (idType->id->name == "Object") {
+            node = nodeFactory->IRConst(true);
+            return;
+        }
+        
+        if ((subtypeTable.contains(exp_st) && subtypeTable.at(exp_st).contains(type_st))
+        || exp_st == type_st) {
+            node = nodeFactory->IRConst(true);
+        } else {
+            node = nodeFactory->IRConst(false);
+        }
+    }
+
+//if exp type is null, value should be false. Test this!!
+//if exp type is array, we currently don't support it
 }
 
 void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
@@ -518,6 +562,12 @@ void TransformVisitor::visit(std::shared_ptr<Program> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
+    if (auto cice = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
+        localTypes[n->id->name] = scope->getNameInScope(cice->constructor->constructorName->name, true);
+    } else if (auto nullExp = std::dynamic_pointer_cast<NulLiteralExp>(n->exp)) {
+        localTypes[n->id->name] = nullptr;
+    }
+
     auto temp = nodeFactory->IRTemp(n->id->name);
     std::shared_ptr<TIR::Expr> exp;
     if (n->exp) {
@@ -733,6 +783,7 @@ void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObjec
         st = exprObj.st;
     }
     assert(expr != nullptr);
+    temp_st = st;
 }
 
 std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp) {

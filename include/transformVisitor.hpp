@@ -15,7 +15,9 @@ class TransformVisitor : public Visitor {
         static int labelCounter;
         static int arrayCounter;
     public:
+        std::shared_ptr<SymbolTable> temp_st;
         std::string className;
+        std::unordered_map<std::string, std::shared_ptr<SymbolTable>> localTypes; //maps variable names to their (object) types, set during ClassInstanceCreationExp
         TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods);
         void visit(std::shared_ptr<PlusExp> n) override;
         void visit(std::shared_ptr<MinusExp> n) override;
@@ -40,7 +42,7 @@ class TransformVisitor : public Visitor {
         void visit(std::shared_ptr<GreaterExp> n) override;
         void visit(std::shared_ptr<LessEqualExp> n) override;
         void visit(std::shared_ptr<GreaterEqualExp> n) override;       
-        // void visit(std::shared_ptr<InstanceOfExp> n) override;  
+        void visit(std::shared_ptr<InstanceOfExp> n) override;  
         void visit(std::shared_ptr<EqualExp> n) override;
         void visit(std::shared_ptr<NotEqualExp> n) override;
         void visit(std::shared_ptr<ConditionalAndExp> n) override;

@@ -358,10 +358,9 @@ void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
     }
 }
 
-
-
+/*
 //require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
-void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+void populateSubtypeTable2(std::shared_ptr<Program> n, bool &error) {
     std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
     if (subtypeTable.contains(decl)) return;
 
@@ -389,7 +388,76 @@ void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
             }
         }
     }
+}*/
+
+/*
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateStringSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    std::string fullClassName = /*n->package->id->name + "." +*/// decl->id->name;
+ /*   if (subtypeTable.contains(fullClassName)) return;
+
+    subtypeTable.insert({fullClassName, {}});
+    subtypeTable.at(fullClassName).insert("Object");
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+        //std::string fullSuperClassName = /*superTable->getPackage() + "." +*/ //superTable->getClassName();
+       // std::string fullSuperClassName = /*superTable->getPackage() + "." +*/ //superTable->getAst()->classOrInterfaceDecl->id->name;
+
+        //if the superDecl is already in our set, do a check and then continue
+       /* if (subtypeTable.at(fullClassName).contains(fullSuperClassName)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(fullSuperClassName)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(fullClassName).insert(fullSuperClassName);
+            for (std::string fullAncestorClassName : subtypeTable.at(fullSuperClassName)) {
+                if (subtypeTable.at(fullClassName).contains(fullAncestorClassName)) continue;
+                subtypeTable.at(fullClassName).insert(fullAncestorClassName);
+            }
+        }
+    }
+}*/
+
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    std::string fullClassName = /*n->package->id->name + "." +*/ decl->id->name;
+    std::shared_ptr<SymbolTable> table = n->scope->current;
+    if (subtypeTable.contains(table)) return;
+
+    subtypeTable.insert({table, {}});
+    /////subtypeTable.at(st).insert("Object");
+
+    for (auto superTable : n->scope->supers) {
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(table).contains(superTable)) {
+            //confirm that superTable's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(superTable)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(table).insert(superTable);
+            for (std::shared_ptr<SymbolTable> ancestorTable : subtypeTable.at(superTable)) {
+                if (subtypeTable.at(table).contains(ancestorTable)) continue;
+                subtypeTable.at(table).insert(ancestorTable);
+            }
+        }
+    }
 }
+
 
 
 
