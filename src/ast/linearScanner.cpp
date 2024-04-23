@@ -51,6 +51,8 @@ void LinearScanner::visit(std::shared_ptr<Return> ret) {
 
 void LinearScanner::visit(std::shared_ptr<Call_s> call) {
     visit(call->getTarget());
+    for (auto& arg: call->getArgs())
+        visit(arg);
 }
 
 void LinearScanner::visit(std::shared_ptr<BinOp> node) {   
@@ -63,6 +65,7 @@ void LinearScanner::visit(std::shared_ptr<Mem> node) {
 }
 
 void LinearScanner::visit(std::shared_ptr<Temp> node) {
+    // std::cout  << "ls:" << node->getName() << std::endl;
     updateLiveInterval(node->getName(), currentPos);   
 }
 
@@ -84,58 +87,57 @@ void LinearScanner::updateLiveInterval(const std::string& name, int position) {
     live_intervals_end[name] = position;
 }
 
-void LinearScanner::allocateRegisters(std::set<std::string> free_registers) {
-    auto R = free_registers.size();
+void LinearScanner::allocateRegisters(std::set<std::string> available_registers) {
     std::vector<Interval> intervals;
+    free_registers = available_registers;
+
     for (auto& p : live_intervals_start) {
         intervals.push_back({p.first, p.second, live_intervals_end[p.first]});
     }
+
     std::sort(intervals.begin(), intervals.end(), [](const Interval& a, const Interval& b) {
         return a.start < b.start;
     });
 
+
     for (auto& interval : intervals) {
        
-        expireOldIntervals(interval.start, free_registers);
-       
-        if (active.size() == R) {
+        expireOldIntervals(interval);
+        if(active.size() == available_registers.size()) {
             spillAtInterval(interval);
-        } else {            
-            if(free_registers.size() > 0)
-            {
-                std::string reg = *free_registers.begin();
-                free_registers.erase(reg);     
-                register_allocation[interval.name] = reg;
-                active.insert(interval);
-            }  
-
+        }
+        else
+        {
+            std::string reg = *free_registers.begin();
+            free_registers.erase(reg);     
+            register_allocation[interval.name] = reg;
+            active.insert(interval);
         }
     }
 }
 
-
-void LinearScanner::expireOldIntervals(int currentStart, std::set<std::string>& free_registers) {
-    while (!active.empty() && (*active.begin()).end < currentStart) {
-        auto it = active.begin();
-        Interval interval = *it;
-        active.erase(it);
-        free_registers.insert(register_allocation[interval.name]);
+void LinearScanner::expireOldIntervals(const Interval& current_interval) {
+    for (auto it = active.begin(); it != active.end(); ) {
+        if (it->end >= current_interval.start)
+            return;
+        auto name = it->name;
+        free_registers.insert(register_allocation[name]);
+        it = active.erase(it);                                
     }
 }
 
 void LinearScanner::spillAtInterval(const Interval& interval) {
-    auto it = --active.end();
-    Interval last = *it;
-    if (last.end > interval.end) {
-        register_allocation[interval.name] = register_allocation[last.name];
-        // spills[last.name] = generateNewStackLocation();
-        spills.insert(last.name);
+    auto it = std::prev(active.end());
+    Interval spill = *it;
+    if (spill.end > interval.end) {
+        register_allocation[interval.name] = register_allocation[spill.name];
+        spills.insert(spill.name);
         active.erase(it);
         active.insert(interval);
     }
-    else
-        // spills[interval.name] = generateNewStackLocation();
+    else {
         spills.insert(interval.name);
+    }
 }
 
 int LinearScanner::generateNewStackLocation() {

@@ -810,13 +810,12 @@ int main(int argc, char *argv[])
                 }
 
                 for (auto &[funcName, funcDecl] : compUnit->getFunctions())
-                {
-    
-                TIR::LinearScanner scanner;
-                scanner.visit(funcDecl);
-                scanner.allocateRegisters({"eax", "ecx", "edx"});
-                tiler.regManager.reset(scanner.register_allocation, scanner.spills);
-                tiler.currentStackOffset = 0;
+                {                    
+                    TIR::LinearScanner scanner;
+                    scanner.visit(funcDecl);
+                    scanner.allocateRegisters({"edx",});
+                    tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills, tiler.currentStackOffset, tiler.tempToStackOffset);
+                    tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();
                     std::cout << funcName << " " << funcDecl->numTemps << std::endl;
                     assemblyCodes.push_back("\nglobal " + funcDecl->getName());

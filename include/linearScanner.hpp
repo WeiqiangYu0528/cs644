@@ -4,12 +4,6 @@
 #include <queue>
 namespace TIR {
 
-    struct VarInfo {
-        std::string registerAssigned;
-        int startTime;
-        int endTime;
-    };
-
     class LinearScanner
     {
     public:
@@ -23,12 +17,16 @@ namespace TIR {
             int start;
             int end;
             bool operator<(const Interval& other) const {
-                return end < other.end;
+            if (end != other.end)
+                    return end < other.end;
+                return name < other.name;
             }            
         };
+        std::set<Interval> active;
+        std::set<std::string> free_registers;
         std::unordered_map<std::string, Interval> intervalTable;
        
-        std::set<Interval> active;
+ 
         int currentPos = 0;
 
         LinearScanner();
@@ -53,7 +51,7 @@ namespace TIR {
 
         void updateLiveInterval(const std::string& name, int position);
         void allocateRegisters(std::set<std::string> free_registers);
-        void expireOldIntervals(int currentStart, std::set<std::string>& free_registers);
+        void expireOldIntervals(const Interval& interval);
         void spillAtInterval(const Interval& interval);
         int generateNewStackLocation();
     };

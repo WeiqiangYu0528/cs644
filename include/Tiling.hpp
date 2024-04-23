@@ -6,7 +6,7 @@
 #include "symbolTable.hpp"
 #include "linearScanner.hpp"
 
-
+#include <cassert>
 #include <unordered_map>
 #include <string>
 #include <stdexcept>
@@ -14,25 +14,30 @@
 
 class RegisterManager {
 private:
-    std::unordered_map<std::string, std::string> registerAlloc;
-    std::set<std::string> spills;
-    std::set<std::string> spilled;
+    std::unordered_map<std::string, std::string>& registerAlloc;
+    std::set<std::string>& spills;
+    int& currentStackOffset;
+    std::unordered_map<std::string, int>& tempToStackOffset;
+
     std::unordered_map<std::string, std::string> regUsage;
+    std::set<std::string> spilledVars;
 
 public:
-    RegisterManager() {}
+    RegisterManager(std::unordered_map<std::string, std::string>& regAlloc, std::set<std::string>& spills,
+                int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset) : 
+                registerAlloc(regAlloc),
+                spills(spills),
+                currentStackOffset(currentStackOffset),
+                tempToStackOffset(tempToStackOffset)                
+                {
+                    for (const auto& pair : regAlloc) {
+                        if (!pair.second.empty()) {
+                            regUsage[pair.second] = "";
+                        }
+                    }
+                }
     
-    void reset(const std::unordered_map<std::string, std::string>& regAlloc,
-                const std::set<std::string>& spills)
-    {
-        this->registerAlloc = regAlloc;
-        this->spills = spills;
-        for (const auto& pair : regAlloc) {
-            regUsage[pair.second] = "";
-        }
-
-    }
-    std::string offset(std::string var, int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset)
+    std::string offset(const std::string& var)
     {
         if (!tempToStackOffset.contains(var)) {
             currentStackOffset -= 4;
@@ -45,34 +50,61 @@ public:
         return offset_string;
     }
 
-    std::string getReg(std::string newVar, int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset, std::vector<std::string>& assembly) {
-        auto reg = registerAlloc[newVar];
-        auto regVar = regUsage[reg];
-        if (!regVar.empty()) {
-            if (newVar == regVar)
-                return reg;
-            else {                
-                if(spills.contains(regVar)) {
-                    auto offset_string = offset(regVar, currentStackOffset, tempToStackOffset);
-                    spilled.insert(regVar);
-                    assembly.push_back("mov [ebp" + offset_string  + "]," + reg);     
-                }
-                
-                if(spilled.contains(newVar)) {
-                    auto offset_string = offset(newVar, currentStackOffset, tempToStackOffset);
-                    assembly.push_back("mov " + reg + ", " +  "[ebp" + offset_string  + "]"); 
-                    spilled.erase(newVar);
-                }
+    void spillToStack(const std::string& var, const std::string& offset_string, const std::string& reg, std::vector<std::string>& assembly) {
+        assembly.push_back("mov [ebp" + offset_string  + "], " + reg);   
+        spilledVars.insert(var);
+    }    
 
-                regUsage[reg] = newVar;
-                
-                return reg;
-            }            
+    void temporaryUseReg(const std::string& reg, std::vector<std::string>& assembly, std::function<void()> useReg) {
+        if (!regUsage[reg].empty()) {
+            auto var = regUsage[reg];
+            std::string offset_string = offset(var);
+            spillToStack(var, offset_string, reg, assembly);
         }
-        else {
-            regUsage[reg] = newVar;                             
+
+        useReg();
+
+        if (!regUsage[reg].empty()) {
+            std::string var = regUsage[reg];
+            std::string offset_string = offset(var);
+            assembly.push_back("mov " + reg + ", [ebp" + offset_string + "]");
         }
-    }
+    }    
+
+    std::string getRegOrStackOffset(std::string var, std::vector<std::string>& assembly) {
+        // 如果var目前的状态是spilled
+            // 返回其stack_offset
+        if (spilledVars.contains(var)) {
+            auto offset_string = offset(var);
+            return "[ebp" + offset_string  + "]";
+        }            
+        // 如果var目前没有被spilled
+            // 如果var可以被分配寄存器
+                // 如果var被分配的寄存器正在被currentVar使用
+                    // 如果currentVar需要被spill到stack
+                        // spill currentVar to stack
+                // regUsage设置成var
+                // 返回寄存器名
+
+        if (registerAlloc.contains(var)) {
+            auto& reg = registerAlloc[var];
+            auto& currentVar = regUsage[reg];
+            if (!currentVar.empty() && currentVar != var) {
+                if (spills.contains(currentVar)) {
+                    auto offset_string = offset(currentVar);
+                    spillToStack(currentVar, offset_string, reg, assembly);                   
+                }
+                regUsage[reg] = var;            
+            }
+            return reg;            
+        }
+        
+            // 如果var不可以被分配寄存器, 设置其在stack上
+            // 返回其stack_offset
+        spilledVars.insert(var);
+        auto offset_string = offset(var);
+        return "[ebp" + offset_string  + "]";        
+    }           
 
 };
 
@@ -83,7 +115,7 @@ public:
     std::shared_ptr<SymbolTable> st;
     std::vector<std::string>& staticFields;
     std::unordered_map<std::string, int> tempToStackOffset;
-    RegisterManager regManager;
+    std::unique_ptr<RegisterManager> regManager;
     
     int currentStackOffset = 0;
     bool callFlag = false;

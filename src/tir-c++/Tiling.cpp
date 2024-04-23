@@ -1,7 +1,6 @@
 #include "Tiling.hpp"
 #include "unordered_set"
-#include <map>
-#include <cassert>
+
 // ISA: X86
 // Opcodes:
 //      mov | add | sub | mul | div | inc | dec | test | cmp | and | or | xor | not | shl
@@ -58,7 +57,7 @@ void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::s
     }
 }
 
-void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {    
+void Tiling::tileMove(const std::shared_ptr<TIR::Move>& node, std::vector<std::string>& assembly) {
     move("ebx", tileExp(node->getSource(), assembly), assembly);
     move(tileExp(node->getTarget(), assembly), "ebx", assembly);
 }
@@ -252,6 +251,22 @@ std::string Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<s
 }
     // auto t = regManager.getReg(localVarName, currentStackOffset, tempToStackOffset, assembly);
 std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly) {
+    // std::string localVarName{node->getName()};
+    // if (localVarName == TIR::Configuration::VTABLE) {
+    //     return st->getClassName() + "_vtable"; 
+    // }
+
+    // if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {
+    //     auto reg = regManager->getRegOrStackOffset(localVarName, assembly);
+    //     move(reg, "eax", assembly);
+    //     callFlag = false;
+    //     return reg;
+    // }
+    // if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
+    //     return "[" + localVarName + "]";
+    // else 
+    //     return regManager->getRegOrStackOffset(localVarName, assembly);
+
     std::string localVarName{node->getName()};
     if (localVarName == TIR::Configuration::VTABLE) {
         return st->getClassName() + "_vtable"; 
@@ -271,10 +286,8 @@ std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector
         callFlag = false;
         return "[ebp" + offset_string  + "]";
     }
-    // if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
-    //     return "[" + localVarName + "]";
-    // else 
-    //     return "[ebp" + offset_string  + "]";
-    return "[ebp" + offset_string  + "]";
-
+    if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
+        return "[" + localVarName + "]";
+    else 
+        return "[ebp" + offset_string  + "]";
 }
