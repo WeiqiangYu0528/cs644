@@ -710,10 +710,16 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
             ambiguousName = visitFieldAccessExp(fieldexp);
             n->exprs = fieldexp->exprs;
         }
-        else if (auto methodexp = std::dynamic_pointer_cast<MethodInvocation>(n->primary)) ambiguousName = visitMethodInvocation(methodexp);
+        else if (auto methodexp = std::dynamic_pointer_cast<MethodInvocation>(n->primary)) {
+            ambiguousName = visitMethodInvocation(methodexp);
+            n->exprs.push_back(methodexp->expr);
+        }
         else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(n->primary)) ambiguousName = visitStringLiteralExp(stringexp);
         else if (auto newarrexp = std::dynamic_pointer_cast<NewArrayExp>(n->primary)) ambiguousName = visitNewArrayExp(newarrexp);
-        else if (auto arraccessexp = std::dynamic_pointer_cast<ArrayAccessExp>(n->primary)) ambiguousName = visitArrayAccessExp(arraccessexp);
+        else if (auto arraccessexp = std::dynamic_pointer_cast<ArrayAccessExp>(n->primary)) {
+            ambiguousName = visitArrayAccessExp(arraccessexp);
+            n->exprs.push_back(arraccessexp->expr);
+        }
         if (ambiguousName.type == AmbiguousNamesType::ERROR || ambiguousName.symbolTable == nullptr) {
             std::cerr << "Error: Invalid method name " << methodName << std::endl;
             error = true;
@@ -820,6 +826,7 @@ AmbiguousName TypeCheckingVisitor::visitMethodInvocation(std::shared_ptr<MethodI
     if (ie) methodSt = ambiguousName.symbolTable->getScope()->getNameInScope(ie->id->name, ie->simple);
     ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, methodSt);
     ambiguousName.typeNode = method->type;
+    n->expr = ExpressionObject(Expression::LOCAL, "tmp",  method->type, methodSt);
     return ambiguousName;
 }
 
@@ -904,7 +911,8 @@ AmbiguousName TypeCheckingVisitor::visitArrayAccessExp(std::shared_ptr<ArrayAcce
     }
     else {
         currentExpInfo.expType = ExpType::Any;
-    }    
+    }
+    n->expr = ExpressionObject(Expression::LOCAL, "tmp",  ambiguousName.typeNode, ambiguousName.symbolTable);
     return ambiguousName;
 }
 

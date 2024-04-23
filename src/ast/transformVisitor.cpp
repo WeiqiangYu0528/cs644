@@ -128,6 +128,7 @@ void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
         call->setSignature(funcSignature);
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
     } else {
+        std::cout << "non string" << std::endl;
         n->exp1->accept(this);
         auto exp1 = getExpr();
         n->exp2->accept(this);
@@ -762,6 +763,10 @@ std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp)
         } 
     }
     else if (auto plusexp = std::dynamic_pointer_cast<PlusExp>(exp)) {
+        if (plusexp->stringConcat) return expr;
+        data = DataType::INT;
+    }
+    else if (auto parexp = std::dynamic_pointer_cast<ParExp>(exp)) {
         return expr;
     }
     return toString(expr, data);
