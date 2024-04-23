@@ -217,25 +217,31 @@ void TransformVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
         return;
     }
 
+    std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(n->type);
     std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(n->type);
-    if (idType == nullptr) {
-        throw std::runtime_error("Error: Instanceof used with type that isn't an IdentifierType");
+    if (idType == nullptr && arrayType == nullptr) {
+        throw std::runtime_error("Error: Instanceof used with type that isn't an IdentifierType or ArrayType");
     }
-    std::shared_ptr<SymbolTable> type_st = scope->getNameInScope(idType->id->name, true);
-    if (idType->id->name == "Object") {
-        node = nodeFactory->IRConst(true);
-        return;
-    }
-    
-    if ((subtypeTable.contains(exp_st) && subtypeTable.at(exp_st).contains(type_st))
-    || exp_st == type_st) {
-        node = nodeFactory->IRConst(true);
-    } else {
-        node = nodeFactory->IRConst(false);
+
+
+    if (idType) {
+
+        std::shared_ptr<SymbolTable> type_st = scope->getNameInScope(idType->id->name, true);
+        if (idType->id->name == "Object") {
+            node = nodeFactory->IRConst(true);
+            return;
+        }
+        
+        if ((subtypeTable.contains(exp_st) && subtypeTable.at(exp_st).contains(type_st))
+        || exp_st == type_st) {
+            node = nodeFactory->IRConst(true);
+        } else {
+            node = nodeFactory->IRConst(false);
+        }
     }
 
 //if exp type is null, value should be false. Test this!!
-
+//if exp type is array, we currently don't support it
 }
 
 void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
