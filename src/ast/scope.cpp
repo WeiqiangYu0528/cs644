@@ -72,7 +72,7 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, s
                         if (segment == "length" && !current->getScopeType(ScopeType::ASSIGNMENT)) {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
                             ambiguousName.typeNode = std::make_shared<IntType>();
-                            updateExpressionObject("length", nullptr, Expression::ARRAY, nullptr, exprs);
+                            updateExpressionObject("length", nullptr, Expression::ARRAY, ambiguousName.typeNode, exprs);
                         }
                         else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);

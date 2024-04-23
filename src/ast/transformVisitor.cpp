@@ -106,13 +106,13 @@ void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
         std::shared_ptr<SymbolTable> st = scope->getNameInScope("String", true);
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         std::vector<std::shared_ptr<TIR::Expr>> args;
-        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1_" + tempCounter);
-        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2_" + tempCounter++);
+        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1_" + std::to_string(tempCounter));
+        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2_" + std::to_string(tempCounter++));
         stmts.push_back(nodeFactory->IRMove(str1, getString(n->exp1)));
         stmts.push_back(nodeFactory->IRMove(str2, getString(n->exp2)));
         args.push_back(str2);
         args.push_back(str1);
-        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
+        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("strtdv");
         stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(str1)));
         size_t i = 0;
         const std::string funcSignature{"String_concat_String_String"};
@@ -511,7 +511,7 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         call->setSignature(n->method->getSignature());
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
     }
-    data = n->expr.type->type;
+    updateDataType(n->expr.type);
 }
 
 void TransformVisitor::visit(std::shared_ptr<ParExp> n) {
@@ -608,12 +608,7 @@ void TransformVisitor::visit(std::shared_ptr<IdentifierExp> n) {
     std::shared_ptr<TIR::Expr> expr;
     std::shared_ptr<SymbolTable> st;
     reclassifyAmbiguousName(n->exprs, expr, st);
-    std::shared_ptr<Type> type = n->exprs.back().type;
-    data = type->type;
-    if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
-    if (data == DataType::OBJECT && type->typeToString() == "String") {
-        data = DataType::STRING;
-    } 
+    updateDataType(n->exprs.back().type);
     node = expr;
     // }
 }
@@ -862,4 +857,13 @@ std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp)
     std::vector<std::shared_ptr<TIR::Expr>> args;
     args.push_back(expr);
     return nodeFactory->IRCall(nodeFactory->IRName(funcName), args);
+}
+
+void TransformVisitor::updateDataType(std::shared_ptr<Type> type) {
+    assert(type != nullptr);
+    data = type->type;
+    if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
+    if (data == DataType::OBJECT && type->typeToString() == "String") {
+        data = DataType::STRING;
+    }
 }
