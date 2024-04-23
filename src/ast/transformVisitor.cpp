@@ -2,50 +2,66 @@
 #include <algorithm>
 #include "transformVisitor.hpp"
 #include "Configuration.hpp"
+#include "subtypeTable.hpp"
 
 int TransformVisitor::labelCounter = 0;
 int TransformVisitor::arrayCounter = 0;
 
-TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf) : scope(s), nodeFactory(nf), node(nullptr) {
+TransformVisitor::TransformVisitor(std::shared_ptr<Scope> s, std::shared_ptr<TIR::NodeFactory> nf, std::vector<std::vector<std::string>>& staticFields, std::vector<std::vector<std::string>>& staticMethods) : scope(s), nodeFactory(nf), node(nullptr), staticFields(staticFields), staticMethods(staticMethods) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<ClassDecl> n) {
     className = n->id->name;
-    std::vector<std::shared_ptr<TIR::Move>> staticFields;
+    std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
+    std::vector<std::string> staticFieldVec;
+    std::vector<std::string> staticMethodVec;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
     for (auto fieldDecl: n->declarations[0]) {
         auto field = std::dynamic_pointer_cast<Field>(fieldDecl);
         std::string fieldName{className + "." + field->fieldName->name};
+        std::replace(fieldName.begin(), fieldName.end(), '.', '_');
         if (field->isStatic) {
             field->accept(this);
-            staticFields.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), getExpr()));
+            staticFieldVec.push_back(fieldName);
+            staticFieldStmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp(fieldName), getExpr()));
         }
     }
     for (auto methodDecl: n->declarations[1]) {
         auto method = std::dynamic_pointer_cast<Method>(methodDecl);
-        if (!method->isNative) {
-            method->accept(this);
-            methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+        if (!method->isAbstract) {
+            if (method->isStatic && method->isNative) {
+                methods[method->getSignature()] = nodeFactory->IRFuncDecl(method->getSignature(), 1, nodeFactory->IRSeq(std::vector<std::shared_ptr<TIR::Stmt>>{}));
+            } else {
+                method->accept(this);
+                methods[method->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+            }
+            staticMethodVec.push_back(method->getSignature());
         }
     }
     for (auto constructorDecl: n->declarations[2]) {
         auto constructor = std::dynamic_pointer_cast<Constructor>(constructorDecl);
         constructor->accept(this);
         methods[constructor->getSignature()] = std::dynamic_pointer_cast<TIR::FuncDecl>(node);
+        staticMethodVec.push_back(constructor->getSignature());
     }
     std::shared_ptr<TIR::CompUnit> compUnit = nodeFactory->IRCompUnit(n->id->name, methods);
-    compUnit->setStaticFields(staticFields);
+    staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+    compUnit->appendFunc(nodeFactory->IRFuncDecl(n->id->name + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
+    staticFields.push_back(std::move(staticFieldVec));
+    staticMethods.push_back(std::move(staticMethodVec));
     node = compUnit;
 }
 
 void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
     className = n->id->name;
     std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> methods;
-    node = nodeFactory->IRCompUnit(n->id->name, methods);
+    node = nodeFactory->IRCompUnit(className, methods);
+    staticFields.push_back(std::vector<std::string>{});
+    staticMethods.push_back(std::vector<std::string>{});
 }
 
 void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
-    int tempNum {TIR::Temp::counter};
+    int tempNum{TIR::Temp::counter};
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("this");
     std::vector<std::shared_ptr<Field>>& fields = scope->current->getVtableFields();
@@ -90,11 +106,35 @@ void TransformVisitor::visit(std::shared_ptr<Method> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<PlusExp> n) {
-    n->exp1->accept(this);
-    auto exp1 = getExpr();
-    n->exp2->accept(this);
-    auto exp2 = getExpr();
-    node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+    if (n->stringConcat) {
+        std::cout << "Plus Expr" << std::endl;
+        std::shared_ptr<SymbolTable> st = scope->getNameInScope("String", true);
+        std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+        std::vector<std::shared_ptr<TIR::Expr>> args;
+        std::shared_ptr<TIR::Temp> str1 = nodeFactory->IRTemp("str1");
+        std::shared_ptr<TIR::Temp> str2 = nodeFactory->IRTemp("str2");
+        stmts.push_back(nodeFactory->IRMove(str1, getString(n->exp1)));
+        stmts.push_back(nodeFactory->IRMove(str2, getString(n->exp2)));
+        args.push_back(str2);
+        args.push_back(str1);
+        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
+        stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(str1)));
+        size_t i = 0;
+        const std::string funcSignature{"String_concat_String_String"};
+        for (; i < st->getVtableMethods().size(); ++i) {
+            if (st->getVtableMethods()[i]->getSignature() == funcSignature) break;
+        }
+        assert(i < st->getVtableMethods().size());
+        std::shared_ptr<TIR::Call> call = nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
+        call->setSignature(funcSignature);
+        node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
+    } else {
+        n->exp1->accept(this);
+        auto exp1 = getExpr();
+        n->exp2->accept(this);
+        auto exp2 = getExpr();
+        node = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, exp1, exp2);
+    }
 }
 
 void TransformVisitor::visit(std::shared_ptr<MinusExp> n) {
@@ -159,6 +199,49 @@ void TransformVisitor::visit(std::shared_ptr<GreaterEqualExp> n) {
     n->exp2->accept(this);
     auto exp2 = getExpr();
     node = nodeFactory->IRBinOp(TIR::BinOp::OpType::GEQ, exp1, exp2);
+}
+
+void TransformVisitor::visit(std::shared_ptr<InstanceOfExp> n) {
+
+    //if true, transform to true
+    n->exp->accept(this);
+    std::shared_ptr<SymbolTable> exp_st;
+    std::shared_ptr<IdentifierExp> idExp = std::dynamic_pointer_cast<IdentifierExp>(n->exp);
+    if (idExp != nullptr && localTypes.contains(idExp->id->name)) {
+        exp_st = localTypes[idExp->id->name];
+    } else {
+        exp_st = temp_st;
+    }
+    if (exp_st == nullptr) {
+        node = nodeFactory->IRConst(false);
+        return;
+    }
+
+    std::shared_ptr<ArrayType> arrayType = std::dynamic_pointer_cast<ArrayType>(n->type);
+    std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(n->type);
+    if (idType == nullptr && arrayType == nullptr) {
+        throw std::runtime_error("Error: Instanceof used with type that isn't an IdentifierType or ArrayType");
+    }
+
+
+    if (idType) {
+
+        std::shared_ptr<SymbolTable> type_st = scope->getNameInScope(idType->id->name, true);
+        if (idType->id->name == "Object") {
+            node = nodeFactory->IRConst(true);
+            return;
+        }
+        
+        if ((subtypeTable.contains(exp_st) && subtypeTable.at(exp_st).contains(type_st))
+        || exp_st == type_st) {
+            node = nodeFactory->IRConst(true);
+        } else {
+            node = nodeFactory->IRConst(false);
+        }
+    }
+
+//if exp type is null, value should be false. Test this!!
+//if exp type is array, we currently don't support it
 }
 
 void TransformVisitor::visit(std::shared_ptr<EqualExp> n) {
@@ -376,6 +459,20 @@ void TransformVisitor::visit(std::shared_ptr<BlockStatements> n) {
     node = nodeFactory->IRSeq(stmts);
 }
 
+void TransformVisitor::visit(std::shared_ptr<StringLiteralExp> n) {
+    std::string& str{n->value};
+    int len = str.size();
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
+    std::shared_ptr<TIR::Temp> tm = nodeFactory->IRTemp("tm" + std::to_string(arrayCounter++));
+    stmts.push_back(nodeFactory->IRMove(tm, nodeFactory->IRCall(nodeFactory->IRName("__malloc"), nodeFactory->IRConst(4 * len + 8))));
+    stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(tm), nodeFactory->IRConst(len)));
+    for (size_t i = 1; i <= len; ++i) {
+        stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4 * (i + 1)))), nodeFactory->IRConst(str[i-1])));
+    }
+    std::shared_ptr<TIR::BinOp> offset = nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, tm, nodeFactory->IRConst(4));
+    node = nodeFactory->IRCall(nodeFactory->IRName("Constructor_String_array_char"), std::vector<std::shared_ptr<TIR::Expr>>{nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), offset)});
+}
+
 void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     std::vector<std::shared_ptr<TIR::Expr>> args;
 
@@ -389,7 +486,7 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     }
     else {
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-        if (n->primary) {
+        if (n->primary && std::dynamic_pointer_cast<ThisExp>(n->primary) == nullptr) {
             n->primary->accept(this);
             stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp("tmp"), getExpr()));
         }
@@ -420,7 +517,6 @@ void TransformVisitor::visit(std::shared_ptr<NewArrayExp> n) {
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Label> nonNegLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
-    std::shared_ptr<TIR::Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
     std::shared_ptr<TIR::Temp> tn = nodeFactory->IRTemp("tn" + std::to_string(arrayCounter));
     std::shared_ptr<TIR::Temp> tm = nodeFactory->IRTemp("tm" + std::to_string(arrayCounter++));
     n->exp->accept(this);
@@ -466,6 +562,12 @@ void TransformVisitor::visit(std::shared_ptr<Program> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<LocalVariableDeclarationStatement> n) {
+    if (auto cice = std::dynamic_pointer_cast<ClassInstanceCreationExp>(n->exp)) {
+        localTypes[n->id->name] = scope->getNameInScope(cice->constructor->constructorName->name, true);
+    } else if (auto nullExp = std::dynamic_pointer_cast<NulLiteralExp>(n->exp)) {
+        localTypes[n->id->name] = nullptr;
+    }
+
     auto temp = nodeFactory->IRTemp(n->id->name);
     std::shared_ptr<TIR::Expr> exp;
     if (n->exp) {
@@ -565,6 +667,10 @@ void TransformVisitor::visit(std::shared_ptr<FieldAccessExp> n) {
     // }
 }
 
+void TransformVisitor::visit(std::shared_ptr<ThisExp> n) {
+    node = nodeFactory->IRTemp("this");
+}
+
 void TransformVisitor::visit(std::shared_ptr<Field> n) {
     if (n->initializer) {
         n->initializer->accept(this);
@@ -635,6 +741,7 @@ std::shared_ptr<TIR::ESeq> TransformVisitor::getCastExpr(int mask) const {
 }
 
 std::shared_ptr<TIR::Mem> TransformVisitor::getField(std::shared_ptr<TIR::Expr> expr, std::shared_ptr<SymbolTable> st, const std::string& name) const {
+    assert(st != nullptr);
     std::vector<std::shared_ptr<Field>>& fields = st->getVtableFields();
     size_t i = 0;
     for (; i < fields.size(); ++i) {
@@ -676,4 +783,64 @@ void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObjec
         st = exprObj.st;
     }
     assert(expr != nullptr);
+    temp_st = st;
+}
+
+std::shared_ptr<TIR::Expr> TransformVisitor::getString(std::shared_ptr<Exp> exp) {
+    exp->accept(this);
+    std::shared_ptr<TIR::Expr> expr = getExpr();
+    DataType data;
+    if (auto integer = std::dynamic_pointer_cast<IntegerLiteralExp>(exp)) {
+        data = DataType::INT;
+    }
+    else if (auto boolean = std::dynamic_pointer_cast<BoolLiteralExp>(exp)) {
+        data = DataType::BOOLEAN;
+    }
+    else if (auto character = std::dynamic_pointer_cast<CharLiteralExp>(exp)) {
+        data = DataType::CHAR;
+    }
+    else if (auto nullexp = std::dynamic_pointer_cast<NulLiteralExp>(exp)) {
+        data = DataType::NULLTYPE;
+    }
+    else if (auto stringexp = std::dynamic_pointer_cast<StringLiteralExp>(exp) ) {
+        return expr;
+    }
+    else if (auto ie = std::dynamic_pointer_cast<IdentifierExp>(exp)) {
+        data = ie->exprs.back().type->type;
+        if (data == DataType::BYTE || data == DataType::SHORT) data = DataType::INT;
+        if (data == DataType::OBJECT && ie->exprs.back().type->typeToString() == "String") {
+            return expr;
+        } 
+    }
+    else if (auto plusexp = std::dynamic_pointer_cast<PlusExp>(exp)) {
+        return expr;
+    }
+    return toString(expr, data);
+}
+
+std::shared_ptr<TIR::Call> TransformVisitor::toString(std::shared_ptr<TIR::Expr> exp, DataType type) const {
+    std::string funcName;
+    switch (type) {
+        case DataType::INT:
+            funcName = "String_valueOf_int_String";
+            break;
+        case DataType::BOOLEAN:
+            funcName = "String_valueOf_boolean_String";
+            break;
+        case DataType::CHAR:
+            funcName = "String_valueOf_char_String";
+            break;
+        case DataType::STRING:
+            funcName = "String_valueOf_String_String";
+            break;
+        case DataType::NULLTYPE:
+        case DataType::OBJECT:
+            funcName = "String_valueOf_Object_String";
+            break;
+        default:
+            assert(false);
+    }
+    std::vector<std::shared_ptr<TIR::Expr>> args;
+    args.push_back(exp);
+    return nodeFactory->IRCall(nodeFactory->IRName(funcName), args);
 }

@@ -10,12 +10,6 @@ class Visitor;
 class SymbolTable;
 class Scope;
 
-struct ExpressionObject {
-    Expression exp;
-    std::string name;
-    std::shared_ptr<SymbolTable> st;
-};
-
 class AstNode {
     public:
         virtual ~AstNode() = default;
@@ -47,6 +41,13 @@ class Statement : public AstNode
         virtual ~Statement() = default;
         virtual void accept(Visitor *v) = 0;
         virtual std::string getStmtName() = 0;
+};
+
+struct ExpressionObject {
+    Expression exp;
+    std::string name;
+    std::shared_ptr<Type> type;
+    std::shared_ptr<SymbolTable> st;
 };
 
 class MemberDecl : public AstNode {
@@ -125,6 +126,7 @@ class ClassOrInterfaceDecl : public AstNode {
 class PlusExp : public Exp, public std::enable_shared_from_this<PlusExp> {
     public:
         std::shared_ptr<Exp> exp1, exp2;
+        bool stringConcat = false;
         PlusExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2);
         void accept(Visitor* v) override;
 };

@@ -81,7 +81,7 @@ AmbiguousName Scope::reclassifyQualifiedAmbiguousName(const std::string& name, s
                         if (segment == "length" && !current->getScopeType(ScopeType::ASSIGNMENT)) {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::EXPRESSION, nullptr);
                             ambiguousName.typeNode = std::make_shared<IntType>();
-                            updateExpressionObject("length", nullptr, Expression::ARRAY, exprs);
+                            updateExpressionObject("length", nullptr, Expression::ARRAY, nullptr, exprs);
                         }
                         else {
                             ambiguousName = AmbiguousName(AmbiguousNamesType::ERROR, nullptr);
@@ -133,7 +133,7 @@ AmbiguousName Scope::reclassifyAmbiguousNameByLocal(const std::string& name, std
     AmbiguousName ambiguousName;
     if (auto fp = std::dynamic_pointer_cast<FormalParameter>(var)) ambiguousName = createAmbiguousName(fp->type, current);
     else if (auto local = std::dynamic_pointer_cast<LocalVariableDeclarationStatement>(var)) ambiguousName = createAmbiguousName(local->type, current);
-    updateExpressionObject(name, ambiguousName.symbolTable, Expression::LOCAL, exprs);
+    updateExpressionObject(name, ambiguousName.symbolTable, Expression::LOCAL, ambiguousName.typeNode, exprs);
     return ambiguousName;
 }
 
@@ -145,7 +145,7 @@ AmbiguousName Scope::reclassifyAmbiguousNameByField(const std::string& name, std
         ambiguousName.type = AmbiguousNamesType::ERROR;
     std::string objName = staticField ? st->getClassName() + "_" + name : name;
     Expression objExpr = staticField ? Expression::STATIC_FIELD : Expression::NON_STATIC_FIELD;
-    updateExpressionObject(objName, ambiguousName.symbolTable, objExpr, exprs);
+    updateExpressionObject(objName, ambiguousName.symbolTable, objExpr, ambiguousName.typeNode, exprs);
     return ambiguousName;
 }
 
@@ -175,7 +175,7 @@ bool Scope::superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<Symbol
     return false;
 }
 
-void Scope::updateExpressionObject(const std::string& name, std::shared_ptr<SymbolTable> st, Expression expr, std::vector<ExpressionObject>* exprs) {
+void Scope::updateExpressionObject(const std::string& name, std::shared_ptr<SymbolTable> st, Expression expr, std::shared_ptr<Type> type, std::vector<ExpressionObject>* exprs) {
     if (exprs)
-        exprs->emplace_back(expr, name, st);
+        exprs->emplace_back(expr, name, type, st);
 }
