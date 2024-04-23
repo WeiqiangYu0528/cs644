@@ -113,20 +113,29 @@ namespace TIR {
     }
 
     void CFG::optimizeJumps(std::vector<std::shared_ptr<BasicBlock>>& trace) {
-        // Remove unnecessary JUMP
-        
-        for(auto& block : trace) {
+        // Remove unnecessary JUMP        
+        for (auto& block : trace) {
             auto& stmts = block->statements;
             for (auto it = stmts.begin(); it != stmts.end(); ) {
                 if (auto jump = std::dynamic_pointer_cast<Jump>(*it)) {
+                    bool deleteJump = false;
+                    if (it != stmts.begin()) {
+                        auto prevIt = std::prev(it);
+                        if (std::dynamic_pointer_cast<Return>(*prevIt)) {
+                            deleteJump = true;
+                        }
+                    }
                     auto nextIt = std::next(it);
-                    if (nextIt != stmts.end()) {
+                    if (nextIt != stmts.end() && !deleteJump) {
                         auto label = std::dynamic_pointer_cast<Label>(*nextIt);
                         auto target = std::dynamic_pointer_cast<Name>(jump->getTarget());
-                        if (label->getName() == target->getName()) {
-                            it = stmts.erase(it); 
-                            continue;  
+                        if (label && target && label->getName() == target->getName()) {
+                            deleteJump = true;
                         }
+                    }
+                    if (deleteJump) {
+                        it = stmts.erase(it);
+                        continue;
                     }
                 }
                 ++it;

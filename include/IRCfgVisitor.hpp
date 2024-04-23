@@ -11,9 +11,9 @@ namespace TIR {
         
         CfgVisitor();
         void visit(std::shared_ptr<CompUnit> cu);
-        void visit(std::shared_ptr<FuncDecl> fd);
+        void visit(std::shared_ptr<FuncDecl> fd, bool optim=true);
         
-        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Seq>& seq);
+        std::vector<std::shared_ptr<Stmt>> visit(std::shared_ptr<Seq>& seq, bool optim);
         void visit(std::shared_ptr<Stmt> stmt);
         void visit(std::shared_ptr<Move> move);
         void visit(std::shared_ptr<Jump> jump);

@@ -12,18 +12,19 @@ void CfgVisitor::visit(std::shared_ptr<CompUnit> cu) {
     }
 }
 
-void CfgVisitor::visit(std::shared_ptr<FuncDecl> fd) {
+void CfgVisitor::visit(std::shared_ptr<FuncDecl> fd, bool optim) {
     std::shared_ptr<Seq> seq = std::dynamic_pointer_cast<Seq>(fd->body);
     // std::cout << fd->getLabel() << std::endl;
-    auto stmts = visit(seq);
+    auto stmts = visit(seq, optim);
     // std::cout << "====================================================" << std::endl;
-    fd->body = std::make_shared<Seq>(stmts);
+    if(optim)
+        fd->body = std::make_shared<Seq>(stmts);
     
     // seq = std::dynamic_pointer_cast<Seq>(fd->body);
     // visit(seq);
 }
 
-std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) {
+std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq, bool optim=true) {
     currentBlock = nullptr;
     lastBlock = nullptr;
     cfg = CFG();
@@ -48,8 +49,13 @@ std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) 
     endCurrentBlock();
     connectBlocks();
     // cfg.Print();
-    auto stmts = cfg.collectTraces();
-
+    if (optim) {
+        auto stmts = cfg.collectTraces();
+        return stmts;
+    }
+    else
+        return std::vector<std::shared_ptr<Stmt>>();
+        
     // for (auto& stmt : stmts) {
     //     std::cout << stmt->getLabel();
     //     if (auto cjump = std::dynamic_pointer_cast<CJump>(stmt)) {
@@ -66,7 +72,7 @@ std::vector<std::shared_ptr<Stmt>> CfgVisitor::visit(std::shared_ptr<Seq>& seq) 
     // seq = std::make_shared<TIR::Seq>(stmts);
     // std::shared_ptr<CheckCanonicalIRVisitor> ccv = std::make_shared<CheckCanonicalIRVisitor>();
     // std::cout << "Canonical? " << (ccv->visit(seq) ? "Yes" : "No") << std::endl;
-    return stmts;
+
 }
 
 

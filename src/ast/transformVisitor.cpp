@@ -45,6 +45,7 @@ void TransformVisitor::visit(std::shared_ptr<InterfaceDecl> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
+    int tempNum {TIR::Temp::counter};
     std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     std::shared_ptr<TIR::Temp> obj = nodeFactory->IRTemp("this");
     std::vector<std::shared_ptr<Field>>& fields = scope->current->getVtableFields();
@@ -62,7 +63,9 @@ void TransformVisitor::visit(std::shared_ptr<Constructor> n) {
     auto block = std::dynamic_pointer_cast<TIR::Seq>(node);
     stmts.push_back(block);
     stmts.push_back(nodeFactory->IRReturn(obj));
-    node = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
+    auto func = nodeFactory->IRFuncDecl(n->getSignature(), n->formalParameters.size(), nodeFactory->IRSeq(stmts));
+    func->numTemps = TIR::Temp::counter - tempNum;
+    node = func;
 }
 
 void TransformVisitor::visit(std::shared_ptr<Method> n) {

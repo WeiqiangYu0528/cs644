@@ -18,6 +18,7 @@
 #include "IRCfgVisitor.hpp"
 #include <Tiling.hpp>
 #include "cfgVisitor.hpp"
+#include "linearScanner.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
     {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY}, {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY}, {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY}, {DataType::OBJECT, DataType::OBJECTARRAY}};
@@ -717,6 +718,11 @@ int main(int argc, char *argv[])
 
             for (auto &[funcName, funcDecl] : compUnit->getFunctions())
             {
+
+                TIR::LinearScanner scanner;
+                scanner.visit(funcDecl);
+                scanner.allocateRegisters({"eax", "ecx", "edx"});
+                tiler.regManager.reset(scanner.register_allocation, scanner.spills);
                 tiler.currentStackOffset = 0;
                 tiler.tempToStackOffset.clear();
                 std::cout << funcName << " " << funcDecl->numTemps << std::endl;
