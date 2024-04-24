@@ -312,7 +312,7 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
         }
 
         vtableMethods.insert(vtableMethods.begin(), superVtableMethodsFiltered.begin(), superVtableMethodsFiltered.end());
-
+        
         return; //we can only extend at most one class
     }
 }
