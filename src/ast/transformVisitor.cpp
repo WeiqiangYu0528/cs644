@@ -503,11 +503,9 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     }
     else {
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
-        bool primary = false;
         if (n->primary && std::dynamic_pointer_cast<ThisExp>(n->primary) == nullptr) {
             n->primary->accept(this);
             stmts.push_back(nodeFactory->IRMove(nodeFactory->IRTemp("tmp"), getExpr()));
-            primary = true;
         }
         std::shared_ptr<TIR::Expr> expr;
         std::shared_ptr<SymbolTable> st;
@@ -516,25 +514,15 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         assert (st != nullptr);
         args.push_back(expr);
         std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
-        size_t pos = n->method->getSignature().find('_');
-        std::string cname = n->method->getSignature().substr(0, pos);
-        if (!primary && cname == "OutputStream") {
-            stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(expr), nodeFactory->IRTemp(cname + "_vtable")));
-        }
         stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(expr)));
         size_t i = 0;
         for (; i < st->getVtableMethods().size(); ++i) {
             if (st->getVtableMethods()[i] == n->method) break;
         }
         assert(i < st->getVtableMethods().size());
-        stmts.push_back(nodeFactory->IRTemp("callback"), nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
+        std::shared_ptr<TIR::Call> call = nodeFactory->IRCall(nodeFactory->IRMem(nodeFactory->IRBinOp(TIR::BinOp::OpType::ADD, vtable, nodeFactory->IRConst(4 * i))), args);
         call->setSignature(n->method->getSignature());
-        stmts.push_back(nodeFactory->IRExp(call));
-        if (!primary && cname == "OutputStream") {
-            stmts.push_back(nodeFactory->IRMove(nodeFactory->IRMem(expr), nodeFactory->IRTemp(className + "_vtable")));
-        }
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), call);
-
     }
     updateDataType(n->expr.type);
 }
