@@ -157,11 +157,15 @@ std::string Tiling::tileName(const std::shared_ptr<TIR::Name>& node, std::vector
 }
 
 std::string Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vector<std::string>& assembly) {    
+
     auto right = tileExp(binOp->getRight(), assembly);
     move("ecx", right, assembly);
     auto left = tileExp(binOp->getLeft(), assembly);
     move("ebx", left, assembly);    
     auto op = binOp->getOpType();
+    
+    assembly.push_back("push edx");    
+
     if (op == TIR::BinOp::OpType::DIV) {
         assembly.push_back("mov eax, ebx");
         assembly.push_back("cdq");
@@ -211,6 +215,9 @@ std::string Tiling::tileBinOp(const std::shared_ptr<TIR::BinOp>& binOp, std::vec
         assembly.push_back("setne bl");
         assembly.push_back("movzx ebx, bl");
     }
+    
+    assembly.push_back("pop edx");    
+
     return "ebx";
 }
 
@@ -295,34 +302,15 @@ std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector
 
 
 
-std::string RegisterManager::getRegOrStackOffset(std::string var, std::vector<std::string>& assembly) {
+// std::string RegisterManager::getRegOrStackOffset(std::string var, std::vector<std::string>& assembly) {
 
+//     if (registerAlloc.contains(var) && !spills.contains(var))
+//     {
+//         auto reg = registerAlloc[var];
+//         regUsage[reg] = var;
+//         return reg;
+//     } else {
+//         return "[ebp" + offset(var)  + "]";   
+//     }
 
-    // return "[ebp" + offset(var)  + "]";      
-
-    if (registerAlloc.contains(var) && !spills.contains(var))
-    {
-        auto reg = registerAlloc[var];
-        regUsage[reg] = var;
-        return reg;
-    } else {
-        return "[ebp" + offset(var)  + "]";   
-    }
-
-
-    // if (registerAlloc.contains(var) && !spilledVars.contains(var))
-    // {
-    //     auto& reg = registerAlloc[var];
-    //     auto& currentVar = regUsage[reg];
-    //     if (!currentVar.empty() && currentVar != var) {
-    //         if (spills.contains(currentVar)) {
-    //             spillToStack(currentVar, offset(currentVar), reg, assembly);                   
-    //         }      
-    //     }
-    //     regUsage[reg] = var;  
-    //     return reg;    
-    // }
-    // else {
-    //     return "[ebp" + offset(var)  + "]";   
-    // }
-}           
+// }           

@@ -814,9 +814,11 @@ int main(int argc, char *argv[])
                     TIR::LinearScanner scanner;
                     scanner.visit(funcDecl);
                     scanner.allocateRegisters({"edi", "esi"});
-                    tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills, tiler.currentStackOffset, tiler.tempToStackOffset);
+                    tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills,
+                        tiler.currentStackOffset, tiler.tempToStackOffset);
                     tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();
+                    tiler.currentPos = 0;
                     std::cout << funcName << " " << funcDecl->numTemps << std::endl;
                     assemblyCodes.push_back("\nglobal " + funcDecl->getName());
                     assemblyCodes.push_back(funcDecl->getName() + ":");

@@ -24,10 +24,9 @@ namespace TIR {
         };
         std::set<Interval> active;
         std::set<std::string> free_registers;
-        std::unordered_map<std::string, Interval> intervalTable;
        
- 
-        int currentPos = 0;
+        int currentPos;
+        int currentCounter;
 
         LinearScanner();
         void visit(std::shared_ptr<FuncDecl> fd);        
@@ -50,9 +49,8 @@ namespace TIR {
         void visit(std::shared_ptr<Name> node);
 
         void updateLiveInterval(const std::string& name, int position);
-        void allocateRegisters(std::set<std::string> free_registers);
+        void allocateRegisters(std::set<std::string> available_registers);
         void expireOldIntervals(const Interval& interval);
         void spillAtInterval(const Interval& interval);
-        int generateNewStackLocation();
     };
 }

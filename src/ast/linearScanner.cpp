@@ -3,6 +3,7 @@
 using namespace TIR;
 
 LinearScanner::LinearScanner() {
+    currentPos = 0;
 }
 
 void LinearScanner::visit(std::shared_ptr<FuncDecl> fd) {
@@ -65,7 +66,7 @@ void LinearScanner::visit(std::shared_ptr<Mem> node) {
 }
 
 void LinearScanner::visit(std::shared_ptr<Temp> node) {
-    if(node->getName().starts_with(Configuration::ABSTRACT_ARG_PREFIX)) return;
+    if(node->getName().starts_with(Configuration::ABSTRACT_ARG_PREFIX)) return;  
     updateLiveInterval(node->getName(), currentPos);   
 }
 
@@ -139,12 +140,6 @@ void LinearScanner::spillAtInterval(const Interval& interval) {
         spills.insert(interval.name);
     }
 }
-
-int LinearScanner::generateNewStackLocation() {
-    static int location = 0;
-    return ++location;
-}
-
 
 void LinearScanner::visit(std::shared_ptr<Label> node) {}
 

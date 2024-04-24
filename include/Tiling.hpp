@@ -18,17 +18,18 @@ private:
     std::set<std::string>& spills;
     int& currentStackOffset;
     std::unordered_map<std::string, int>& tempToStackOffset;
-
     std::unordered_map<std::string, std::string> regUsage;
-    std::set<std::string> spilledVars;
+    std::set<std::string> spilledVar;
+    std::set<std::string> lockedReg;
 
 public:
     RegisterManager(std::unordered_map<std::string, std::string>& regAlloc, std::set<std::string>& spills,
-                int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset) : 
+            int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset
+               ) : 
                 registerAlloc(regAlloc),
                 spills(spills),
                 currentStackOffset(currentStackOffset),
-                tempToStackOffset(tempToStackOffset)                
+                tempToStackOffset(tempToStackOffset)
                 {
                     for (const auto& pair : regAlloc) {
                         if (!pair.second.empty()) {
@@ -49,36 +50,51 @@ public:
             offset_string = std::string("+") + offset_string;     
         return offset_string;
     }
+    
+    std::string getRegOrStackOffset(const std::string& var, std::vector<std::string>& assembly) {
+        // return "[ebp" + offset(var) + "]";
 
-    void spillToStack(const std::string& var, const std::string& offset_string, const std::string& reg, std::vector<std::string>& assembly) {
-        assembly.push_back("mov [ebp" + offset_string  + "], " + reg);   
-        spilledVars.insert(var);
-    }    
+        // if (registerAlloc.contains(var) && !spills.contains(var))
+        // {
+        //     auto reg = registerAlloc[var];
+        //     regUsage[reg] = var;
+        //     return reg;
+        // } else {
+        //     return "[ebp" + offset(var)  + "]";   
+        // }
 
-    void temporaryUseRegs(const std::vector<std::string>& regs, std::vector<std::string>& assembly, std::function<void()> useRegs) {
-        std::vector<std::pair<std::string, std::string>> spilledVars;
+        auto regIter = registerAlloc.find(var);
 
-        for (const auto& reg : regs) {
-            if (!regUsage[reg].empty()) {
-                auto var = regUsage[reg];
-                std::string offset_string = offset(var);
-                spillToStack(var, offset_string, reg, assembly);
-                spilledVars.emplace_back(reg, var);
+        if (regIter != registerAlloc.end())
+        {            
+            if(lockedReg.contains(regIter->second))
+                return "[ebp" + offset(var) + "]";     
+
+            if(regUsage[regIter->second] != var) {
+                
+                if (spills.contains(var)) {
+                    if(!spilledVar.contains(var)) {
+                        spilledVar.insert(var);
+                        assembly.push_back("mov [ebp"  + offset(var) + "], " + regIter->second);
+                    }
+                    return "[ebp" + offset(var) + "]";
+                }
+                else {                      
+                    regUsage[regIter->second] = var;
+                    return regIter->second;
+                }
             }
+            else {                 
+                return regIter->second;
+            }
+        }        
+        if (regIter == registerAlloc.end()) {
+            return "[ebp" + offset(var) + "]";
         }
 
-        useRegs();
-        
-        for (const auto& spilled : spilledVars) {
-            const auto& reg = spilled.first;
-            const auto& var = spilled.second;
-            std::string offset_string = offset(var);
-            assembly.push_back("mov " + reg + ", [ebp" + offset_string + "]");
-        }
+        throw std::runtime_error("Logical error: Variable '" + var + "' is neither allocated a register nor spilled.");
+
     }
-
-
-    std::string getRegOrStackOffset(std::string var, std::vector<std::string>& assembly);
 };
 
 
@@ -91,6 +107,7 @@ public:
     std::unique_ptr<RegisterManager> regManager;
 
     int currentStackOffset = 0;
+    int currentPos = 0;
     bool callFlag = false;
     void move(const std::string& dst, const std::string& src, std::vector<std::string>& assembly);
     void tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly);
