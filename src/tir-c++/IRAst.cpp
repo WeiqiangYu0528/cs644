@@ -1,3 +1,4 @@
+#include <cassert>
 #include "IRAst.hpp"
 
 using namespace TIR;
@@ -351,7 +352,12 @@ std::shared_ptr<Node> Mem::visitChildren(std::shared_ptr<IRVisitor> v) {
     return shared_from_this();
 }
 
-Move::Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash) : target(target), src(src) {}
+Move::Move(std::shared_ptr<Expr> target, std::shared_ptr<Expr> src, bool trash) : target(target), src(src) {
+    trash = false;
+    trash = std::dynamic_pointer_cast<Temp>(target) != nullptr;
+    if (!trash) trash = std::dynamic_pointer_cast<Mem>(target) != nullptr;
+    assert(trash);
+}
 
 std::shared_ptr<Expr> Move::getTarget() const {
     return target;

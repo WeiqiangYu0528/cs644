@@ -327,8 +327,8 @@ void TransformVisitor::visit(std::shared_ptr<ConditionalOrExp> n) {
 }
 
 void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
+    std::vector<std::shared_ptr<TIR::Stmt>> stmts;
     if (auto leftexp = std::dynamic_pointer_cast<ArrayAccessExp>(n->left)) {
-        std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         std::shared_ptr<TIR::Label> errLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
         std::shared_ptr<TIR::Label> nonNullLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
         std::shared_ptr<TIR::Label> inboundLabel = nodeFactory->IRLabel(std::to_string(labelCounter++));
@@ -352,13 +352,14 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
         stmts.push_back(nodeFactory->IRMove(mem, te));
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), te);
     } else {
+        std::shared_ptr<TIR::Temp> left = nodeFactory->IRTemp("left_" + std::to_string(tempCounter++));
+        std::shared_ptr<TIR::Temp> right = nodeFactory->IRTemp("right_" + std::to_string(tempCounter++));
         n->left->accept(this);
-        auto left = getExpr();
+        stmts.push_back(nodeFactory->IRMove(left, getExpr()));
         n->right->accept(this);
-        auto right = getExpr();
-        assert(left != nullptr);
-        assert(right != nullptr);
-        node = nodeFactory->IRMove(left, right);
+        stmts.push_back(nodeFactory->IRMove(right, getExpr()));
+        stmts.push_back(nodeFactory->IRMove(left, right));
+        node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), left);
     }
 }
 
@@ -504,16 +505,17 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
     else {
         std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         std::shared_ptr<TIR::Temp> temp = nodeFactory->IRTemp("me_" + std::to_string(tempCounter++));
+        std::vector<ExpressionObject>& exprs = n->in;
         if (n->primary) {
             n->primary->accept(this);
         } else {
-            reclassifyAmbiguousName(n->in);
+            reclassifyAmbiguousName(exprs);
         }
         stmts.push_back(nodeFactory->IRMove(temp, getExpr()));
         std::string cname{n->method->className};
         args.push_back(temp);
         std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp(cname + "_tdv");
-        std::shared_ptr<SymbolTable> st = n->in.back().st;
+        std::shared_ptr<SymbolTable> st = exprs.empty() ? scope->current : exprs.back().st;
         stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(temp)));
         size_t i = 0;
         for (; i < st->getVtableMethods().size(); ++i) {
@@ -764,7 +766,7 @@ std::shared_ptr<TIR::ESeq> TransformVisitor::getLength(std::shared_ptr<TIR::Expr
 void TransformVisitor::reclassifyAmbiguousName(const std::vector<ExpressionObject>& exprs) {
     std::shared_ptr<SymbolTable> st;
     std::shared_ptr<TIR::Expr> expr;
-    if (exprs[0].exp == Expression::NON_STATIC_FIELD) {
+    if (exprs.empty() || exprs[0].exp == Expression::NON_STATIC_FIELD) {
         expr = nodeFactory->IRTemp("this");
         st = scope->current;
     }
