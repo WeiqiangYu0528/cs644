@@ -276,21 +276,13 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
 
     assert(n->scope->current->vtableMethodsPopulated == false);
     n->scope->current->vtableMethodsPopulated = true;
+
     std::vector<std::shared_ptr<Method>> &vtableMethods = n->scope->current->getVtableMethods();
+    std::unordered_map<std::string, int> signatureIndexMap;
 
-    std::unordered_set<std::string> classlessMethodSignatures;
-    
-    //get and set current vtableMethods
-    for (const auto& memberDecl : cdecl->declarations[1]) {
-        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
-        if (!method || method->isStatic) continue;
-        vtableMethods.push_back(method);  
-        std::string methodSignature = removeClassName(method->getSignature(), method->className);
-        assert(!(classlessMethodSignatures.contains(methodSignature)));
-        classlessMethodSignatures.insert(methodSignature);
-    }
+    assert(vtableMethods.size() == 0);
 
-    //for each parent, add their non-static vtableMethods
+    //find superclass
     for (const auto& superTable : n->scope->supers) {
         std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getAst()->classOrInterfaceDecl);
         if (!scdecl) continue;
@@ -300,17 +292,37 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
             populateVtableMethods(superTable->getAst(), error);
         }
 
-        //get that parent's vtableMethods
+        //copy super's methods to our vector
         std::vector<std::shared_ptr<Method>> &superVtableMethods = superTable->getVtableMethods();
-        for (const auto& superMethod : superVtableMethods) {
-            //don't allow any repeat method signatures
-            std::string methodSignature = removeClassName(superMethod->getSignature(), superMethod->className);
-            if (classlessMethodSignatures.contains(methodSignature)) continue;
-            vtableMethods.push_back(superMethod);
-            classlessMethodSignatures.insert(methodSignature);            
-        }
-        return; //we can only extend at most one class
+        vtableMethods.insert(vtableMethods.end(), superVtableMethods.begin(), superVtableMethods.end());
+
+        //now vtableMethods consists entirely of its superclass's vtableMethods
+        break;
     }
+
+    //vtableMethods has been populated with our superclass's methods, if any exist
+    //populate our signatureIndexMap
+    for (int i = 0; i < vtableMethods.size(); ++i) {
+        std::shared_ptr<Method> method = vtableMethods[i];
+        std::string methodSignature = removeClassName(method->getSignature(), method->className);
+        assert(!signatureIndexMap.contains(methodSignature));
+        signatureIndexMap[methodSignature] = i;
+    }
+
+    //look at our methods. if the method exists in our vtableMethods, override it. Else, add it and add new entry.
+    for (const auto& memberDecl : cdecl->declarations[1]) {
+        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
+        if (!method || method->isStatic) continue; //ignore static methods
+
+        std::string methodSignature = removeClassName(method->getSignature(), method->className);
+
+        if (signatureIndexMap.contains(methodSignature)) {
+            vtableMethods[signatureIndexMap[methodSignature]] = method;
+        } else {
+            vtableMethods.push_back(method);
+            signatureIndexMap[methodSignature] = vtableMethods.size() - 1;
+        }
+    }      
 }
 
 void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
