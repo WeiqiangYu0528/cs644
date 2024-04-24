@@ -813,7 +813,7 @@ int main(int argc, char *argv[])
                 {                    
                     TIR::LinearScanner scanner;
                     scanner.visit(funcDecl);
-                    scanner.allocateRegisters({"edx",});
+                    scanner.allocateRegisters({"edi", "esi"});
                     tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills, tiler.currentStackOffset, tiler.tempToStackOffset);
                     tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();

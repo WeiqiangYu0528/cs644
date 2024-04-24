@@ -65,7 +65,7 @@ void LinearScanner::visit(std::shared_ptr<Mem> node) {
 }
 
 void LinearScanner::visit(std::shared_ptr<Temp> node) {
-    // std::cout  << "ls:" << node->getName() << std::endl;
+    if(node->getName().starts_with(Configuration::ABSTRACT_ARG_PREFIX)) return;
     updateLiveInterval(node->getName(), currentPos);   
 }
 
@@ -84,7 +84,7 @@ void LinearScanner::updateLiveInterval(const std::string& name, int position) {
     if(!live_intervals_start.contains(name)) {
         live_intervals_start[name] = position;
     }
-    live_intervals_end[name] = position;
+    live_intervals_end[name] = position + 1;
 }
 
 void LinearScanner::allocateRegisters(std::set<std::string> available_registers) {

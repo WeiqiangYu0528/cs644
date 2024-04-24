@@ -251,43 +251,78 @@ std::string Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<s
 }
     // auto t = regManager.getReg(localVarName, currentStackOffset, tempToStackOffset, assembly);
 std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly) {
-    // std::string localVarName{node->getName()};
-    // if (localVarName == TIR::Configuration::VTABLE) {
-    //     return st->getClassName() + "_vtable"; 
-    // }
-
-    // if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {
-    //     auto reg = regManager->getRegOrStackOffset(localVarName, assembly);
-    //     move(reg, "eax", assembly);
-    //     callFlag = false;
-    //     return reg;
-    // }
-    // if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
-    //     return "[" + localVarName + "]";
-    // else 
-    //     return regManager->getRegOrStackOffset(localVarName, assembly);
-
     std::string localVarName{node->getName()};
     if (localVarName == TIR::Configuration::VTABLE) {
         return st->getClassName() + "_vtable"; 
     }
-    
-    if (!tempToStackOffset.contains(localVarName)) {
-        currentStackOffset -= 4;
-        tempToStackOffset[localVarName] = currentStackOffset;
-    }
-    auto offset = tempToStackOffset[localVarName];
-    auto offset_string = std::to_string(offset);
-    if (offset > 0)
-        offset_string = std::string("+") + offset_string;
 
     if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {
-        assembly.push_back("mov [ebp" + offset_string  + "], eax");
+        auto reg = regManager->getRegOrStackOffset(localVarName, assembly);
+        move(reg, "eax", assembly);
         callFlag = false;
-        return "[ebp" + offset_string  + "]";
+        return reg;
     }
     if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
         return "[" + localVarName + "]";
     else 
-        return "[ebp" + offset_string  + "]";
+        return regManager->getRegOrStackOffset(localVarName, assembly);
+
+    // std::string localVarName{node->getName()};
+    // if (localVarName == TIR::Configuration::VTABLE) {
+    //     return st->getClassName() + "_vtable"; 
+    // }
+    
+    // if (!tempToStackOffset.contains(localVarName)) {
+    //     currentStackOffset -= 4;
+    //     tempToStackOffset[localVarName] = currentStackOffset;
+    // }
+    // auto offset = tempToStackOffset[localVarName];
+    // auto offset_string = std::to_string(offset);
+    // if (offset > 0)
+    //     offset_string = std::string("+") + offset_string;
+
+    // if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {
+    //     assembly.push_back("mov [ebp" + offset_string  + "], eax");
+    //     callFlag = false;
+    //     return "[ebp" + offset_string  + "]";
+    // }
+    // if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
+    //     return "[" + localVarName + "]";
+    // else 
+    //     return "[ebp" + offset_string  + "]";
 }
+
+
+
+
+std::string RegisterManager::getRegOrStackOffset(std::string var, std::vector<std::string>& assembly) {
+
+
+    // return "[ebp" + offset(var)  + "]";      
+
+    if (registerAlloc.contains(var) && !spills.contains(var))
+    {
+        auto reg = registerAlloc[var];
+        regUsage[reg] = var;
+        return reg;
+    } else {
+        return "[ebp" + offset(var)  + "]";   
+    }
+
+
+    // if (registerAlloc.contains(var) && !spilledVars.contains(var))
+    // {
+    //     auto& reg = registerAlloc[var];
+    //     auto& currentVar = regUsage[reg];
+    //     if (!currentVar.empty() && currentVar != var) {
+    //         if (spills.contains(currentVar)) {
+    //             spillToStack(currentVar, offset(currentVar), reg, assembly);                   
+    //         }      
+    //     }
+    //     regUsage[reg] = var;  
+    //     return reg;    
+    // }
+    // else {
+    //     return "[ebp" + offset(var)  + "]";   
+    // }
+}           

@@ -55,57 +55,30 @@ public:
         spilledVars.insert(var);
     }    
 
-    void temporaryUseReg(const std::string& reg, std::vector<std::string>& assembly, std::function<void()> useReg) {
-        if (!regUsage[reg].empty()) {
-            auto var = regUsage[reg];
-            std::string offset_string = offset(var);
-            spillToStack(var, offset_string, reg, assembly);
+    void temporaryUseRegs(const std::vector<std::string>& regs, std::vector<std::string>& assembly, std::function<void()> useRegs) {
+        std::vector<std::pair<std::string, std::string>> spilledVars;
+
+        for (const auto& reg : regs) {
+            if (!regUsage[reg].empty()) {
+                auto var = regUsage[reg];
+                std::string offset_string = offset(var);
+                spillToStack(var, offset_string, reg, assembly);
+                spilledVars.emplace_back(reg, var);
+            }
         }
 
-        useReg();
-
-        if (!regUsage[reg].empty()) {
-            std::string var = regUsage[reg];
+        useRegs();
+        
+        for (const auto& spilled : spilledVars) {
+            const auto& reg = spilled.first;
+            const auto& var = spilled.second;
             std::string offset_string = offset(var);
             assembly.push_back("mov " + reg + ", [ebp" + offset_string + "]");
         }
-    }    
+    }
 
-    std::string getRegOrStackOffset(std::string var, std::vector<std::string>& assembly) {
-        // 如果var目前的状态是spilled
-            // 返回其stack_offset
-        if (spilledVars.contains(var)) {
-            auto offset_string = offset(var);
-            return "[ebp" + offset_string  + "]";
-        }            
-        // 如果var目前没有被spilled
-            // 如果var可以被分配寄存器
-                // 如果var被分配的寄存器正在被currentVar使用
-                    // 如果currentVar需要被spill到stack
-                        // spill currentVar to stack
-                // regUsage设置成var
-                // 返回寄存器名
 
-        if (registerAlloc.contains(var)) {
-            auto& reg = registerAlloc[var];
-            auto& currentVar = regUsage[reg];
-            if (!currentVar.empty() && currentVar != var) {
-                if (spills.contains(currentVar)) {
-                    auto offset_string = offset(currentVar);
-                    spillToStack(currentVar, offset_string, reg, assembly);                   
-                }
-                regUsage[reg] = var;            
-            }
-            return reg;            
-        }
-        
-            // 如果var不可以被分配寄存器, 设置其在stack上
-            // 返回其stack_offset
-        spilledVars.insert(var);
-        auto offset_string = offset(var);
-        return "[ebp" + offset_string  + "]";        
-    }           
-
+    std::string getRegOrStackOffset(std::string var, std::vector<std::string>& assembly);
 };
 
 
@@ -116,7 +89,7 @@ public:
     std::vector<std::string>& staticFields;
     std::unordered_map<std::string, int> tempToStackOffset;
     std::unique_ptr<RegisterManager> regManager;
-    
+
     int currentStackOffset = 0;
     bool callFlag = false;
     void move(const std::string& dst, const std::string& src, std::vector<std::string>& assembly);
