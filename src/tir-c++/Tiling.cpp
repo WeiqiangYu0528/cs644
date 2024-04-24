@@ -269,10 +269,8 @@ std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector
         callFlag = false;
         return reg;
     }
-    if (std::find(staticFields.begin(), staticFields.end(), localVarName) != staticFields.end())
-        return "[" + localVarName + "]";
-    else 
-        return regManager->getRegOrStackOffset(localVarName, assembly);
+
+    return regManager->getRegOrStackOffset(localVarName, assembly);
 
     // std::string localVarName{node->getName()};
     // if (localVarName == TIR::Configuration::VTABLE) {

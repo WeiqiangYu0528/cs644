@@ -18,18 +18,21 @@ private:
     std::set<std::string>& spills;
     int& currentStackOffset;
     std::unordered_map<std::string, int>& tempToStackOffset;
+    std::vector<std::string>& staticFields;
+
     std::unordered_map<std::string, std::string> regUsage;
     std::set<std::string> spilledVar;
     std::set<std::string> lockedReg;
 
 public:
     RegisterManager(std::unordered_map<std::string, std::string>& regAlloc, std::set<std::string>& spills,
-            int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset
+            int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset, std::vector<std::string>& staticFields
                ) : 
                 registerAlloc(regAlloc),
                 spills(spills),
                 currentStackOffset(currentStackOffset),
-                tempToStackOffset(tempToStackOffset)
+                tempToStackOffset(tempToStackOffset),
+                staticFields(staticFields)
                 {
                     for (const auto& pair : regAlloc) {
                         if (!pair.second.empty()) {
@@ -52,7 +55,17 @@ public:
     }
     
     std::string getRegOrStackOffset(const std::string& var, std::vector<std::string>& assembly) {
+        
+        if(var.starts_with(TIR::Configuration::ABSTRACT_ARG_PREFIX) || var == TIR::Configuration::ABSTRACT_RET)
+        {
+            return "[ebp" + offset(var)  + "]";   
+        } 
+        
+        // std::cout << "222:" << var << std::endl;
+
+        // std::cout << "current: " <<  var << std::endl; 
         // return "[ebp" + offset(var) + "]";
+        // std::cout << "current var: " + var <<std::endl;
 
         // if (registerAlloc.contains(var) && !spills.contains(var))
         // {
@@ -60,39 +73,48 @@ public:
         //     regUsage[reg] = var;
         //     return reg;
         // } else {
-        //     return "[ebp" + offset(var)  + "]";   
+
+        //     if (std::find(staticFields.begin(), staticFields.end(), var) != staticFields.end())
+        //         return "[" + var + "]";
+        //     else             
+        //         return "[ebp" + offset(var)  + "]";   
         // }
 
-        auto regIter = registerAlloc.find(var);
-
-        if (regIter != registerAlloc.end())
-        {            
-            if(lockedReg.contains(regIter->second))
-                return "[ebp" + offset(var) + "]";     
-
-            if(regUsage[regIter->second] != var) {
-                
-                if (spills.contains(var)) {
-                    if(!spilledVar.contains(var)) {
-                        spilledVar.insert(var);
-                        assembly.push_back("mov [ebp"  + offset(var) + "], " + regIter->second);
+        if (registerAlloc.contains(var) && !spilledVar.contains(var)) {
+            auto& reg = registerAlloc[var];
+            auto& currentVar = regUsage[reg];
+            if(currentVar != var) {
+                std::cout << "current: " << var << " allocated to register " << reg << std::endl;
+                if (spills.contains(currentVar)) {
+                    if(!spilledVar.contains(currentVar))                    
+                    {
+                        spilledVar.insert(currentVar);
                     }
-                    return "[ebp" + offset(var) + "]";
+                    if (std::find(staticFields.begin(), staticFields.end(), currentVar) != staticFields.end())
+                    {
+                        std::cout << "current: staticFields" << currentVar << " spilled into" << " [" + currentVar + "]" << std::endl;
+                    }
+                    else {
+                        assembly.push_back("mov [ebp"  + offset(currentVar) + "], " + reg);
+                        std::cout << "current: " << currentVar << " spilled into" << " [ebp"  + offset(currentVar) + "]" << std::endl;
+                    }
+                   
                 }
-                else {                      
-                    regUsage[regIter->second] = var;
-                    return regIter->second;
-                }
+                regUsage[reg] = var;
             }
-            else {                 
-                return regIter->second;
-            }
-        }        
-        if (regIter == registerAlloc.end()) {
-            return "[ebp" + offset(var) + "]";
-        }
+            return reg;            
+        }         
+    
+        if(!registerAlloc.contains(var) && spills.contains(var) && !spilledVar.contains(var)) {
+            spilledVar.insert(var);
+            offset(var);
+            std::cout << "current: " << var << " spilled into" << " [ebp"  + offset(var) + "]" << std::endl;
 
-        throw std::runtime_error("Logical error: Variable '" + var + "' is neither allocated a register nor spilled.");
+        }
+        if (std::find(staticFields.begin(), staticFields.end(), var) != staticFields.end())
+            return "[" + var + "]";
+        else             
+            return "[ebp" + offset(var)  + "]";   
 
     }
 };

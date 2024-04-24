@@ -6,8 +6,39 @@ namespace TIR {
 
     CFG::CFG() {}
 
+
+    void CFG::computeLiveVariables() {
+        bool changed;
+        do {
+            changed = false;
+            for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
+                auto block = *it;
+                std::unordered_set<std::string> newLiveOut;
+                for (auto& edge : block->outgoing) {
+                    auto& successorLiveIn = liveIn[edge->to];
+                    newLiveOut.insert(successorLiveIn.begin(), successorLiveIn.end());
+                }
+                std::unordered_set<std::string> newLiveIn(newLiveOut);
+                for (const auto& def : block->defs) {
+                    newLiveIn.erase(def);
+                }
+                for (const auto& use : block->uses) {
+                    newLiveIn.insert(use);
+                }
+                if (liveIn[block] != newLiveIn || liveOut[block] != newLiveOut) {
+                    liveIn[block] = std::move(newLiveIn);
+                    liveOut[block] = std::move(newLiveOut);
+                    changed = true;
+                }
+            }
+        } while (changed);
+    }
+
+
+
     std::shared_ptr<BasicBlock> CFG::newBlock() {
         auto newBlock = std::make_shared<BasicBlock>();
+        newBlock->index = blocks.size();
         blocks.push_back(newBlock);
         return newBlock;
     }
