@@ -277,9 +277,9 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
     assert(n->scope->current->vtableMethodsPopulated == false);
     n->scope->current->vtableMethodsPopulated = true;
     std::vector<std::shared_ptr<Method>> &vtableMethods = n->scope->current->getVtableMethods();
+    //add all current class methods to the vector ref
 
     std::unordered_set<std::string> classlessMethodSignatures;
-    
     //get and set current vtableMethods
     for (const auto& memberDecl : cdecl->declarations[1]) {
         std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
@@ -302,13 +302,17 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
 
         //get that parent's vtableMethods
         std::vector<std::shared_ptr<Method>> &superVtableMethods = superTable->getVtableMethods();
+        std::vector<std::shared_ptr<Method>> superVtableMethodsFiltered;
         for (const auto& superMethod : superVtableMethods) {
             //don't allow any repeat method signatures
             std::string methodSignature = removeClassName(superMethod->getSignature(), superMethod->className);
             if (classlessMethodSignatures.contains(methodSignature)) continue;
-            vtableMethods.push_back(superMethod);
+            superVtableMethodsFiltered.push_back(superMethod);
             classlessMethodSignatures.insert(methodSignature);            
         }
+
+        vtableMethods.insert(vtableMethods.begin(), superVtableMethodsFiltered.begin(), superVtableMethodsFiltered.end());
+
         return; //we can only extend at most one class
     }
 }
