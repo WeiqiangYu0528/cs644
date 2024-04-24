@@ -169,7 +169,8 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
         std::shared_ptr<Identifier> id;
-        std::vector<ExpressionObject> exprs;
+        std::vector<ExpressionObject> in;
+        ExpressionObject out;
         bool simple;
         IdentifierExp(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
@@ -212,8 +213,8 @@ class NulLiteralExp : public Exp, public std::enable_shared_from_this<NulLiteral
 class ArrayAccessExp: public Exp, public std::enable_shared_from_this<ArrayAccessExp> {
     public:
         std::shared_ptr<Exp> array, index;
-        std::vector<ExpressionObject> exprs;
-        ExpressionObject expr;
+        // ExpressionObject in;
+        ExpressionObject out;
         ArrayAccessExp(std::shared_ptr<Exp> arr, std::shared_ptr<Exp> idx);
         void accept(Visitor* v) override;
 };
@@ -228,7 +229,7 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<Type> type;
-        ExpressionObject expr;
+        ExpressionObject out;
         CastExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
 };
@@ -237,7 +238,8 @@ class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAcce
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<IdentifierExp> field;
-        std::vector<ExpressionObject> exprs;
+        ExpressionObject in;
+        ExpressionObject out;
         FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
         void accept(Visitor* v) override;
 };
@@ -260,7 +262,7 @@ class NegExp : public Exp, public std::enable_shared_from_this<NegExp> {
 class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
     public:
         std::shared_ptr<Exp> exp;
-        std::vector<ExpressionObject> exprs;
+        ExpressionObject out;
         ParExp(std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };
@@ -355,7 +357,7 @@ public:
 class Assignment : public Exp, public std::enable_shared_from_this<Assignment> {
 public:
     std::shared_ptr<Exp> left, right;
-    std::vector<ExpressionObject> exprs;
+    ExpressionObject out;
     Assignment(std::shared_ptr<Exp> left, std::shared_ptr<Exp> right);
     void accept(Visitor* v) override;
 };
@@ -587,8 +589,8 @@ public:
     std::shared_ptr<IdentifierType> ambiguousName;
     std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::shared_ptr<Method> method;
-    std::vector<ExpressionObject> exprs;
-    ExpressionObject expr;
+    std::vector<ExpressionObject> in;
+    ExpressionObject out;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
         std::shared_ptr<IdentifierExp> primaryMethodName,
@@ -619,7 +621,7 @@ public:
     std::shared_ptr<IdentifierType> classType;
     std::vector<std::shared_ptr<Exp>> arguments;
     std::shared_ptr<Constructor> constructor;
-    std::vector<ExpressionObject> exprs;
+    ExpressionObject out;
     ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
     void accept(Visitor* v) override;
 };
