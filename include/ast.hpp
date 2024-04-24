@@ -212,6 +212,8 @@ class NulLiteralExp : public Exp, public std::enable_shared_from_this<NulLiteral
 class ArrayAccessExp: public Exp, public std::enable_shared_from_this<ArrayAccessExp> {
     public:
         std::shared_ptr<Exp> array, index;
+        std::vector<ExpressionObject> exprs;
+        ExpressionObject expr;
         ArrayAccessExp(std::shared_ptr<Exp> arr, std::shared_ptr<Exp> idx);
         void accept(Visitor* v) override;
 };
@@ -226,6 +228,7 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<Type> type;
+        ExpressionObject expr;
         CastExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
 };
@@ -257,6 +260,7 @@ class NegExp : public Exp, public std::enable_shared_from_this<NegExp> {
 class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
     public:
         std::shared_ptr<Exp> exp;
+        std::vector<ExpressionObject> exprs;
         ParExp(std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };
@@ -584,6 +588,7 @@ public:
     std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::shared_ptr<Method> method;
     std::vector<ExpressionObject> exprs;
+    ExpressionObject expr;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
         std::shared_ptr<IdentifierExp> primaryMethodName,

@@ -722,17 +722,20 @@ int main(int argc, char *argv[])
     if (!error)
     {
         std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
-        std::vector<std::vector<std::string>> staticFields;
+        std::vector<std::string> staticFields;
+        std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
         std::vector<std::vector<std::string>> staticMethods;
         std::vector<std::shared_ptr<TIR::CompUnit>> compUnits;
         for (std::shared_ptr<Program> program : asts)
         {
             std::cout << program->getQualifiedName().second << std::endl;
-            TransformVisitor tvisitor(program->scope, nodeFactory, staticFields, staticMethods);
+            TransformVisitor tvisitor(program->scope, nodeFactory, staticFields, staticFieldStmts, staticMethods);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
             compUnits.push_back(cu);
         }
+        staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+        compUnits[0]->appendFunc(nodeFactory->IRFuncDecl(compUnits[0]->getName() + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
         for (size_t i = 0; i < compUnits.size(); ++i) {
             std::shared_ptr<TIR::CompUnit> compUnit = compUnits[i];
             std::shared_ptr<SymbolTable> st = asts[i]->scope->current;
@@ -763,17 +766,21 @@ int main(int argc, char *argv[])
                 std::vector<std::string> assemblyCodes;
                 assemblyCodes.push_back("extern __malloc");
                 assemblyCodes.push_back("extern __exception");
-                for (size_t j = 0; j < staticFields.size(); ++j) {
-                    if (j == i) continue;
-                    for (const auto& field : staticFields[j]) {
+                if (i != 0) {
+                    for (const auto& field : staticFields) {
                         assemblyCodes.push_back("extern " + field);
                     }
+                }
+                for (size_t j = 0; j < staticMethods.size(); ++j) {
+                    if (j == i) continue;
                     for (const auto& method : staticMethods[j]) {
                         assemblyCodes.push_back("extern " + method);
                     }
                 }
-                for (const auto& field : staticFields[i]) {
-                    assemblyCodes.push_back("global " + field);
+                if (i == 0) {
+                    for (const auto& field : staticFields) {
+                        assemblyCodes.push_back("global " + field);
+                    }
                 }
                 assemblyCodes.push_back("\nglobal " + compUnit->getName()+ "_vtable");
                 // static data
@@ -791,16 +798,16 @@ int main(int argc, char *argv[])
                 }
                 if (!validVTable) vtableDecl += "0";
                 assemblyCodes.push_back(vtableDecl);
-
-                for (const auto& field : staticFields[i])
-                {
-                    assemblyCodes.push_back(field + ": dd 0");
+                if (i == 0) {
+                    for (const auto& field : staticFields)
+                    {
+                        assemblyCodes.push_back(field + ": dd 0");
+                    }
                 }
                 assemblyCodes.push_back("\nsection .text");
-                assemblyCodes.push_back("global _start");
-                Tiling tiler(st, staticFields[i]);
-
+                Tiling tiler(st, staticFields);
                 if (i == 0) {
+                    assemblyCodes.push_back("global _start");
                     assemblyCodes.push_back("_start:"); // Entry point label
                     assemblyCodes.push_back("call " + compUnit->getName() + TIR::Configuration::STATIC_INIT_FUNC);
                     assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
@@ -819,7 +826,7 @@ int main(int argc, char *argv[])
                     tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();
                     tiler.currentPos = 0;
-                    std::cout << funcName << " " << funcDecl->numTemps << std::endl;
+                    // std::cout << funcName << " " << funcDecl->numTemps << std::endl;
                     assemblyCodes.push_back("\nglobal " + funcDecl->getName());
                     assemblyCodes.push_back(funcDecl->getName() + ":");
                     assemblyCodes.push_back("push ebp");
