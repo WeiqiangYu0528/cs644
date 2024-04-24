@@ -722,6 +722,7 @@ int main(int argc, char *argv[])
     {
         std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
         std::vector<std::string> staticFields;
+        std::vector<std::string> vtables;
         std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
         std::vector<std::vector<std::string>> staticMethods;
         std::vector<std::shared_ptr<TIR::CompUnit>> compUnits;
@@ -732,6 +733,7 @@ int main(int argc, char *argv[])
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
             compUnits.push_back(cu);
+            vtables.push_back(cu->getName() + "_vtable");
         }
         staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
         compUnits[0]->appendFunc(nodeFactory->IRFuncDecl(compUnits[0]->getName() + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
@@ -765,6 +767,8 @@ int main(int argc, char *argv[])
                 std::vector<std::string> assemblyCodes;
                 assemblyCodes.push_back("extern __malloc");
                 assemblyCodes.push_back("extern __exception");
+                assemblyCodes.push_back("extern NATIVEjava.io.OutputStream.nativeWrite");
+
                 if (i != 0) {
                     for (const auto& field : staticFields) {
                         assemblyCodes.push_back("extern " + field);
@@ -780,6 +784,10 @@ int main(int argc, char *argv[])
                     for (const auto& field : staticFields) {
                         assemblyCodes.push_back("global " + field);
                     }
+                }
+                for (size_t k = 0; k < vtables.size(); ++k) {
+                    if (k == i) continue;
+                    assemblyCodes.push_back("extern " + vtables[k]);
                 }
                 assemblyCodes.push_back("\nglobal " + compUnit->getName()+ "_vtable");
                 // static data
@@ -804,7 +812,7 @@ int main(int argc, char *argv[])
                     }
                 }
                 assemblyCodes.push_back("\nsection .text");
-                Tiling tiler(st, staticFields);
+                Tiling tiler(st, staticFields, vtables);
                 if (i == 0) {
                     assemblyCodes.push_back("global _start");
                     assemblyCodes.push_back("_start:"); // Entry point label

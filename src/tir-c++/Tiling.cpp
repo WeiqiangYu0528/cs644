@@ -19,7 +19,7 @@
 //           o = overflow
 //           no = not overflow
 
-Tiling::Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields) : st(st), staticFields(fields) {
+Tiling::Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields, std::vector<std::string>& tables) : st(st), staticFields(fields), vtables(tables) {
 }
 
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
@@ -91,7 +91,7 @@ void Tiling::tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std:
 void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std::string>& assembly) {
     const auto& args = node->getArgs();
     std::string funcName = node->getSignature();
-    if (funcName == "__malloc") {
+    if (funcName == "__malloc" || funcName == "NATIVEjava.io.OutputStream.nativeWrite") {
         tileExp(args[0], assembly);
         assembly.push_back("mov eax, ebx");
     }
@@ -235,8 +235,8 @@ void Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<std::str
 
 void Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly, bool read) {
     std::string localVarName{node->getName()};
-    if (localVarName == TIR::Configuration::VTABLE) {
-        assembly.push_back("mov ebx, " + st->getClassName() + "_vtable");
+    if (std::find(vtables.begin(), vtables.end(), localVarName) != vtables.end()) {
+        assembly.push_back("mov ebx, " + localVarName);
         return;
     }
     if (!tempToStackOffset.contains(localVarName)) {
