@@ -18,6 +18,8 @@ class SymbolTable {
     std::shared_ptr<Program> ast;
     // package
     std::string pkg;
+    // class name
+    std::string cname;
     // member type declaration
     std::shared_ptr<ClassOrInterfaceDecl> cdecl;
     // field table
@@ -50,6 +52,8 @@ class SymbolTable {
         std::shared_ptr<Program> getAst() const;
         void setPackage(std::string& p);
         std::string getPackage() const;
+        void setClassName(const std::string& c);
+        std::string getClassName() const;
         void setClassOrInterfaceDecl(std::shared_ptr<ClassOrInterfaceDecl> c);
         std::shared_ptr<ClassOrInterfaceDecl> getClassOrInterfaceDecl() const;
         void setScope(std::shared_ptr<Scope> s);

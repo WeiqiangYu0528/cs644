@@ -1,3 +1,4 @@
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -18,6 +19,8 @@
 #include "IRCfgVisitor.hpp"
 #include <Tiling.hpp>
 #include "cfgVisitor.hpp"
+#include "subtypeTable.hpp"
+#include "linearScanner.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
     {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY}, {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY}, {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY}, {DataType::OBJECT, DataType::OBJECTARRAY}};
@@ -275,21 +278,13 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
 
     assert(n->scope->current->vtableMethodsPopulated == false);
     n->scope->current->vtableMethodsPopulated = true;
+
     std::vector<std::shared_ptr<Method>> &vtableMethods = n->scope->current->getVtableMethods();
+    std::unordered_map<std::string, int> signatureIndexMap;
 
-    std::unordered_set<std::string> classlessMethodSignatures;
-    
-    //get and set current vtableMethods
-    for (const auto& memberDecl : cdecl->declarations[1]) {
-        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
-        if (!method || method->isStatic) continue;
-        vtableMethods.push_back(method);  
-        std::string methodSignature = removeClassName(method->getSignature(), method->className);
-        assert(!(classlessMethodSignatures.contains(methodSignature)));
-        classlessMethodSignatures.insert(methodSignature);
-    }
+    assert(vtableMethods.size() == 0);
 
-    //for each parent, add their non-static vtableMethods
+    //find superclass
     for (const auto& superTable : n->scope->supers) {
         std::shared_ptr<ClassDecl> scdecl = std::dynamic_pointer_cast<ClassDecl>(superTable->getAst()->classOrInterfaceDecl);
         if (!scdecl) continue;
@@ -299,17 +294,37 @@ void populateVtableMethods(std::shared_ptr<Program> n, bool &error) {
             populateVtableMethods(superTable->getAst(), error);
         }
 
-        //get that parent's vtableMethods
+        //copy super's methods to our vector
         std::vector<std::shared_ptr<Method>> &superVtableMethods = superTable->getVtableMethods();
-        for (const auto& superMethod : superVtableMethods) {
-            //don't allow any repeat method signatures
-            std::string methodSignature = removeClassName(superMethod->getSignature(), superMethod->className);
-            if (classlessMethodSignatures.contains(methodSignature)) continue;
-            vtableMethods.push_back(superMethod);
-            classlessMethodSignatures.insert(methodSignature);            
-        }
-        return; //we can only extend at most one class
+        vtableMethods.insert(vtableMethods.end(), superVtableMethods.begin(), superVtableMethods.end());
+
+        //now vtableMethods consists entirely of its superclass's vtableMethods
+        break;
     }
+
+    //vtableMethods has been populated with our superclass's methods, if any exist
+    //populate our signatureIndexMap
+    for (int i = 0; i < vtableMethods.size(); ++i) {
+        std::shared_ptr<Method> method = vtableMethods[i];
+        std::string methodSignature = removeClassName(method->getSignature(), method->className);
+        assert(!signatureIndexMap.contains(methodSignature));
+        signatureIndexMap[methodSignature] = i;
+    }
+
+    //look at our methods. if the method exists in our vtableMethods, override it. Else, add it and add new entry.
+    for (const auto& memberDecl : cdecl->declarations[1]) {
+        std::shared_ptr<Method> method = std::dynamic_pointer_cast<Method>(memberDecl);
+        if (!method || method->isStatic) continue; //ignore static methods
+
+        std::string methodSignature = removeClassName(method->getSignature(), method->className);
+
+        if (signatureIndexMap.contains(methodSignature)) {
+            vtableMethods[signatureIndexMap[methodSignature]] = method;
+        } else {
+            vtableMethods.push_back(method);
+            signatureIndexMap[methodSignature] = vtableMethods.size() - 1;
+        }
+    }      
 }
 
 void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
@@ -357,12 +372,113 @@ void populateVtableFields(std::shared_ptr<Program> n, bool &error) {
     }
 }
 
+/*
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable2(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    if (subtypeTable.contains(decl)) return;
+
+    subtypeTable.insert({decl, {}});
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(decl).contains(superDecl)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(superDecl)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(decl).insert(superDecl);
+            for (std::shared_ptr<ClassOrInterfaceDecl> ancestorDecl : subtypeTable.at(superDecl)) {
+                if (subtypeTable.at(decl).contains(ancestorDecl)) continue;
+                subtypeTable.at(decl).insert(ancestorDecl);
+            }
+        }
+    }
+}*/
+
+/*
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateStringSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    std::string fullClassName = /*n->package->id->name + "." +*/// decl->id->name;
+ /*   if (subtypeTable.contains(fullClassName)) return;
+
+    subtypeTable.insert({fullClassName, {}});
+    subtypeTable.at(fullClassName).insert("Object");
+
+    for (auto superTable : n->scope->supers) {
+        std::shared_ptr<ClassOrInterfaceDecl> superDecl = superTable->getClassOrInterfaceDecl();
+        //std::string fullSuperClassName = /*superTable->getPackage() + "." +*/ //superTable->getClassName();
+       // std::string fullSuperClassName = /*superTable->getPackage() + "." +*/ //superTable->getAst()->classOrInterfaceDecl->id->name;
+
+        //if the superDecl is already in our set, do a check and then continue
+       /* if (subtypeTable.at(fullClassName).contains(fullSuperClassName)) {
+            //confirm that superDecl's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(fullSuperClassName)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(fullClassName).insert(fullSuperClassName);
+            for (std::string fullAncestorClassName : subtypeTable.at(fullSuperClassName)) {
+                if (subtypeTable.at(fullClassName).contains(fullAncestorClassName)) continue;
+                subtypeTable.at(fullClassName).insert(fullAncestorClassName);
+            }
+        }
+    }
+}*/
+
+//require that subtypeTable doesn't already have an entry for n->classOrInterfaceDecl
+void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
+    std::shared_ptr<ClassOrInterfaceDecl> decl = n->classOrInterfaceDecl;
+    std::string fullClassName = /*n->package->id->name + "." +*/ decl->id->name;
+    std::shared_ptr<SymbolTable> table = n->scope->current;
+    if (subtypeTable.contains(table)) return;
+
+    subtypeTable.insert({table, {}});
+    /////subtypeTable.at(st).insert("Object");
+
+    for (auto superTable : n->scope->supers) {
+        //if the superDecl is already in our set, do a check and then continue
+        if (subtypeTable.at(table).contains(superTable)) {
+            //confirm that superTable's entry in subtypeTable already exists, otherwise error
+            if (!subtypeTable.contains(superTable)) {
+                std::cerr << "Error: Subtype Table Building failed, supertype's entry not filled in" << std::endl;
+                error = true;
+                return;
+            } else continue;
+        } else {
+            //otherwise, add it and its ancestors to our set
+            populateSubtypeTable(superTable->getAst(), error);
+            if (error) return;
+            subtypeTable.at(table).insert(superTable);
+            for (std::shared_ptr<SymbolTable> ancestorTable : subtypeTable.at(superTable)) {
+                if (subtypeTable.at(table).contains(ancestorTable)) continue;
+                subtypeTable.at(table).insert(ancestorTable);
+            }
+        }
+    }
+}
+
 
 
 
 
 int main(int argc, char *argv[])
 {
+    bool optimized = true;
     std::unordered_map<std::string,
                        std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>
         tables;
@@ -371,6 +487,10 @@ int main(int argc, char *argv[])
     bool error{false};
     for (int i = 1; i < argc; ++i)
     {
+        if (strcmp(argv[i], "--opt-none") == 0) {
+            optimized = false;
+            continue;
+        }
         std::ifstream inputFile;
         inputFile.open(argv[i]);
         if (!inputFile.is_open())
@@ -447,6 +567,14 @@ int main(int argc, char *argv[])
         std::cerr << "Error: Hierarchy Checking failed" << std::endl;
         error = true;
     }
+
+    //reset
+    subtypeTable.clear(); //just in case
+    for (auto ast : asts) 
+    {
+        populateSubtypeTable(ast, error);
+    }
+
 
     if (!error)
     {
@@ -570,7 +698,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-
     if (!error)
     {
         for (std::shared_ptr<Program> program : asts)
@@ -585,7 +712,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-
     if (!error)
     {
         for (std::shared_ptr<Program> program : asts)
@@ -614,135 +740,143 @@ int main(int argc, char *argv[])
     if (!error)
     {
         std::shared_ptr<TIR::NodeFactory_c> nodeFactory = std::make_shared<TIR::NodeFactory_c>();
-        std::vector<std::shared_ptr<TIR::Stmt>> staticFields;
-        std::unordered_map<std::string, int> staticFieldsMap;
-        std::unordered_map<std::string, std::shared_ptr<TIR::FuncDecl>> staticMethodMap;
-        std::shared_ptr<TIR::CompUnit> compUnit;
+        std::vector<std::string> staticFields;
+        std::vector<std::string> vtables;
+        std::vector<std::shared_ptr<TIR::Stmt>> staticFieldStmts;
+        std::vector<std::vector<std::string>> staticMethods;
+        std::vector<std::shared_ptr<TIR::CompUnit>> compUnits;
         for (std::shared_ptr<Program> program : asts)
         {
-            TransformVisitor tvisitor(program->scope, nodeFactory);
+            std::cout << program->getQualifiedName().second << std::endl;
+            TransformVisitor tvisitor(program->scope, nodeFactory, staticFields, staticFieldStmts, staticMethods);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
-            if (compUnit == nullptr)
-                compUnit = cu;
-            for (auto fieldDecl : cu->getFields())
+            compUnits.push_back(cu);
+            vtables.push_back(cu->getName() + "_vtable");
+        }
+        staticFieldStmts.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
+        compUnits[0]->appendFunc(nodeFactory->IRFuncDecl(compUnits[0]->getName() + TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFieldStmts)));
+        for (size_t i = 0; i < compUnits.size(); ++i) {
+            std::shared_ptr<TIR::CompUnit> compUnit = compUnits[i];
+            std::shared_ptr<SymbolTable> st = asts[i]->scope->current;
+            try
             {
-                auto field = std::dynamic_pointer_cast<TIR::Temp>(fieldDecl->getTarget());
-                staticFieldsMap[field->getName()] = 0;
-                staticFields.push_back(fieldDecl);
+                std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
+                cvisitor->visit(compUnit);
             }
-            for (auto &[k, v] : cu->getFunctions())
+            catch (std::exception &e)
             {
-                staticMethodMap[k] = v;
+                std::cout << "Error in CanonicalVisitor" << std::endl;
             }
-        }
-        staticFields.push_back(nodeFactory->IRReturn(nodeFactory->IRConst(0)));
-        compUnit->setStaticInitFunc(nodeFactory->IRFuncDecl(TIR::Configuration::STATIC_INIT_FUNC, 0, nodeFactory->IRSeq(staticFields)));
-        compUnit->setFunctions(staticMethodMap);
 
-        try
-        {
-            std::shared_ptr<CanonicalVisitor> cvisitor = std::make_shared<CanonicalVisitor>();
-            cvisitor->visit(compUnit);
+            try
             {
-                TIR::Simulator sim(compUnit);
-                sim.staticFields = staticFieldsMap;
-                sim.initStaticFields();
-                // long result = sim.call(compUnit->getName() + "_test_int");
-                // std::cout << "After CanonicalVisitor: program evaluates to " << result << std::endl;
-                staticFieldsMap = sim.staticFields;
+                std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
+                cfv->visit(compUnit);
+                std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
+                std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
             }
-        }
-        catch (std::exception &e)
-        {
-            std::cout << "Error in CanonicalVisitor" << std::endl;
-        }
-
-        try
-        {
-            std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
-            cfv->visit(compUnit);
-            std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
-            std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
-            // {
-            //     TIR::Simulator sim(compUnit);
-            //     sim.staticFields = staticFieldsMap;
-            //     sim.initStaticFields();
-            //     long result = sim.call(compUnit->getName() + "_test_int");
-            //     std::cout << "After CFG: program evaluates to " << result << std::endl;
-            //     staticFieldsMap = sim.staticFields;
-            // }
-        }
-        catch (std::exception &e)
-        {
-            std::cout << "Error in CFG" << std::endl;
-        }
-
-        {
-            // generate .s file for compUnit
-
-            std::vector<std::string> assemblyCodes;
-            assemblyCodes.push_back("extern __malloc");
-            assemblyCodes.push_back("extern __exception\n");
-            // static data
-            assemblyCodes.push_back("section .data");
-            for (auto &[key, value] : staticFieldsMap)
+            catch (std::exception &e)
             {
-                std::string staticField = key;
-                std::replace(staticField.begin(), staticField.end(), '.', '_');
-                assemblyCodes.push_back(staticField + ": dd " + std::to_string(value));
+                std::cout << "Error in CFG" << std::endl;
             }
-            // for (auto instr : assemblyCodes)
-            // {
-            //     std::cout << instr << std::endl;
-            // }
-            assemblyCodes.push_back("\nsection .text");
-            assemblyCodes.push_back("global _start");
-            Tiling tiler(staticFieldsMap);
 
-            assemblyCodes.push_back("_start:"); // Entry point label
-            assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
-            assemblyCodes.push_back("mov ebx, eax");
-            assemblyCodes.push_back("mov eax, 1");
-            assemblyCodes.push_back("int 0x80");
-
-            for (auto &[funcName, funcDecl] : compUnit->getFunctions())
             {
-                tiler.currentStackOffset = 0;
-                tiler.tempToStackOffset.clear();
-                // std::vector<std::string> assemblyInstructions;
-                std::cout << funcName << " " << funcDecl->numTemps << std::endl;
+                // generate .s file for compUnit
+                std::vector<std::string> assemblyCodes;
+                assemblyCodes.push_back("extern __malloc");
+                assemblyCodes.push_back("extern __exception");
+                assemblyCodes.push_back("extern NATIVEjava.io.OutputStream.nativeWrite");
 
-                assemblyCodes.push_back("\n" + funcDecl->getName() + ":");
-                assemblyCodes.push_back("push ebp");
-                assemblyCodes.push_back("mov ebp, esp");
-                assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
-                for (int i = 0; i < funcDecl->getNumParams(); i++)
-                    tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
-
-                // if (!tempToStackOffset.contains(node->getName())) {
-                //     tempToStackOffset[node->getName()] = currentStackOffset;
-                // }
-                // std::cout << funcDecl->getName() << std::endl;
-
-                for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
-                {
-                    // if (std::dynamic_pointer_cast<Call_s>(stmt) != nullptr) {
-                    //     assemblyInstructions.push_back("call " + std::dynamic_pointer_cast<Call_s>(stmt)->getTarget()->getName());
-                    // }
-                    tiler.tileStmt(stmt, assemblyCodes);
+                if (i != 0) {
+                    for (const auto& field : staticFields) {
+                        assemblyCodes.push_back("extern " + field);
+                    }
                 }
-                // assemblyCodes.insert(assemblyCodes.end(), assemblyInstructions.begin(), assemblyInstructions.end());
-                // for (auto instr : assemblyInstructions)
-                // {
-                //     std::cout << instr << std::endl;
-                // }
-                
-            }
+                for (size_t j = 0; j < staticMethods.size(); ++j) {
+                    if (j == i) continue;
+                    for (const auto& method : staticMethods[j]) {
+                        assemblyCodes.push_back("extern " + method);
+                    }
+                }
+                if (i == 0) {
+                    for (const auto& field : staticFields) {
+                        assemblyCodes.push_back("global " + field);
+                    }
+                }
+                for (size_t k = 0; k < vtables.size(); ++k) {
+                    if (k == i) continue;
+                    assemblyCodes.push_back("extern " + vtables[k]);
+                }
+                assemblyCodes.push_back("\nglobal " + compUnit->getName()+ "_vtable");
+                // static data
+                assemblyCodes.push_back("section .data");
+                std::vector<std::shared_ptr<Method>>& methods = st->getVtableMethods();
+                size_t methodSize{methods.size()};
+                std::string vtableDecl = compUnit->getName()+ "_vtable: dd ";
+                bool validVTable{false};
+                for (size_t i = 0; i < methodSize; ++i) {
+                    if (!methods[i]->isNative && !methods[i]->isAbstract) {
+                        vtableDecl += methods[i]->getSignature();
+                        if (i != methodSize - 1) vtableDecl += ", ";
+                        validVTable = true;
+                    }
+                }
+                if (!validVTable) vtableDecl += "0";
+                assemblyCodes.push_back(vtableDecl);
+                if (i == 0) {
+                    for (const auto& field : staticFields)
+                    {
+                        assemblyCodes.push_back(field + ": dd 0");
+                    }
+                }
+                assemblyCodes.push_back("\nsection .text");
+                Tiling tiler(st, staticFields, vtables);
+                if (i == 0) {
+                    assemblyCodes.push_back("global _start");
+                    assemblyCodes.push_back("_start:"); // Entry point label
+                    assemblyCodes.push_back("call " + compUnit->getName() + TIR::Configuration::STATIC_INIT_FUNC);
+                    assemblyCodes.push_back("call " + compUnit->getName() + "_test_int");
+                    assemblyCodes.push_back("mov ebx, eax");
+                    assemblyCodes.push_back("mov eax, 1");
+                    assemblyCodes.push_back("int 0x80");
+                }
 
-            assemblyCodes.push_back("\nzerodivisionlabel:");
-            assemblyCodes.push_back("call __exception");
-            generateAssemblyFile("output.s", assemblyCodes);
+                for (auto &[funcName, funcDecl] : compUnit->getFunctions())
+                {                    
+                    std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>(true);
+                    cfv->visit(funcDecl);
+                    auto& cfg = cfv->cfg;
+
+                    TIR::LinearScanner scanner(cfg);
+                    
+                    scanner.allocateRegisters({"edx", "esi"});
+                    tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills,
+                        tiler.currentStackOffset, tiler.tempToStackOffset, tiler.staticFields, optimized);
+                    tiler.currentStackOffset = 0;
+                    tiler.tempToStackOffset.clear();
+                    tiler.currentPos = 0;
+                    // std::cout << funcName << " " << funcDecl->numTemps << std::endl;
+                    assemblyCodes.push_back("\nglobal " + funcDecl->getName());
+                    assemblyCodes.push_back(funcDecl->getName() + ":");
+                    assemblyCodes.push_back("push ebp");
+                    assemblyCodes.push_back("mov ebp, esp");
+                    assemblyCodes.push_back("sub esp, " + std::to_string(4 * funcDecl->numTemps));
+                    for (int i = 0; i < funcDecl->getNumParams(); i++) {
+                        tiler.tempToStackOffset[Configuration::ABSTRACT_ARG_PREFIX + std::to_string(i)] = 4 * (i + 2);
+                    }
+
+                    for (auto stmt : std::dynamic_pointer_cast<Seq>(funcDecl->getBody())->getStmts())
+                    {
+                        tiler.tileStmt(stmt, assemblyCodes);
+                    }
+
+                }
+
+                assemblyCodes.push_back("\nzerodivisionlabel:");
+                assemblyCodes.push_back("call __exception");
+                generateAssemblyFile(compUnit->getName() + ".s", assemblyCodes);
+            }
         }
     }
 

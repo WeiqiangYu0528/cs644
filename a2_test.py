@@ -2,6 +2,8 @@ import os
 import subprocess
 import argparse
 
+optimized = True
+
 error_code = {
     'J1_' : 0,
     'J2_' : 0,
@@ -15,6 +17,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--single', metavar='dir', type=str)
     parser.add_argument('-a', '--all', action='store_true')
+    parser.add_argument('-no', '--nop', action='store_true')
     return parser.parse_args()
 
 
@@ -29,6 +32,8 @@ def collect_files(directory):
 
 def execute_joosc(files):
     command = ['./joosc'] + files
+    if not optimized:
+        command.append('--opt-none')
     result = subprocess.run(command, capture_output=True, text=True)
     return result
 
@@ -105,10 +110,14 @@ def single(dir_or_file):
 
 if __name__ == "__main__":
     args = parse_arguments()
-    jsl_dir = './JSL_5.0'
-    test_dir = './tests/a5-tests'
+    jsl_dir = './JSL_6.1'
+    test_dir = './tests/a6-tests'
+
+    if args.nop:
+        optimized = False
 
     if args.single:
         single(args.single)
     elif args.all:
         main(test_dir)
+    

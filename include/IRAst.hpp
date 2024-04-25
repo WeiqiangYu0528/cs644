@@ -156,6 +156,7 @@ class Call : public Expr_c {
 protected:
     std::shared_ptr<Expr> target;
     std::vector<std::shared_ptr<Expr>> args;
+    std::string signature;
 
 public:
     /**
@@ -179,6 +180,10 @@ public:
     std::vector<std::shared_ptr<Expr>> getArgs() const;
 
     int getNumArgs() const;
+
+    void setSignature(const std::string& s);
+
+    std::string getSignature() const;
 
     std::string getLabel() const override;
 
@@ -304,8 +309,6 @@ public:
 class CompUnit : public Node_c {
 private:
     std::string name;
-    std::shared_ptr<FuncDecl> staticInitFunc;
-    std::vector<std::shared_ptr<Move>> fields;
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> functions;
 
 public:
@@ -315,17 +318,11 @@ public:
 
     void appendFunc(std::shared_ptr<FuncDecl> func);
 
-    void setStaticInitFunc(std::shared_ptr<FuncDecl> func);
-
-    void setFields(std::vector<std::shared_ptr<Move>>& fields);
-
     void setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions);
 
     std::string getName() const;
 
     const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& getFunctions() const;
-
-    const std::vector<std::shared_ptr<Move>>& getFields() const;
 
     std::shared_ptr<FuncDecl> getFunction(const std::string& name) const;
 
@@ -583,8 +580,9 @@ public:
  */
 class Call_s : public Stmt {
 protected:
-    std::shared_ptr<Name> target;
+    std::shared_ptr<Temp> target;
     std::vector<std::shared_ptr<Temp>> args;
+    std::string signature;
 
 public:
     /**
@@ -601,15 +599,19 @@ public:
      * @param numRets number of return values for this function call
      * @param args arguments of this function call
      */
-    Call_s(std::shared_ptr<Name> target, const std::vector<std::shared_ptr<Temp>>& args);
+    Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args);
 
-    std::shared_ptr<Name> getTarget() const;
+    std::shared_ptr<Temp> getTarget() const;
 
     std::vector<std::shared_ptr<Temp>> getArgs() const;
 
     int getNumArgs() const;
 
     std::string getLabel() const override;
+
+    void setSignature(const std::string& s);
+
+    std::string getSignature() const;
 
     std::shared_ptr<Node> visitChildren(std::shared_ptr<IRVisitor> v) override;
 

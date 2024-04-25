@@ -23,11 +23,11 @@ class Scope {
         std::shared_ptr<SymbolTable> getQualifiedNameInScope(const std::string& name) const;
         std::shared_ptr<SymbolTable> getUnqualifiedNameInScope(const std::string& name) const;
         bool isNameValidInScope(const std::string& name) const;
-        AmbiguousName reclassifySimpleAmbiguousName(const std::string& name);
-        AmbiguousName reclassifyQualifiedAmbiguousName(const std::string& name);
-        AmbiguousName reclassifyAmbiguousName(const std::string& name, bool simple);
-        AmbiguousName reclassifyAmbiguousNameByLocal(const std::string& name);
-        AmbiguousName reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> s, bool staticField);
-
+        AmbiguousName reclassifySimpleAmbiguousName(const std::string& name, std::vector<ExpressionObject>* exprs = nullptr);
+        AmbiguousName reclassifyQualifiedAmbiguousName(const std::string& name, std::vector<ExpressionObject>* exprs = nullptr);
+        AmbiguousName reclassifyAmbiguousName(const std::string& name, bool simple, std::vector<ExpressionObject>* exprs = nullptr);
+        AmbiguousName reclassifyAmbiguousNameByLocal(const std::string& name, std::vector<ExpressionObject>* exprs = nullptr);
+        AmbiguousName reclassifyAmbiguousNameByField(const std::string& name, std::shared_ptr<SymbolTable> s, bool staticField, std::vector<ExpressionObject>* exprs = nullptr);
+        void updateExpressionObject(const std::string& name, std::shared_ptr<SymbolTable> st, Expression expr, std::shared_ptr<Type> type, std::vector<ExpressionObject>* exprs = nullptr);
         bool superBFS(std::shared_ptr<SymbolTable>& start, std::shared_ptr<SymbolTable>& end, bool strictSubclass = true);
 };

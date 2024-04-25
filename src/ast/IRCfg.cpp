@@ -4,7 +4,35 @@
 namespace TIR {
     BasicBlock::BasicBlock() {}
 
-    CFG::CFG() {}
+    CFG::CFG() { block_id = 0;}
+
+
+    void CFG::computeLiveVariables() {
+        bool changed;
+        do {
+            changed = false;
+            for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
+                auto block = *it;
+                std::unordered_set<std::string> newLiveOut;
+                for (auto& edge : block->outgoing) {
+                    auto& successorLiveIn = liveIn[edge->to];
+                    newLiveOut.insert(successorLiveIn.begin(), successorLiveIn.end());
+                }
+                std::unordered_set<std::string> newLiveIn(newLiveOut);
+                for (const auto& def : block->defs) {
+                    newLiveIn.erase(def);
+                }
+                for (const auto& use : block->uses) {
+                    newLiveIn.insert(use);
+                }
+                if (liveIn[block] != newLiveIn || liveOut[block] != newLiveOut) {
+                    liveIn[block] = std::move(newLiveIn);
+                    liveOut[block] = std::move(newLiveOut);
+                    changed = true;
+                }
+            }
+        } while (changed);
+    }
 
     std::shared_ptr<BasicBlock> CFG::newBlock() {
         auto newBlock = std::make_shared<BasicBlock>();
@@ -62,6 +90,7 @@ namespace TIR {
 
     void CFG::collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<BasicBlock>>& blocks) {
         if (!block || block->marked) return;
+        block->index = ++block_id;
         block->marked = true;
         blocks.push_back(block);
         if (!block->outgoing.empty()) {
@@ -113,20 +142,29 @@ namespace TIR {
     }
 
     void CFG::optimizeJumps(std::vector<std::shared_ptr<BasicBlock>>& trace) {
-        // Remove unnecessary JUMP
-        
-        for(auto& block : trace) {
+        // Remove unnecessary JUMP        
+        for (auto& block : trace) {
             auto& stmts = block->statements;
             for (auto it = stmts.begin(); it != stmts.end(); ) {
                 if (auto jump = std::dynamic_pointer_cast<Jump>(*it)) {
+                    bool deleteJump = false;
+                    if (it != stmts.begin()) {
+                        auto prevIt = std::prev(it);
+                        if (std::dynamic_pointer_cast<Return>(*prevIt)) {
+                            deleteJump = true;
+                        }
+                    }
                     auto nextIt = std::next(it);
-                    if (nextIt != stmts.end()) {
+                    if (nextIt != stmts.end() && !deleteJump) {
                         auto label = std::dynamic_pointer_cast<Label>(*nextIt);
                         auto target = std::dynamic_pointer_cast<Name>(jump->getTarget());
-                        if (label->getName() == target->getName()) {
-                            it = stmts.erase(it); 
-                            continue;  
+                        if (label && target && label->getName() == target->getName()) {
+                            deleteJump = true;
                         }
+                    }
+                    if (deleteJump) {
+                        it = stmts.erase(it);
+                        continue;
                     }
                 }
                 ++it;

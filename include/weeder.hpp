@@ -67,7 +67,9 @@ enum class DataType {
     LONGARRAY,
     FLOATARRAY,
     DOUBLEARRAY,
-    OBJECTARRAY
+    OBJECTARRAY,
+    STRING,
+    NULLTYPE
 };
 
 inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
@@ -82,3 +84,10 @@ inline bool validateModifier(std::vector<int>& vec, Modifiers token) {
     }
     return true;
 }
+
+enum class Expression {
+    LOCAL = 0,
+    NON_STATIC_FIELD,
+    STATIC_FIELD,
+    ARRAY
+};

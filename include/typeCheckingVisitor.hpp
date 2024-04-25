@@ -94,7 +94,7 @@ class TypeCheckingVisitor : public Visitor {
             // int < short
             {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},
             // int < byte
-            {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Short}, ExpType::Boolean},                        
+            {{ExpRuleType::Comparison, ExpType::Integer, ExpType::Byte}, ExpType::Boolean},                        
             // short < short           
             {{ExpRuleType::Comparison, ExpType::Short, ExpType::Short}, ExpType::Boolean},
             // short < char

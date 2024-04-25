@@ -37,6 +37,9 @@ bool BinOp::isConstant() const {
 }
 
 Call::Call(std::shared_ptr<Expr> target, const std::vector<std::shared_ptr<Expr>>& args) : target(target), args(args) {
+    if (auto name = std::dynamic_pointer_cast<Name>(target)) {
+        signature = name->getName();
+    }
 }
 
 std::shared_ptr<Expr> Call::getTarget() const {
@@ -53,6 +56,14 @@ int Call::getNumArgs() const {
 
 std::string Call::getLabel() const {
     return "CALL";
+}
+
+void Call::setSignature(const std::string& s) {
+    signature = s;
+}
+
+std::string Call::getSignature() const {
+    return signature;
 }
 
 std::shared_ptr<Node> Call::visitChildren(std::shared_ptr<IRVisitor> v) {
@@ -78,10 +89,10 @@ bool Call::isCanonical(std::shared_ptr<CheckCanonicalIRVisitor> v) const {
     return !v->inExpr();
 }
 
-Call_s::Call_s(std::shared_ptr<Name> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
+Call_s::Call_s(std::shared_ptr<Temp> target, const std::vector<std::shared_ptr<Temp>>& args) : target(target), args(args) {
 }
 
-std::shared_ptr<Name> Call_s::getTarget() const {
+std::shared_ptr<Temp> Call_s::getTarget() const {
     return target;
 }
 
@@ -95,6 +106,14 @@ int Call_s::getNumArgs() const {
 
 std::string Call_s::getLabel() const {
     return "CALL_s";
+}
+
+void Call_s::setSignature(const std::string& s) {
+    signature = s;
+}
+
+std::string Call_s::getSignature() const {
+    return signature;
 }
 
 std::shared_ptr<Node> Call_s::visitChildren(std::shared_ptr<IRVisitor> v) {
@@ -169,14 +188,6 @@ void CompUnit::appendFunc(std::shared_ptr<FuncDecl> func) {
     functions[func->name] = func;
 }
 
-void CompUnit::setStaticInitFunc(std::shared_ptr<FuncDecl> func) {
-    this->staticInitFunc = func;
-}
-
-void CompUnit::setFields(std::vector<std::shared_ptr<Move>>& fields) {
-    this->fields = fields;
-}
-
 void CompUnit::setFunctions(std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& functions) {
     this->functions = functions;
 }
@@ -189,12 +200,8 @@ const std::unordered_map<std::string, std::shared_ptr<FuncDecl>>& CompUnit::getF
     return functions;
 }
 
-const std::vector<std::shared_ptr<Move>>& CompUnit::getFields() const {
-    return fields;
-}
-
 std::shared_ptr<FuncDecl> CompUnit::getFunction(const std::string& name) const {
-    return name == Configuration::STATIC_INIT_FUNC ? staticInitFunc : functions.at(name);
+    return functions.at(name);
 }
 
 std::string CompUnit::getLabel() const {
@@ -205,7 +212,6 @@ std::shared_ptr<Node> CompUnit::visitChildren(std::shared_ptr<IRVisitor> v) {
     bool modified = false;
 
     std::unordered_map<std::string, std::shared_ptr<FuncDecl>> results;
-    v->visit(shared_from_this(), staticInitFunc);
     for (auto [key, func] : functions) {
         std::shared_ptr<FuncDecl> newFunc = std::dynamic_pointer_cast<FuncDecl>(v->visit(shared_from_this(), func));
         if (newFunc != func) modified = true;

@@ -1,13 +1,21 @@
 public class A{
-    public A() {
+
+    public A(){}
+
+    public static int test(){
+	
+	boolean b = true;
+	boolean e = false;
+	Object a = new A();
+	boolean c = e || a instanceof A;
+	boolean d = b && a instanceof A;
+
+	if (c && d){
+	    return 123;
+	}
+	else {
+	    return 12378;
+	}
     }
 
-    public static int test() {
-        int[] arr = new int[1];
-        arr[0] = 1;
-        if (1 < 3 && arr[0] > 5) {
-            return 123;
-        }
-        return 200;
-    }
 }

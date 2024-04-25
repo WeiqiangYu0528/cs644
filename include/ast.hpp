@@ -7,6 +7,7 @@
 #include "weeder.hpp"
 
 class Visitor;
+class SymbolTable;
 class Scope;
 
 class AstNode {
@@ -40,6 +41,13 @@ class Statement : public AstNode
         virtual ~Statement() = default;
         virtual void accept(Visitor *v) = 0;
         virtual std::string getStmtName() = 0;
+};
+
+struct ExpressionObject {
+    Expression exp;
+    std::string name;
+    std::shared_ptr<Type> type;
+    std::shared_ptr<SymbolTable> st;
 };
 
 class MemberDecl : public AstNode {
@@ -118,6 +126,7 @@ class ClassOrInterfaceDecl : public AstNode {
 class PlusExp : public Exp, public std::enable_shared_from_this<PlusExp> {
     public:
         std::shared_ptr<Exp> exp1, exp2;
+        bool stringConcat = false;
         PlusExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2);
         void accept(Visitor* v) override;
 };
@@ -160,6 +169,7 @@ class NotExp : public Exp, public std::enable_shared_from_this<NotExp> {
 class IdentifierExp : public Exp, public std::enable_shared_from_this<IdentifierExp> {
     public:
         std::shared_ptr<Identifier> id;
+        std::vector<ExpressionObject> exprs;
         bool simple;
         IdentifierExp(std::shared_ptr<Identifier> i, bool s = false);
         void accept(Visitor* v) override;
@@ -202,6 +212,8 @@ class NulLiteralExp : public Exp, public std::enable_shared_from_this<NulLiteral
 class ArrayAccessExp: public Exp, public std::enable_shared_from_this<ArrayAccessExp> {
     public:
         std::shared_ptr<Exp> array, index;
+        std::vector<ExpressionObject> exprs;
+        ExpressionObject expr;
         ArrayAccessExp(std::shared_ptr<Exp> arr, std::shared_ptr<Exp> idx);
         void accept(Visitor* v) override;
 };
@@ -216,6 +228,7 @@ class CastExp : public Exp, public std::enable_shared_from_this<CastExp> {
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<Type> type;
+        ExpressionObject expr;
         CastExp(std::shared_ptr<Exp> e, std::shared_ptr<Type> t);
         void accept(Visitor* v) override;
 };
@@ -224,6 +237,7 @@ class FieldAccessExp : public Exp, public std::enable_shared_from_this<FieldAcce
     public:
         std::shared_ptr<Exp> exp;
         std::shared_ptr<IdentifierExp> field;
+        std::vector<ExpressionObject> exprs;
         FieldAccessExp(std::shared_ptr<Exp> e, std::shared_ptr<IdentifierExp> f);
         void accept(Visitor* v) override;
 };
@@ -246,6 +260,7 @@ class NegExp : public Exp, public std::enable_shared_from_this<NegExp> {
 class ParExp : public Exp, public std::enable_shared_from_this<ParExp> {
     public:
         std::shared_ptr<Exp> exp;
+        std::vector<ExpressionObject> exprs;
         ParExp(std::shared_ptr<Exp> e);
         void accept(Visitor* v) override;
 };
@@ -337,19 +352,11 @@ public:
     void accept(Visitor* v) override;
 };
 
-
 class Assignment : public Exp, public std::enable_shared_from_this<Assignment> {
 public:
     std::shared_ptr<Exp> left, right;
+    std::vector<ExpressionObject> exprs;
     Assignment(std::shared_ptr<Exp> left, std::shared_ptr<Exp> right);
-    void accept(Visitor* v) override;
-};
-
-class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
-public:
-    std::shared_ptr<IdentifierType> classType;
-    std::vector<std::shared_ptr<Exp>> arguments;
-    ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
     void accept(Visitor* v) override;
 };
 
@@ -580,6 +587,8 @@ public:
     std::shared_ptr<IdentifierType> ambiguousName;
     std::shared_ptr<IdentifierExp> ambiguousMethodName;
     std::shared_ptr<Method> method;
+    std::vector<ExpressionObject> exprs;
+    ExpressionObject expr;
     std::vector<std::shared_ptr<Exp>> arguments;
     MethodInvocation(std::shared_ptr<Exp> primary, 
         std::shared_ptr<IdentifierExp> primaryMethodName,
@@ -602,6 +611,17 @@ class Constructor : public MemberDecl, public std::enable_shared_from_this<Const
         std::vector<std::shared_ptr<FormalParameter>> fp, std::shared_ptr<BlockStatement> b);
         void accept(Visitor* v) override;
         void setModifiers(std::vector<Modifiers>& m) override;
+        std::string getSignature() const;
+};
+
+class ClassInstanceCreationExp : public Exp, public std::enable_shared_from_this<ClassInstanceCreationExp> {
+public:
+    std::shared_ptr<IdentifierType> classType;
+    std::vector<std::shared_ptr<Exp>> arguments;
+    std::shared_ptr<Constructor> constructor;
+    std::vector<ExpressionObject> exprs;
+    ClassInstanceCreationExp(std::shared_ptr<IdentifierType> classType, std::vector<std::shared_ptr<Exp>> arguments);
+    void accept(Visitor* v) override;
 };
 
 class ClassDecl : public ClassOrInterfaceDecl, public std::enable_shared_from_this<ClassDecl> {
