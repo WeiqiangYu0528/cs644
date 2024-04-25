@@ -61,6 +61,7 @@ parser: $(BISON_OUT) $(FLEX_OUT)
 
 
 bench: $(TARGET)
+	@echo "" > benchmarks/results.csv
 	@for bench_file in $(BENCH_DIR)/*.java; do \
 		benchmark_name=$$(basename $$bench_file); \
 		echo "Running with optimization for $$benchmark_name..."; \
