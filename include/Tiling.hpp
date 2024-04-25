@@ -56,10 +56,13 @@ public:
     
     std::string getRegOrStackOffset(const std::string& var, std::vector<std::string>& assembly) {
         
+
+
         if(var.starts_with(TIR::Configuration::ABSTRACT_ARG_PREFIX) || var == TIR::Configuration::ABSTRACT_RET)
         {
             return "[ebp" + offset(var)  + "]";   
         } 
+        
         // assert(registerAlloc.contains(var) && spills.contains(var));
         // if (registerAlloc.contains(var) && !spills.contains(var))
         // {
@@ -73,37 +76,38 @@ public:
         //     else             
         //         return "[ebp" + offset(var)  + "]";   
         // }
+        if(false) {
+            if (registerAlloc.contains(var) && !spilledVar.contains(var)) {
+                    auto& reg = registerAlloc[var];
+                    auto& currentVar = regUsage[reg];
+                    if(currentVar != var) {
+                        std::cout << "current: " << var << " allocated to register " << reg << std::endl;
+                        if (spills.contains(currentVar)) {
+                            if(!spilledVar.contains(currentVar))                    
+                            {
+                                spilledVar.insert(currentVar);
+                            }
+                            if (std::find(staticFields.begin(), staticFields.end(), currentVar) != staticFields.end())
+                            {
+                                std::cout << "current: staticFields" << currentVar << " spilled into" << " [" + currentVar + "]" << std::endl;
+                            }
+                            else {
+                                assembly.push_back("mov [ebp"  + offset(currentVar) + "], " + reg);
+                                std::cout << "current: " << currentVar << " spilled into" << " [ebp"  + offset(currentVar) + "]" << std::endl;
+                            }
+                        
+                        }
+                        regUsage[reg] = var;
+                    }
+                    return reg;            
+                }         
 
-        if (registerAlloc.contains(var) && !spilledVar.contains(var)) {
-            auto& reg = registerAlloc[var];
-            auto& currentVar = regUsage[reg];
-            if(currentVar != var) {
-                std::cout << "current: " << var << " allocated to register " << reg << std::endl;
-                if (spills.contains(currentVar)) {
-                    if(!spilledVar.contains(currentVar))                    
-                    {
-                        spilledVar.insert(currentVar);
-                    }
-                    if (std::find(staticFields.begin(), staticFields.end(), currentVar) != staticFields.end())
-                    {
-                        std::cout << "current: staticFields" << currentVar << " spilled into" << " [" + currentVar + "]" << std::endl;
-                    }
-                    else {
-                        assembly.push_back("mov [ebp"  + offset(currentVar) + "], " + reg);
-                        std::cout << "current: " << currentVar << " spilled into" << " [ebp"  + offset(currentVar) + "]" << std::endl;
-                    }
-                   
-                }
-                regUsage[reg] = var;
+            if(!registerAlloc.contains(var) && spills.contains(var) && !spilledVar.contains(var)) {
+                spilledVar.insert(var);
+                offset(var);
+                std::cout << "current: " << var << " spilled into" << " [ebp"  + offset(var) + "]" << std::endl;
+
             }
-            return reg;            
-        }         
-    
-        if(!registerAlloc.contains(var) && spills.contains(var) && !spilledVar.contains(var)) {
-            spilledVar.insert(var);
-            offset(var);
-            std::cout << "current: " << var << " spilled into" << " [ebp"  + offset(var) + "]" << std::endl;
-
         }
         if (std::find(staticFields.begin(), staticFields.end(), var) != staticFields.end())
             return "[" + var + "]";
