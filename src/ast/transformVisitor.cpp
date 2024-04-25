@@ -513,7 +513,8 @@ void TransformVisitor::visit(std::shared_ptr<MethodInvocation> n) {
         assert (expr != nullptr);
         assert (st != nullptr);
         args.push_back(expr);
-        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp("tdv");
+        std::string cname{n->method->className};
+        std::shared_ptr<TIR::Temp> vtable = nodeFactory->IRTemp(cname + "_tdv");
         stmts.push_back(nodeFactory->IRMove(vtable, nodeFactory->IRMem(expr)));
         size_t i = 0;
         for (; i < st->getVtableMethods().size(); ++i) {
