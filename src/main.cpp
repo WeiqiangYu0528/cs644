@@ -19,6 +19,7 @@
 #include <Tiling.hpp>
 #include "cfgVisitor.hpp"
 #include "subtypeTable.hpp"
+#include "linearScanner.hpp"
 
 std::unordered_map<DataType, DataType> arrayDataTypes = {
     {DataType::VOID, DataType::VOIDARRAY}, {DataType::INT, DataType::INTARRAY}, {DataType::BOOLEAN, DataType::BOOLEANARRAY}, {DataType::CHAR, DataType::CHARARRAY}, {DataType::BYTE, DataType::BYTEARRAY}, {DataType::SHORT, DataType::SHORTARRAY}, {DataType::LONG, DataType::LONGARRAY}, {DataType::FLOAT, DataType::FLOATARRAY}, {DataType::DOUBLE, DataType::DOUBLEARRAY}, {DataType::OBJECT, DataType::OBJECTARRAY}};
@@ -836,9 +837,19 @@ int main(int argc, char *argv[])
                 }
 
                 for (auto &[funcName, funcDecl] : compUnit->getFunctions())
-                {
+                {                    
+                    std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>(true);
+                    cfv->visit(funcDecl);
+                    auto& cfg = cfv->cfg;
+
+                    TIR::LinearScanner scanner(cfg);
+                    
+                    scanner.allocateRegisters({"edx", "esi"});
+                    tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills,
+                        tiler.currentStackOffset, tiler.tempToStackOffset, tiler.staticFields);
                     tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();
+                    tiler.currentPos = 0;
                     // std::cout << funcName << " " << funcDecl->numTemps << std::endl;
                     assemblyCodes.push_back("\nglobal " + funcDecl->getName());
                     assemblyCodes.push_back(funcDecl->getName() + ":");
