@@ -642,7 +642,7 @@ void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
         case DataType::CHAR:
             mask = 0XFFFF;
             node = nodeFactory->IRBinOp(TIR::BinOp::OpType::AND, getExpr(), nodeFactory->IRConst(mask));
-            break;
+            break;/*
         case DataType::OBJECT:
         {
             std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(n->type);
@@ -657,7 +657,7 @@ void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
                 }
             }
             break;
-        }
+        }*/
         default:
             break;
     }
