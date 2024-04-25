@@ -658,6 +658,14 @@ void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
             }
             break;
         }
+        case DataType::ARRAY:
+        {
+            std::shared_ptr<ArrayType> arrType = std::dynamic_pointer_cast<ArrayType>(n->type);
+            auto idExp = std::dynamic_pointer_cast<IdentifierExp>(n->exp);
+            if (idExp && localTypes.contains(idExp->id->name)) {
+                node = nodeFactory->IRCall(nodeFactory->IRName("__exception"));
+            }
+        }
         default:
             break;
     }
