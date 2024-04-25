@@ -643,6 +643,21 @@ void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
             mask = 0XFFFF;
             node = nodeFactory->IRBinOp(TIR::BinOp::OpType::AND, getExpr(), nodeFactory->IRConst(mask));
             break;
+        case DataType::OBJECT:
+        {
+            std::shared_ptr<IdentifierType> idType = std::dynamic_pointer_cast<IdentifierType>(n->type);
+            if (idType) {
+                std::shared_ptr<SymbolTable> type_st = scope->getNameInScope(idType->id->name, idType->simple);
+                auto idExp = std::dynamic_pointer_cast<IdentifierExp>(n->exp);
+                if (idExp && localTypes.contains(idExp->id->name)) {
+                    std::shared_ptr<SymbolTable> exp_st = localTypes[idExp->id->name];
+                    if (type_st != exp_st && (!subtypeTable.contains(exp_st) || !subtypeTable[exp_st].contains(type_st))) {
+                        node = nodeFactory->IRCall(nodeFactory->IRName("__exception"));
+                    }
+                }
+            }
+            break;
+        }
         default:
             break;
     }
