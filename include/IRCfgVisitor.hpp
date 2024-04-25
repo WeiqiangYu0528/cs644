@@ -9,7 +9,7 @@ namespace TIR {
         std::shared_ptr<BasicBlock> currentBlock;
         std::shared_ptr<BasicBlock> lastBlock; 
         
-        CfgVisitor();
+        CfgVisitor(bool split=false);
         void visit(std::shared_ptr<CompUnit> cu);
         void visit(std::shared_ptr<FuncDecl> fd, bool optim=true);
         
@@ -21,7 +21,7 @@ namespace TIR {
         void visit(std::shared_ptr<Label> label);
         void visit(std::shared_ptr<Return> ret);
         void visit(std::shared_ptr<Call_s> call);
-        
+        bool split;
         void endCurrentBlock();
         void startNewBlock();
         void connectBlocks();

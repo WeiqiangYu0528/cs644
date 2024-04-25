@@ -4,7 +4,7 @@
 namespace TIR {
     BasicBlock::BasicBlock() {}
 
-    CFG::CFG() {}
+    CFG::CFG() { block_id = 0;}
 
 
     void CFG::computeLiveVariables() {
@@ -34,11 +34,8 @@ namespace TIR {
         } while (changed);
     }
 
-
-
     std::shared_ptr<BasicBlock> CFG::newBlock() {
         auto newBlock = std::make_shared<BasicBlock>();
-        newBlock->index = blocks.size();
         blocks.push_back(newBlock);
         return newBlock;
     }
@@ -93,6 +90,7 @@ namespace TIR {
 
     void CFG::collectTrace(std::shared_ptr<BasicBlock> block, std::vector<std::shared_ptr<BasicBlock>>& blocks) {
         if (!block || block->marked) return;
+        block->index = ++block_id;
         block->marked = true;
         blocks.push_back(block);
         if (!block->outgoing.empty()) {

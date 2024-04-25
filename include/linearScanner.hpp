@@ -17,21 +17,20 @@ namespace TIR {
             std::string name;
             int start;
             int end;     
+            bool operator<(const Interval& other) const {
+                return end < other.end;
+            }       
         };
 
-        struct IntervalEndCompare {
-            bool operator()(const Interval& a, const Interval& b) {
-                return a.end > b.end;
-            }
-        };        
-        std::priority_queue<Interval, std::vector<Interval>, IntervalEndCompare> active;
+   
+        std::vector<Interval> active;
         
         std::set<std::string> free_registers;
         bool isDefContext;
         int currentPos;
         int currentCounter;
 
-        LinearScanner(CFG& cfg): cfg(cfg){ currentPos = 0;}
+        LinearScanner(CFG& cfg): cfg(cfg){ currentPos = 0; isDefContext = false;}
   
         void visit(std::shared_ptr<Stmt> stmt, std::shared_ptr<BasicBlock> block);      
         void visit(std::shared_ptr<Move> move, std::shared_ptr<BasicBlock> block);  
@@ -53,5 +52,6 @@ namespace TIR {
         void spillAtInterval(Interval& interval);
         void allocateRegister(Interval& interval);
         void computeLiveVariables();
+        void insertIntervalSorted(const Interval& interval);      
     };
 }

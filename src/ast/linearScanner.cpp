@@ -2,6 +2,8 @@
 
 using namespace TIR;
 
+
+
  void LinearScanner::visit(std::shared_ptr<Stmt> stmt, std::shared_ptr<BasicBlock> block) {
     if (auto cjump = std::dynamic_pointer_cast<CJump>(stmt)) {
         visit(cjump, block);
@@ -56,8 +58,6 @@ void LinearScanner::visit(std::shared_ptr<Temp> node, std::shared_ptr<BasicBlock
     if(node->getName().starts_with(TIR::Configuration::ABSTRACT_ARG_PREFIX) || node->getName() == TIR::Configuration::ABSTRACT_RET)
         return;
     
-    // std::cout << "111:" << node->getName() << std::endl;
-
     if (isDefContext) {
         block->defs.insert(node->getName());
     } else {
@@ -86,33 +86,25 @@ void LinearScanner::allocateRegisters(std::set<std::string> available_registers)
     cfg.computeLiveVariables();
 
     std::unordered_map<std::string, Interval> intervals;
-    std::unordered_map<std::string, int> lastSeenLiveOut;
 
     for (auto& block : cfg.blocks) {
-        for (const auto& liveOutVar : cfg.liveOut[block]) {
-            lastSeenLiveOut[liveOutVar] = std::max(lastSeenLiveOut[liveOutVar], block->index);
+        for (const auto& var : cfg.liveOut[block]) {
+            if (intervals.find(var) == intervals.end()) {
+                intervals[var] = {var, block->index, block->index};
+            }        
+            intervals[var].end = std::max(intervals[var].end, block->index);
         }
     }
 
     for (auto& block : cfg.blocks) {
-      for (auto& def : block->defs) {
-            if (intervals.find(def) == intervals.end()) {
-                intervals[def] = {def, block->index, block->index};
-            } else {
-                intervals[def].end = std::max(intervals[def].end, block->index);
+        for (const auto& var : cfg.liveIn[block]) {
+            if (intervals.find(var) == intervals.end()) {
+                intervals[var] = {var, block->index, block->index};
             }
-        }
-
-        for (const auto& use : block->uses) {
-            if (intervals.find(use) == intervals.end()) {
-                intervals[use] = {use, block->index, block->index};
-            }
-            intervals[use].end = std::max(intervals[use].end, lastSeenLiveOut[use]);
+            intervals[var].start = std::min(intervals[var].start, block->index);
         }
     }
-    
-    
-    std::cout << "=========================================" << std::endl;
+
     std::vector<Interval> live_intervals;
     free_registers = available_registers;
 
@@ -125,50 +117,64 @@ void LinearScanner::allocateRegisters(std::set<std::string> available_registers)
         return a.start < b.start;
     });
 
-    for (auto& interval : live_intervals) {
-       
+
+ for (auto& interval : live_intervals) {
         expireOldIntervals(interval);
-        if(active.size() == available_registers.size()) {
+        if (active.size() == available_registers.size()) {
             spillAtInterval(interval);
-        }
-        else
-        {
+        } else {
             std::string reg = *free_registers.begin();
-            free_registers.erase(reg);     
+            free_registers.erase(reg);
             register_allocation[interval.name] = reg;
-            std::cout << "Interval " << interval.name << " (" << interval.start << "," << interval.end << ") allocated to register " << reg << std::endl;
-            active.push(interval);
+            insertIntervalSorted(interval);
         }
     }
-    std::cout << "=========================================" << std::endl;
+
 }
+
+void LinearScanner::insertIntervalSorted(const Interval& interval) {
+    auto it = std::upper_bound(active.begin(), active.end(), interval, [](const Interval& a, const Interval& b) {
+        return a.end < b.end;
+    });
+    active.insert(it, interval);
+}
+
 
 void LinearScanner::expireOldIntervals(Interval& current_interval) {
-    while (!active.empty()) {
-        Interval top = active.top();
-        if (top.end < current_interval.start) {
-            free_registers.insert(register_allocation[top.name]);
-            active.pop(); 
+    auto it = std::remove_if(active.begin(), active.end(),
+                                [&current_interval, this](Interval& interval) {
+                                    if (interval.end < current_interval.start) {
+                                        free_registers.insert(register_allocation[interval.name]);
+                                        register_allocation.erase(interval.name);
+                                        return true;
+                                    }
+                                    return false;
+                                });
+    active.erase(it, active.end());
+}
+
+
+void LinearScanner::spillAtInterval(Interval& interval) {
+    if (!active.empty() && active.back().end > interval.end) {
+        Interval& top = active.back();
+        register_allocation[interval.name] = register_allocation[top.name];
+        register_allocation.erase(top.name);
+        active.pop_back();
+        insertIntervalSorted(interval);
+    } else {
+
+        if (free_registers.empty()) {
+            spills.insert(interval.name);
         } else {
-            break;
+
+            std::string reg = *free_registers.begin();
+            free_registers.erase(reg);
+            register_allocation[interval.name] = reg;
+            insertIntervalSorted(interval);
         }
     }
 }
 
-void LinearScanner::spillAtInterval(Interval& interval) {
-    if (!active.empty()) {
-        Interval top = active.top();
-        if (top.end > interval.end) {
-            register_allocation[interval.name] = register_allocation[top.name];
-            std::cout << "Interval " << interval.name << " (" << interval.start << "," << interval.end << ") allocated to register " << register_allocation[top.name] << std::endl;
-            active.pop();
-            active.push(interval);
-        } else {
-            spills.insert(interval.name);
-            std::cout << "Interval " << interval.name << " (" << interval.start << "," << interval.end << ") spilled" << std::endl;
-        }
-    }
-}
 
 void LinearScanner::visit(std::shared_ptr<Label> node, std::shared_ptr<BasicBlock> block) {}
 

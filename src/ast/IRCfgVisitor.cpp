@@ -2,7 +2,8 @@
 
 using namespace TIR;
 
-CfgVisitor::CfgVisitor() {
+CfgVisitor::CfgVisitor(bool split) {
+    this->split = split;
 }
 
 
@@ -101,6 +102,7 @@ void CfgVisitor::visit(std::shared_ptr<Label> label) {
     }
     addStatment(label);
     cfg.labelToBlock[label->getName()] = currentBlock;
+    if(split) endCurrentBlock();    
 }
 
 void CfgVisitor::visit(std::shared_ptr<Jump> jump) {
@@ -118,6 +120,7 @@ void CfgVisitor::visit(std::shared_ptr<CJump> cjump) {
 
 void CfgVisitor::visit(std::shared_ptr<Move> move) {
     addStatment(move);
+    if(split) endCurrentBlock();        
 }
 
 void CfgVisitor::visit(std::shared_ptr<Return> ret) {
@@ -126,7 +129,8 @@ void CfgVisitor::visit(std::shared_ptr<Return> ret) {
 }
 
 void CfgVisitor::visit(std::shared_ptr<Call_s> call) {
-    currentBlock->statements.push_back(call);
+    addStatment(call);
+    if(split) endCurrentBlock();        
 }
 
 void CfgVisitor::startNewBlock() {

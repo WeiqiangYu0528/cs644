@@ -60,13 +60,7 @@ public:
         {
             return "[ebp" + offset(var)  + "]";   
         } 
-        
-        // std::cout << "222:" << var << std::endl;
-
-        // std::cout << "current: " <<  var << std::endl; 
-        // return "[ebp" + offset(var) + "]";
-        // std::cout << "current var: " + var <<std::endl;
-
+        // assert(registerAlloc.contains(var) && spills.contains(var));
         // if (registerAlloc.contains(var) && !spills.contains(var))
         // {
         //     auto reg = registerAlloc[var];

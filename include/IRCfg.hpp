@@ -51,7 +51,7 @@ namespace TIR {
             void optimizeJumps(std::vector<std::shared_ptr<BasicBlock>>& trace);
             std::vector<std::shared_ptr<Stmt>> collectTraces();            
             void computeLiveVariables();
-                        
+            int block_id;                        
     };
 
 }

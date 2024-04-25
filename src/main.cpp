@@ -818,13 +818,13 @@ int main(int argc, char *argv[])
 
                 for (auto &[funcName, funcDecl] : compUnit->getFunctions())
                 {                    
-                    std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
-                    cfv->visit(funcDecl, false);
+                    std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>(true);
+                    cfv->visit(funcDecl);
                     auto& cfg = cfv->cfg;
 
                     TIR::LinearScanner scanner(cfg);
                     
-                    scanner.allocateRegisters({"edi", "edx", "esi"});
+                    scanner.allocateRegisters({"edx", "esi"});
                     tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills,
                         tiler.currentStackOffset, tiler.tempToStackOffset, tiler.staticFields);
                     tiler.currentStackOffset = 0;
