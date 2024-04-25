@@ -636,7 +636,11 @@ AmbiguousName TypeCheckingVisitor::visitParExp(std::shared_ptr<ParExp> n) {
         n->exprs = cice->exprs;
         return ambiguousName;
     }
-    if (auto as = std::dynamic_pointer_cast<Assignment>(n->exp)) return visitAssignment(as);
+    if (auto as = std::dynamic_pointer_cast<Assignment>(n->exp)) {
+        AmbiguousName ambiguousName = visitAssignment(as);
+        n->exprs = as->exprs;
+        return ambiguousName;
+    }
     currentExpInfo = GetExpInfo(n->exp);
     if (currentExpInfo.expType == ExpType::String)
         return AmbiguousName(AmbiguousNamesType::EXPRESSION, scope->onDemandImported["String"]);
@@ -961,6 +965,7 @@ AmbiguousName TypeCheckingVisitor::visitAssignment(std::shared_ptr<Assignment> n
 
     ambiguousName = AssignmentTypeCheckingLogic(left_type, right_type);
     currentExpInfo = left_type;
+    n->exprs = std::vector<ExpressionObject>{ExpressionObject(Expression::LOCAL, "tmp", ambiguousName.typeNode, ambiguousName.symbolTable)};
     return ambiguousName;
 }
 

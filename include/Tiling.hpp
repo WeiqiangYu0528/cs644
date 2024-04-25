@@ -116,9 +116,10 @@ public:
 
 class Tiling {
 public:
-    Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields);
+    Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields, std::vector<std::string>& tables);
     std::shared_ptr<SymbolTable> st;
     std::vector<std::string>& staticFields;
+    std::vector<std::string>& vtables;
     std::unordered_map<std::string, int> tempToStackOffset;
     std::unique_ptr<RegisterManager> regManager;
 

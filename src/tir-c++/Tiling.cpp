@@ -35,8 +35,7 @@ void Tiling::move(const std::string& dst, const std::string& src, std::vector<st
     }
 }
 
-
-Tiling::Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields) : st(st), staticFields(fields) {
+Tiling::Tiling(std::shared_ptr<SymbolTable> st, std::vector<std::string>& fields, std::vector<std::string>& tables) : st(st), staticFields(fields), vtables(tables) {
 }
 
 void Tiling::tileStmt(const std::shared_ptr<TIR::Stmt>& stmt, std::vector<std::string>& assembly) {
@@ -110,7 +109,7 @@ void Tiling::tileLabel(const std::shared_ptr<TIR::Label>& node, std::vector<std:
 void Tiling::tileCall(const std::shared_ptr<TIR::Call_s>& node, std::vector<std::string>& assembly) {
     const auto& args = node->getArgs();
     std::string funcName = node->getSignature();
-    if (funcName == "__malloc") {
+    if (funcName == "__malloc" || funcName == "NATIVEjava.io.OutputStream.nativeWrite") {
         auto arg = tileExp(args[0], assembly);
         move("eax", arg, assembly);        
     }
@@ -259,8 +258,8 @@ std::string Tiling::tileMem(const std::shared_ptr<TIR::Mem>& node, std::vector<s
     // auto t = regManager.getReg(localVarName, currentStackOffset, tempToStackOffset, assembly);
 std::string Tiling::tileTemp(const std::shared_ptr<TIR::Temp>& node, std::vector<std::string>& assembly) {
     std::string localVarName{node->getName()};
-    if (localVarName == TIR::Configuration::VTABLE) {
-        return st->getClassName() + "_vtable"; 
+    if (std::find(vtables.begin(), vtables.end(), localVarName) != vtables.end()) {
+        return localVarName; 
     }
 
     if (localVarName == TIR::Configuration::ABSTRACT_RET && callFlag) {

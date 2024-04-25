@@ -352,10 +352,10 @@ public:
     void accept(Visitor* v) override;
 };
 
-
 class Assignment : public Exp, public std::enable_shared_from_this<Assignment> {
 public:
     std::shared_ptr<Exp> left, right;
+    std::vector<ExpressionObject> exprs;
     Assignment(std::shared_ptr<Exp> left, std::shared_ptr<Exp> right);
     void accept(Visitor* v) override;
 };
