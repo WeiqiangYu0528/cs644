@@ -352,13 +352,27 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
         stmts.push_back(nodeFactory->IRMove(mem, te));
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), te);
     } else {
+        // n->left->accept(this);
+        // auto left = getExpr();
+        // n->right->accept(this);
+        // auto right = getExpr();
+        // assert(left != nullptr);
+        // assert(right != nullptr);
+        // node = nodeFactory->IRMove(left, right);
+        std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         n->left->accept(this);
         auto left = getExpr();
+        if (auto eseq = std::dynamic_pointer_cast<TIR::ESeq>(left)) {
+            
+            stmts.push_back(eseq->getStmt());
+            left = eseq->getExpr();
+        }
         n->right->accept(this);
         auto right = getExpr();
         assert(left != nullptr);
         assert(right != nullptr);
-        node = nodeFactory->IRMove(left, right);
+        stmts.push_back(nodeFactory->IRMove(left, right));
+        node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), left);
     }
 }
 
