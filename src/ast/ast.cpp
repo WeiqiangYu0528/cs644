@@ -245,7 +245,7 @@ void OrExp::accept(Visitor* v) {
 }
 
 OrExp::OrExp(std::shared_ptr<Exp> e1, std::shared_ptr<Exp> e2) : exp1(e1), exp2(e2) {
-    std::cout << "OrExp constructor" << std::endl;
+    // std::cout << "OrExp constructor" << std::endl;
 }
 
 void ConditionalAndExp::accept(Visitor* v) {
