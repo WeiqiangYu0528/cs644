@@ -352,13 +352,19 @@ void TransformVisitor::visit(std::shared_ptr<Assignment> n) {
         stmts.push_back(nodeFactory->IRMove(mem, te));
         node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), te);
     } else {
+        std::vector<std::shared_ptr<TIR::Stmt>> stmts;
         n->left->accept(this);
         auto left = getExpr();
+        if (auto eseq = std::dynamic_pointer_cast<TIR::ESeq>(left)) {
+            stmts.push_back(eseq->getStmt());
+            left = eseq->getExpr();
+        }
         n->right->accept(this);
         auto right = getExpr();
         assert(left != nullptr);
         assert(right != nullptr);
-        node = nodeFactory->IRMove(left, right);
+        stmts.push_back(nodeFactory->IRMove(left, right));
+        node = nodeFactory->IRESeq(nodeFactory->IRSeq(stmts), left);
     }
 }
 
@@ -701,7 +707,9 @@ void TransformVisitor::visit(std::shared_ptr<ClassInstanceCreationExp> n) {
     std::vector<std::shared_ptr<TIR::Expr>> args;
     for (auto arg : n->arguments) {
         arg->accept(this);
-        args.push_back(std::dynamic_pointer_cast<TIR::Expr>(node));
+        std::shared_ptr<TIR::Expr> expr = getExpr();
+        assert(expr != nullptr);
+        args.push_back(expr);
     }
 
     node = nodeFactory->IRCall(nodeFactory->IRName(n->constructor->getSignature()), args);

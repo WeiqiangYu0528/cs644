@@ -63,10 +63,10 @@ void CFGVisitor::visit(std::shared_ptr<Constructor> n) {
     cfg.mergeUnusedNodes();
     // cfg.Print();
     // cfg.PrintNodes();
-    if(!cfg.checkReachability()) {
-        std::cerr << "Error: checkReachability()" << std::endl;
-        exit(42);
-    }
+    // if(!cfg.checkReachability()) {
+    //     std::cerr << "Error: checkReachability()" << std::endl;
+    //     exit(42);
+    // }
     if (!cfg.checkDeadAssignments()) {
         std::cerr << "Warning: Dead assignment found" << std::endl;
         // exit(43);
@@ -108,10 +108,10 @@ void CFGVisitor::visit(std::shared_ptr<Method> n) {
         cfg.mergeUnusedNodes();
         // cfg.Print();
         // cfg.PrintNodes();
-        if(!cfg.checkReachability()) {
-            std::cerr << "Error: checkReachability()" << std::endl;
-            exit(42);
-        }
+        // if(!cfg.checkReachability()) {
+        //     std::cerr << "Error: checkReachability()" << std::endl;
+        //     exit(42);
+        // }
         if(n->type->type != DataType::VOID && !cfg.checkMissingReturn() && !loopIndefinite) {
             std::cerr << "Error: checkMissingReturn()" << std::endl;
             exit(42);

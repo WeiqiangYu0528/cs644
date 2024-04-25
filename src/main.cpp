@@ -767,7 +767,8 @@ int main(int argc, char *argv[])
                 std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
                 cfv->visit(compUnit);
                 std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
-                std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
+                assert(ccv->visit(compUnit));
+                // std::cout << "Canonical? " << ( ? "Yes" : "No") << std::endl;
             }
             catch (std::exception &e)
             {
