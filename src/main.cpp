@@ -1,3 +1,4 @@
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -477,6 +478,7 @@ void populateSubtypeTable(std::shared_ptr<Program> n, bool &error) {
 
 int main(int argc, char *argv[])
 {
+    bool optimized = true;
     std::unordered_map<std::string,
                        std::unordered_map<std::string, std::shared_ptr<SymbolTable>>>
         tables;
@@ -485,6 +487,10 @@ int main(int argc, char *argv[])
     bool error{false};
     for (int i = 1; i < argc; ++i)
     {
+        if (strcmp(argv[i], "--opt-none") == 0) {
+            optimized = false;
+            continue;
+        }
         std::ifstream inputFile;
         inputFile.open(argv[i]);
         if (!inputFile.is_open())
@@ -846,7 +852,7 @@ int main(int argc, char *argv[])
                     
                     scanner.allocateRegisters({"edx", "esi"});
                     tiler.regManager = std::make_unique<RegisterManager>(scanner.register_allocation, scanner.spills,
-                        tiler.currentStackOffset, tiler.tempToStackOffset, tiler.staticFields);
+                        tiler.currentStackOffset, tiler.tempToStackOffset, tiler.staticFields, optimized);
                     tiler.currentStackOffset = 0;
                     tiler.tempToStackOffset.clear();
                     tiler.currentPos = 0;

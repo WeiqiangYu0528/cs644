@@ -23,16 +23,18 @@ private:
     std::unordered_map<std::string, std::string> regUsage;
     std::set<std::string> spilledVar;
     std::set<std::string> lockedReg;
+    bool optimized;
 
 public:
     RegisterManager(std::unordered_map<std::string, std::string>& regAlloc, std::set<std::string>& spills,
-            int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset, std::vector<std::string>& staticFields
+            int& currentStackOffset, std::unordered_map<std::string, int>& tempToStackOffset, std::vector<std::string>& staticFields, bool optimized
                ) : 
                 registerAlloc(regAlloc),
                 spills(spills),
                 currentStackOffset(currentStackOffset),
                 tempToStackOffset(tempToStackOffset),
-                staticFields(staticFields)
+                staticFields(staticFields),
+                optimized(optimized)
                 {
                     for (const auto& pair : regAlloc) {
                         if (!pair.second.empty()) {
@@ -76,12 +78,12 @@ public:
         //     else             
         //         return "[ebp" + offset(var)  + "]";   
         // }
-        if(false) {
+        if(optimized) {
             if (registerAlloc.contains(var) && !spilledVar.contains(var)) {
                     auto& reg = registerAlloc[var];
                     auto& currentVar = regUsage[reg];
                     if(currentVar != var) {
-                        std::cout << "current: " << var << " allocated to register " << reg << std::endl;
+                        // std::cout << "current: " << var << " allocated to register " << reg << std::endl;
                         if (spills.contains(currentVar)) {
                             if(!spilledVar.contains(currentVar))                    
                             {

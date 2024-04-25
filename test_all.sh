@@ -8,7 +8,7 @@ for file in "${TEST_DIR}"/*
 do
     filename=$(basename "$file")
 
-    python3 "${SCRIPT_DIR}/a2_test.py" -s "$file" > /dev/null 2>&1
+    python3 "${SCRIPT_DIR}/a2_test.py" $1 -s "$file" > /dev/null 2>&1
     output=$(bash "${SCRIPT_DIR}/compile.sh")
     echo -e "File: $filename\033[80GCompile output: $output"
 done
