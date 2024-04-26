@@ -21,8 +21,10 @@ OBJ_FILES=$(SRC_FILES:src/%.cpp=$(OBJ_DIR)/%.o) $(OBJ_DIR)/parser/parser.tab.o $
 
 TARGET_DIR=.
 TARGET=$(TARGET_DIR)/joosc
-# STD_LIB=/u/cs444/pub/stdlib/6.1
 STD_LIB=JSL_6.1
+# STD_LIB=/u/cs444/pub/stdlib/6.1
+NASM=nasm
+# NASM=/u/cs444/bin/nasm
 BENCH_DIR=benchmarks/opt-reg-only
 OUTPUT_DIR=output
 
@@ -61,6 +63,7 @@ parser: $(BISON_OUT) $(FLEX_OUT)
 
 
 bench: $(TARGET)
+	@mkdir -p output
 	@echo "" > benchmarks/results.csv
 	@for bench_file in $(BENCH_DIR)/*.java; do \
 		benchmark_name=$$(basename $$bench_file); \
@@ -73,7 +76,7 @@ bench: $(TARGET)
 		./$(TARGET) $$bench_file $$files; \
 		cp $(STD_LIB)/runtime.s $(OUTPUT_DIR)/; \
 		for file in $(OUTPUT_DIR)/*.s; do \
-			nasm -O1 -f elf -g -F dwarf $$file; \
+			$(NASM) -O1 -f elf -g -F dwarf $$file; \
 		done; \
 		ld -melf_i386 -o $(OUTPUT_DIR)/main_opt $(OUTPUT_DIR)/*.o; \
 		time_opt=$$({ time -p $(OUTPUT_DIR)/main_opt; } 2>&1 | grep real | awk '{print $$2 * 1000}'); \
@@ -82,7 +85,7 @@ bench: $(TARGET)
 		./$(TARGET) --opt-none $$bench_file $$files; \
 		cp $(STD_LIB)/runtime.s $(OUTPUT_DIR)/; \
 		for file in $(OUTPUT_DIR)/*.s; do \
-			nasm -O1 -f elf -g -F dwarf $$file; \
+			$(NASM) -O1 -f elf -g -F dwarf $$file; \
 		done; \
 		ld -melf_i386 -o $(OUTPUT_DIR)/main_no_opt $(OUTPUT_DIR)/*.o; \
 		time_no_opt=$$({ time -p $(OUTPUT_DIR)/main_no_opt; } 2>&1 | grep real | awk '{print $$2 * 1000}'); \
