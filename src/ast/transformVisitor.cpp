@@ -670,7 +670,7 @@ void TransformVisitor::visit(std::shared_ptr<CastExp> n) {
             break;
     }
 }
-
+ 
 void TransformVisitor::visit(std::shared_ptr<NotExp> n) {
     n->exp->accept(this);
     node = nodeFactory->IRBinOp(TIR::BinOp::OpType::XOR, nodeFactory->IRConst(1), getExpr());

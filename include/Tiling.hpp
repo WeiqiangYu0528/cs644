@@ -91,11 +91,11 @@ public:
                             }
                             if (std::find(staticFields.begin(), staticFields.end(), currentVar) != staticFields.end())
                             {
-                                std::cout << "current: staticFields" << currentVar << " spilled into" << " [" + currentVar + "]" << std::endl;
+                                // std::cout << "current: staticFields" << currentVar << " spilled into" << " [" + currentVar + "]" << std::endl;
                             }
                             else {
                                 assembly.push_back("mov [ebp"  + offset(currentVar) + "], " + reg);
-                                std::cout << "current: " << currentVar << " spilled into" << " [ebp"  + offset(currentVar) + "]" << std::endl;
+                                // std::cout << "current: " << currentVar << " spilled into" << " [ebp"  + offset(currentVar) + "]" << std::endl;
                             }
                         
                         }
@@ -107,7 +107,7 @@ public:
             if(!registerAlloc.contains(var) && spills.contains(var) && !spilledVar.contains(var)) {
                 spilledVar.insert(var);
                 offset(var);
-                std::cout << "current: " << var << " spilled into" << " [ebp"  + offset(var) + "]" << std::endl;
+                // std::cout << "current: " << var << " spilled into" << " [ebp"  + offset(var) + "]" << std::endl;
 
             }
         }

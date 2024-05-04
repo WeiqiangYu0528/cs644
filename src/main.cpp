@@ -747,7 +747,7 @@ int main(int argc, char *argv[])
         std::vector<std::shared_ptr<TIR::CompUnit>> compUnits;
         for (std::shared_ptr<Program> program : asts)
         {
-            std::cout << program->getQualifiedName().second << std::endl;
+            // std::cout << program->getQualifiedName().second << std::endl;
             TransformVisitor tvisitor(program->scope, nodeFactory, staticFields, staticFieldStmts, staticMethods);
             program->accept(&tvisitor);
             std::shared_ptr<TIR::CompUnit> cu = tvisitor.getCompUnit();
@@ -774,7 +774,7 @@ int main(int argc, char *argv[])
                 std::shared_ptr<TIR::CfgVisitor> cfv = std::make_shared<TIR::CfgVisitor>();
                 cfv->visit(compUnit);
                 std::shared_ptr<TIR::CheckCanonicalIRVisitor> ccv = std::make_shared<TIR::CheckCanonicalIRVisitor>();
-                std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
+                // std::cout << "Canonical? " << (ccv->visit(compUnit) ? "Yes" : "No") << std::endl;
             }
             catch (std::exception &e)
             {
