@@ -109,7 +109,7 @@ During and/or after type checking, the following restrictions of the Joos 1W lan
 - Check that no bitwise operations occur.
 - Check that the implicit this variable is not accessed in a static method or in the initializer of a static field.
 
-### Assignment 4: Static Checking (Part C)
+## Assignment 4: Static Checking (Part C)
 In this assignment, you will implement the static checking of the following requirements of the Joos 1W language:
 
 - All statements must be reachable. (Details of the exact definition of reachability are specified in Section 14.20 of the Java Language Specification. It turns out that it is possible to implement reachability checking using an AST traversal, but it is recommended that you implement it as a dataflow analysis.)
@@ -117,14 +117,14 @@ In this assignment, you will implement the static checking of the following requ
 - Every local variable must have an initializer, and the variable must not occur in its own initializer.
 - You will also implement a dataflow analysis to emit warnings for dead assignments to local variables. Notice that since Joos 1W requires that all local variables be initialized when declared, your compiler need not emit warnings for any local variable declaration even though the initialization may be dead. Any warnings emitted by your compiler should be for assignments to already initialized local variables.
 
-### Assignments 5: Code Generation (Part A)
+## Assignments 5: Code Generation (Part A)
 In this assignment, you will make your compiler generate i386 assembly (Intel dialect) for the subset of Joos 1W language that does not include object-oriented features. This subset does include arrays, static methods, and static fields.
 
 Your compiler should first generate IR code, then lower it to canonical form, and finally emit assembly code by tiling the IR syntax trees. You are expected to make use of x86 features, including memory operands and rich addressing modes, in designing your tiles. You need not implement register allocation in this assignment; it is acceptable to spill all variables to the stack.
 
 A Java definition of the IR used in lectures can be found under /u/cs444/pub/tir in the linux.student.cs environment. AST types and an interpreter are included. You can change its definition or reimplement it in your chosen implementation language, but you should document your changes in your report. Your IR should not deviate too much from the provided intermediate representation; for example, using LLVM or JVM is not allowed.
 
-### Assignment 6: Code Generation (Part B)
+## Assignment 6: Code Generation (Part B)
 In this assignment, you will build on your Assignment 5 compiler and implement code generation (i386 assembly, Intel dialect) for the complete Joos 1W language, including its object-oriented features.
 
 You will also implement register allocation, either using linear scan or graph coloring. By default, your compiler should perform register allocation. Your joosc compiler should also provide a command-line option, --opt-none, that disables optimizations including register allocation. You will evaluate the performance improvements enabled by register allocation on your own benchmarks.
